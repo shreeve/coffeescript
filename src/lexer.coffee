@@ -68,6 +68,7 @@ exports.Lexer = class Lexer
     i = 0
     while @chunk = code[i..]
       consumed = \
+           @ctToken()         or
            @identifierToken() or
            @commentToken()    or
            @whitespaceToken() or
@@ -437,6 +438,12 @@ exports.Lexer = class Lexer
     {length} = match[0]
     @token 'JS', script, {length, data: {here: !!matchedHere}}
     length
+
+  # Matches CoffeeTags.
+  ctToken: ->
+    return 0 unless @chunk.charAt(0) is '•' and match = CTTOKEN.exec @chunk
+    @token 'CT', (ct = match[0])[2..], 0, ct.length
+    ct.length
 
   # Matches regular expression literals, as well as multiline extended ones.
   # Lexing regular expressions is difficult to distinguish from division, so we
@@ -1337,6 +1344,14 @@ MULTI_DENT = /^(?:\n[^\n\S]*)+/
 
 JSTOKEN      = ///^ `(?!``) ((?: [^`\\] | \\[\s\S]           )*) `   ///
 HERE_JSTOKEN = ///^ ```     ((?: [^`\\] | \\[\s\S] | `(?!``) )*) ``` ///
+
+# CoffeeTags match '• tag.class1.class2@id!'
+# Use 'tag' for the HTML tag
+# Use '.' for classes
+# Use '@' for the id
+# Use trailing '!' for raw HTML
+# Use '• fn()' to call coffeeTags(fn, ...) instead of coffeeTags(h, ...)
+CTTOKEN = /^• (?:\w+\(\)|[\w\-@.]*!?)/
 
 # String-matching-regexes.
 STRING_START   = /^(?:'''|"""|'|")/

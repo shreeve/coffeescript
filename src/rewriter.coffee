@@ -52,6 +52,7 @@ exports.Rewriter = class Rewriter
     @closeOpenIndexes()
     @normalizeLines()
     @tagPostfixConditionals()
+    @adjustCoffeeTags()
     @addImplicitBracesAndParens()
     @rescueStowawayComments()
     @addLocationDataToGeneratedTokens()
@@ -157,6 +158,15 @@ exports.Rewriter = class Rewriter
       return yes if @tag(end + 1) is ':'
     no
 
+  # Returns `yes` if standing in front of something that can be
+  # implicitly appended to the prior line with a comma.
+  looksAppendable: (j) ->
+    if (@looksObjectish(j) or @indexOfTag(j, IMPLICIT_CALL) > -1)
+      return not @findTagsBackwards(j - 2, ['CLASS', 'EXTENDS', 'IF',
+        ':', 'FINALLY', 'TRY',
+        'CATCH', 'SWITCH', 'LEADING_WHEN', 'FOR', 'WHILE', 'UNTIL'])
+    no
+
   # Returns `yes` if current line of tokens contain an element of tags on same
   # expression level. Stop searching at `LINEBREAKS` or explicit start of
   # containing balanced expression.
@@ -170,6 +180,26 @@ exports.Rewriter = class Rewriter
       backStack.pop() if @tag(i) in EXPRESSION_START and backStack.length
       i -= 1
     @tag(i) in tags
+
+  # Adjust token stream so that CoffeeTags look like normal function calls.
+  adjustCoffeeTags: ->
+    @scanTokens (token, i, tokens) ->
+      if token[0] is 'CT'
+        m = tokens[i + 1][0] isnt 'TERMINATOR'
+        t = token[1]
+        if t[-2..] is '()'
+          @coffeeTags = t[0...-2]
+          tokens.splice i + 0, if m then 1 else 2
+          return 0
+        f = generate 'IDENTIFIER', 'coffeeTags'; f.spaced = true
+        h = generate 'IDENTIFIER', @coffeeTags or= 'h'
+        c = generate ',', ','
+        s = generate 'STRING', "'#{token[1]}'"
+        o = generate ',', ',' if m
+        tokens.splice i + 0, 1, f, h, c, s
+        tokens.splice i + 4, 0, o if o
+        return if o then 5 else 4
+      return 1
 
   # Look for signs of implicit calls and objects in the token stream and
   # add them.
@@ -244,7 +274,12 @@ exports.Rewriter = class Rewriter
         #
         #  1. We have seen a `CONTROL` argument on the line.
         #  2. The last token before the indent is part of the list below.
+        #  3. We are able to add this token to the prior line with a comma.
         if prevTag not in ['=>', '->', '[', '(', ',', '{', 'ELSE', '=']
+          if @looksAppendable(i + 1) # look at implicitObjectContinues() also
+            tokens.splice i, 0, generate ',', ',' # insert comma before indent
+            stack.push [tag, i]
+            return forward(2)
           while inImplicitCall() or inImplicitObject() and prevTag isnt ':'
             if inImplicitCall()
               endImplicitCall()
