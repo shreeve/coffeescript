@@ -1,19 +1,17 @@
 
 ==[ Initial state ]==
 
-20:49:58  shreeve@ice  ~/Data/Code/coffeescript> time cake build:parser
+$ time cake build:parser
 cake build:parser  10.25s user 0.25s system 106% cpu 9.879 total
-20:50:12  shreeve@ice  ~/Data/Code/coffeescript> time cake build:parser
 cake build:parser  10.24s user 0.24s system 106% cpu 9.890 total
-20:50:24  shreeve@ice  ~/Data/Code/coffeescript> time cake build:parser
 cake build:parser  10.23s user 0.24s system 105% cpu 9.892 total
-20:50:37  shreeve@ice  ~/Data/Code/coffeescript> time cake build
+
+$ time cake build
 cake build  13.15s user 0.37s system 119% cpu 11.291 total
-20:50:51  shreeve@ice  ~/Data/Code/coffeescript> time cake build
 cake build  13.28s user 0.38s system 120% cpu 11.377 total
-20:51:04  shreeve@ice  ~/Data/Code/coffeescript> time cake build
 cake build  13.19s user 0.36s system 119% cpu 11.334 total
-20:51:16  shreeve@ice  ~/Data/Code/coffeescript> npm test
+
+$ npm test
 
 > coffeescript@2.7.0 test
 > node ./bin/cake test
@@ -21,3 +19,54 @@ cake build  13.19s user 0.36s system 119% cpu 11.334 total
 (node:73524) ExperimentalWarning: Importing JSON modules is an experimental feature. This feature could change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
 passed 1473 tests in 3.77 seconds
+
+--
+
+# Recompile src to lib/coffeescript
+coffeescript> coffee -c -o lib/coffeescript src
+
+# Now, with updated files in lib, generate the parser
+cake build:parser
+
+processGrammar: 2.92ms
+buildLRAutomaton: 59.227ms
+processLookaheads: 9.572ms
+buildParseTable: 100.597ms
+💥 Total time: 176.042ms
+
+9.89s = average(9.879 + 9.890 + 9.892) = Original build time
+
+56.2x faster parser generation
+
+$ ls -l lib/coffeescript/parser.js
+-rw-r--r-- 1 shreeve staff 303K Sep  8 22:12 lib/coffeescript/parser.js
+
+--
+
+npm test
+
+> coffeescript@2.7.0 test
+> node ./bin/cake test
+
+(node:40800) ExperimentalWarning: Importing JSON modules is an experimental feature. This feature could change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+passed 1473 tests in 3.73 seconds
+
+--
+
+# build compressed parser { compressed: true}
+
+$ cake build:parser
+
+processGrammar: 2.937ms
+buildLRAutomaton: 55.054ms
+processLookaheads: 9.672ms
+buildParseTable: 102.474ms
+💥 Total time: 174.972ms
+
+$ ls -l lib/coffeescript/parser.js
+-rw-r--r-- 1 shreeve staff 27K Sep  8 22:10 lib/coffeescript/parser.js
+
+# NOTE: same speed, 91%+ reduction in size (8.9% original size)
+
+--
