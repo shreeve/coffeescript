@@ -259,7 +259,7 @@ class Generator
   _augmentGrammar: (grammar) ->
     throw new Error "Grammar error: must have at least one rule." if @rules.length is 0
 
-    @start = grammar.start or @rules[0].lhs
+    @start = grammar.start or @rules[0].type
     unless @types[@start]
       throw new Error "Grammar error: start symbol '#{@start}' must be a type defined in the grammar."
 
@@ -461,7 +461,7 @@ class Generator
 
           if i is rule.rhs.length - 1
             # Symbol at end: add FOLLOW(LHS)
-            @types[rule.lhs].follows.forEach (item) =>
+            @types[rule.type].follows.forEach (item) =>
               @types[symbol].follows.add item
           else
             # Add FIRST(β) where β follows symbol
@@ -472,7 +472,7 @@ class Generator
 
             # If β is nullable, also add FOLLOW(LHS)
             if @_isNullable beta
-              @types[rule.lhs].follows.forEach (item) =>
+              @types[rule.type].follows.forEach (item) =>
                 @types[symbol].follows.add item
 
           changed = true if @types[symbol].follows.size > oldSize
@@ -481,7 +481,7 @@ class Generator
   _assignItemLookaheads: ->
     for state in @states
       for item from state.reductions
-        follows = @types[item.rule.lhs]?.follows
+        follows = @types[item.rule.type]?.follows
         if follows
           item.lookaheads.clear()
           item.lookaheads.add token for token from follows
