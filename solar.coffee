@@ -63,9 +63,9 @@ class Generator
   constructor: (grammar, options = {}) ->
 
     # Configuration
-    @options = { ...grammar.options, ...options }
+    @options     = { ...grammar.options, ...options }
     @parseParams = grammar.parseParams
-    @yy = {}
+    @yy          = {}
 
     # Grammar structures
     @operators = {}
