@@ -290,9 +290,9 @@ class Generator
     while marked < states.length
       itemSet = states[marked++]
       symbols = new Set
-      for item from itemSet.items when sym = item.nextSymbol
-        if sym isnt '$end'
-          symbols.add sym
+      for item from itemSet.items when symbol = item.nextSymbol
+        if symbol isnt '$end'
+          symbols.add symbol
       for symbol from symbols
         @_insertState symbol, itemSet, states, stateMap
 
