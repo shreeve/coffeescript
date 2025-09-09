@@ -43,7 +43,7 @@ class Item
     @dot        = dot                       # position of the dot in the rule
     @lookaheads = new Set(lookaheads or []) # lookahead tokens (if any)
     @nextSymbol = @rule.symbols[@dot]       # symbol after dot (if any)
-    @id         = @rule.id * 100 + @dot     # compact unique ID
+    @id         = "#{@rule.id}:#{@dot}"     # compact unique ID
 
 # LR State: A set of items with transitions to other states
 class State
