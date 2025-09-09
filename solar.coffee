@@ -28,9 +28,9 @@ class Type
 
 # Rule: One possible match for a type (Expr → Expr + Term)
 class Rule
-  constructor: (type, pattern, id) ->
+  constructor: (type, symbols, id) ->
     @type       = type    # type (nonterminal) that this rule defines
-    @pattern    = pattern # string of symbols to match ("Expr ** Expr")
+    @symbols    = symbols # array of symbols to match ["Expr", "**"", "Expr"]
     @id         = id      # unique numeric ID for this rule
     @nullable   = false   # true if this rule can produce no tokens (ε)
     @firsts     = new Set # FIRST set: tokens that can start this rule
@@ -148,25 +148,25 @@ class Generator
       handles = if typeof rules is 'string' then rules.split(/\s*\|\s*/g) else rules[..]
 
       for handle in handles
-        [rhs, action, precedence] = @_parseHandle handle
+        [symbols, action, precedence] = @_parseHandle handle
 
         # Add symbols to grammar
-        addSymbol token for token in rhs
+        addSymbol symbol for symbol in symbols
 
         # Process semantic actions
         if action
-          action = @_processSemanticAction action, rhs
+          action = @_processSemanticAction action, symbols
           label = 'case ' + (rules.length + 1) + ':'
           actionGroups[action]?.push(label) or actionGroups[action] = [label]
 
         # Create rule
-        rule = new Rule symbol, rhs, rules.length + 1
+        rule = new Rule symbol, symbols, rules.length + 1
 
         # Set precedence
         @_assignPrecedence rule, precedence, operators, types
 
         rules.push rule
-        ruleTable.push [@symbolIds[symbol], if rhs[0] is '' then 0 else rhs.length]
+        ruleTable.push [@symbolIds[symbol], if symbols[0] is '' then 0 else symbols.length]
         types[symbol].rules.push rule
 
     # Generate parser components
@@ -181,37 +181,37 @@ class Generator
 
   _parseHandle: (handle) ->
     if Array.isArray handle
-      rhs = if typeof handle[0] is 'string' then handle[0].trim().split(' ') else handle[0][..]
-      rhs = rhs.map (e) -> e.replace(/\[[a-zA-Z_][a-zA-Z0-9_-]*\]/g, '')
+      symbols = if typeof handle[0] is 'string' then handle[0].trim().split(' ') else handle[0][..]
+      symbols = symbols.map (e) -> e.replace(/\[[a-zA-Z_][a-zA-Z0-9_-]*\]/g, '')
 
       action = if typeof handle[1] is 'string' or handle.length is 3 then handle[1] else null
       precedence = if handle[2] then handle[2] else if handle[1] and typeof handle[1] isnt 'string' then handle[1] else null
 
-      [rhs, action, precedence]
+      [symbols, action, precedence]
     else
       handle = handle.replace /\[[a-zA-Z_][a-zA-Z0-9_-]*\]/g, ''
-      rhs = handle.trim().split ' '
-      [rhs, null, null]
+      symbols = handle.trim().split ' '
+      [symbols, null, null]
 
-  _processSemanticAction: (action, rhs) ->
+  _processSemanticAction: (action, symbols) ->
     # Process named semantic values
     if action.match(/[$@][a-zA-Z][a-zA-Z0-9_]*/)
       count = {}
       names = {}
 
-      for token, i in rhs
-        rhs_i = token.match(/\[[a-zA-Z][a-zA-Z0-9_-]*\]/) # Like [var]
-        if rhs_i
-          rhs_i = rhs_i[0].slice(1, -1)
+      for token, i in symbols
+        symbols_i = token.match(/\[[a-zA-Z][a-zA-Z0-9_-]*\]/) # Like [var]
+        if symbols_i
+          symbols_i = symbols_i[0].slice(1, -1)
         else
-          rhs_i = token
+          symbols_i = token
 
-        if names[rhs_i]
-          names[rhs_i + (++count[rhs_i])] = i + 1
+        if names[symbols_i]
+          names[symbols_i + (++count[symbols_i])] = i + 1
         else
-          names[rhs_i] = i + 1
-          names[rhs_i + "1"] = i + 1
-          count[rhs_i] = 1
+          names[symbols_i] = i + 1
+          names[symbols_i + "1"] = i + 1
+          count[symbols_i] = 1
 
       action = action
         .replace /\$([a-zA-Z][a-zA-Z0-9_]*)/g, (str, pl) -> if names[pl] then '$' + names[pl] else str # Like $var
@@ -221,15 +221,15 @@ class Generator
     action
       .replace(/([^'"])\$\$|^\$\$/g, '$1this.$') # Like $$var
       .replace(/@[0$]/g, "this._$") # Like @var
-      .replace(/\$(-?\d+)/g, (_, n) -> "$$[$0" + (parseInt(n, 10) - rhs.length || '') + "]") # Like $1
-      .replace( /@(-?\d+)/g, (_, n) -> "_$[$0" +               (n - rhs.length || '') + "]") # Like @1
+      .replace(/\$(-?\d+)/g, (_, n) -> "$$[$0" + (parseInt(n, 10) - symbols.length || '') + "]") # Like $1
+      .replace( /@(-?\d+)/g, (_, n) -> "_$[$0" +               (n - symbols.length || '') + "]") # Like @1
 
   _assignPrecedence: (rule, precedence, operators, types) ->
     if precedence?.prec and operators[precedence.prec]
       rule.precedence = operators[precedence.prec].precedence
     else if rule.precedence is 0
       # Use rightmost token's precedence
-      for token in rule.rhs by -1
+      for token in rule.symbols by -1
         if operators[token] and not types[token]
           rule.precedence = operators[token].precedence
           break
@@ -400,7 +400,7 @@ class Generator
 
       # Mark rules nullable if all handle symbols are nullable
       for rule in @rules when not rule.nullable
-        if rule.rhs.every (symbol) => @_isNullable symbol
+        if rule.symbols.every (symbol) => @_isNullable symbol
           rule.nullable = changed = true
 
       # Propagate to types
@@ -420,7 +420,7 @@ class Generator
       changed = false
 
       for rule in @rules
-        firsts = @_computeFirst rule.rhs
+        firsts = @_computeFirst rule.symbols
         oldSize = rule.firsts.size
         rule.firsts.clear()
         firsts.forEach (item) => rule.firsts.add item
@@ -456,16 +456,16 @@ class Generator
       changed = false
 
       for rule in @rules
-        for symbol, i in rule.rhs when @types[symbol]
+        for symbol, i in rule.symbols when @types[symbol]
           oldSize = @types[symbol].follows.size
 
-          if i is rule.rhs.length - 1
+          if i is rule.symbols.length - 1
             # Symbol at end: add FOLLOW(LHS)
             @types[rule.type].follows.forEach (item) =>
               @types[symbol].follows.add item
           else
             # Add FIRST(β) where β follows symbol
-            beta = rule.rhs[i + 1..]
+            beta = rule.symbols[i + 1..]
             firstSet = @_computeFirst beta
 
             firstSet.forEach (item) => @types[symbol].follows.add item
