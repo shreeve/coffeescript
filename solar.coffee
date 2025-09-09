@@ -14,13 +14,13 @@
 class Token
   constructor: (name, id) ->
     @id   = id   # unique numeric ID for this token
-    @name = name # name of this token/terminal ("NUMBER" or  "+")
+    @name = name # name of this token (terminal) ["NUMBER" or  "+"]
 
 # Type: A nonterminal symbol that can be matched by one or more rules
 class Type
   constructor: (name, id) ->
     @id       = id      # unique numeric ID for this type
-    @name     = name    # name of this type/nonterminal ("ForLoop" or "Splat")
+    @name     = name    # name of this type (nonterminal) ["ForLoop" or "Splat"]
     @rules    = []      # rules that define this type
     @nullable = false   # true if one of the rules can produce no tokens (ε)
     @firsts   = new Set # FIRST set: tokens that can start this type
@@ -74,7 +74,7 @@ class Generator
 
     # Initialize symbol table with special symbols
     @symbolTable = new Map
-    @symbolTable.set "$accept", new Nonterminal "$accept", 0
+    @symbolTable.set "$accept", new Type     "$accept", 0
     @symbolTable.set "$end"   , new Terminal    "$end"   , 1
     @symbolTable.set "error"  , new Terminal    "error"  , 2
 
@@ -108,10 +108,10 @@ class Generator
   # ============================================================================
 
   processGrammar: (grammar) ->
-    @nonterminals = {}
+    @types = {}
     @operators = @_processOperators grammar.operators
 
-    @_buildRules grammar.bnf, @rules, @nonterminals, @operators
+    @_buildRules grammar.bnf, @rules, @types, @operators
     @_augmentGrammar grammar
 
   _processOperators: (ops) ->
@@ -123,7 +123,7 @@ class Generator
         operators[precedence[k]] = {precedence: i + 1, assoc: precedence[0]}
     operators
 
-  _buildRules: (bnf, rules, nonterminals, operators) ->
+  _buildRules: (bnf, rules, types, operators) ->
     actionGroups = {}
     ruleTable = [0]
     @symbolIds = {"$accept": 0, "$end": 1, "error": 2}  # Add reserved symbols
@@ -136,14 +136,14 @@ class Generator
       # Use existing symbol or create a new one
       unless symbol = @symbolTable.get(name)
         id = symbolId++
-        symbol = if bnf[name] then new Nonterminal(name, id) else new Terminal(name, id)
+        symbol = if bnf[name] then new Type(name, id) else new Terminal(name, id)
         @symbolTable.set name, symbol
       @symbolIds[name] = symbol.id
 
-    # Process nonterminals and their rules
+    # Process types and their rules
     for own symbol, rules of bnf
       addSymbol symbol
-      nonterminals[symbol] = @symbolTable.get symbol
+      types[symbol] = @symbolTable.get symbol
 
       handles = if typeof rules is 'string' then rules.split(/\s*\|\s*/g) else rules[..]
 
@@ -163,16 +163,16 @@ class Generator
         rule = new Rule symbol, rhs, rules.length + 1
 
         # Set precedence
-        @_assignPrecedence rule, precedence, operators, nonterminals
+        @_assignPrecedence rule, precedence, operators, types
 
         rules.push rule
         ruleTable.push [@symbolIds[symbol], if rhs[0] is '' then 0 else rhs.length]
-        nonterminals[symbol].rules.push rule
+        types[symbol].rules.push rule
 
     # Generate parser components
     actionsCode = @_generateActionCode actionGroups
     @ruleData = ruleTable
-    @_buildTerminalMappings nonterminals
+    @_buildTerminalMappings types
 
     parameters = "yytext, yyleng, yylineno, yy, yystate, $$, _$"
     parameters += ', ' + @parseParams.join(', ') if @parseParams
@@ -224,13 +224,13 @@ class Generator
       .replace(/\$(-?\d+)/g, (_, n) -> "$$[$0" + (parseInt(n, 10) - rhs.length || '') + "]") # Like $1
       .replace( /@(-?\d+)/g, (_, n) -> "_$[$0" +               (n - rhs.length || '') + "]") # Like @1
 
-  _assignPrecedence: (rule, precedence, operators, nonterminals) ->
+  _assignPrecedence: (rule, precedence, operators, types) ->
     if precedence?.prec and operators[precedence.prec]
       rule.precedence = operators[precedence.prec].precedence
     else if rule.precedence is 0
       # Use rightmost terminal's precedence
       for token in rule.rhs by -1
-        if operators[token] and not nonterminals[token]
+        if operators[token] and not types[token]
           rule.precedence = operators[token].precedence
           break
 
@@ -249,27 +249,27 @@ class Generator
       .replace(/YYABORT/g, 'return false')
       .replace(/YYACCEPT/g, 'return true')
 
-  _buildTerminalMappings: (nonterminals) ->
+  _buildTerminalMappings: (types) ->
     @terminalNames = {}
 
     for own name, id of @symbolIds when id >= 2
-      unless nonterminals[name]
+      unless types[name]
         @terminalNames[id] = name
 
   _augmentGrammar: (grammar) ->
     throw new Error "Grammar error: must have at least one rule." if @rules.length is 0
 
     @start = grammar.start or @rules[0].lhs
-    unless @nonterminals[@start]
-      throw new Error "Grammar error: start symbol '#{@start}' must be a nonterminal defined in the grammar."
+    unless @types[@start]
+      throw new Error "Grammar error: start symbol '#{@start}' must be a type defined in the grammar."
 
     acceptRule = new Rule "$accept", [@start, "$end"], 0
     @rules.push acceptRule
     @acceptRuleIndex = @rules.length - 1
 
-    @nonterminals.$accept = @symbolTable.get "$accept"
-    @nonterminals.$accept.rules.push acceptRule
-    @nonterminals[@start].follows.add "$end"
+    @types.$accept = @symbolTable.get "$accept"
+    @types.$accept.rules.push acceptRule
+    @types[@start].follows.add "$end"
 
   # ============================================================================
   # LR Automaton Construction
@@ -328,14 +328,14 @@ class Generator
           # Reduction item
           closureSet.reductions.add(item)
           closureSet.hasConflicts = closureSet.reductions.size > 1 or closureSet.hasShifts
-        else if not @nonterminals[nextSymbol]
+        else if not @types[nextSymbol]
           # Shift item (terminal)
           closureSet.hasShifts = true
           closureSet.hasConflicts = closureSet.reductions.size > 0
         else
-          # Nonterminal - add items for all its rules
-          nonterminal = @nonterminals[nextSymbol]
-          for rule in nonterminal.rules
+          # Type - add items for all its rules
+          type = @types[nextSymbol]
+          for rule in type.rules
             # Create [B → •γ] with empty lookaheads (will be filled by FOLLOW sets later)
             newItem = new Item rule
             newItems.add(newItem) unless itemCores.has(newItem.id)
@@ -403,15 +403,15 @@ class Generator
         if rule.rhs.every (symbol) => @_isNullable symbol
           rule.nullable = changed = true
 
-      # Propagate to nonterminals
-      for symbol, nonterminal of @nonterminals when not @_isNullable symbol
-        if nonterminal.rules.some (p) -> p.nullable
-          nonterminal.nullable = changed = true
+      # Propagate to types
+      for symbol, type of @types when not @_isNullable symbol
+        if type.rules.some (p) -> p.nullable
+          type.nullable = changed = true
 
   _isNullable: (symbol) ->
     return true if symbol is ''
     return symbol.every((s) => @_isNullable s) if Array.isArray symbol
-    @nonterminals[symbol]?.nullable or false
+    @types[symbol]?.nullable or false
 
   # Compute FIRST sets (terminals that can begin derivations)
   _computeFirstSets: ->
@@ -426,62 +426,62 @@ class Generator
         firsts.forEach (item) => rule.firsts.add item
         changed = true if rule.firsts.size > oldSize
 
-      for symbol, nonterminal of @nonterminals
-        oldSize = nonterminal.firsts.size
-        nonterminal.firsts.clear()
-        for rule in nonterminal.rules
-          rule.firsts.forEach (s) => nonterminal.firs ts.add s
-        changed = true if nonterminal.firsts.size > oldSize
+      for symbol, type of @types
+        oldSize = type.firsts.size
+        type.firsts.clear()
+        for rule in type.rules
+          rule.firsts.forEach (s) => type.firsts.add s
+        changed = true if type.firsts.size > oldSize
 
   _computeFirst: (symbols) ->
     return new Set if symbols is ''
     return @_computeFirstOfSequence symbols if Array.isArray symbols
-    return new Set([symbols]) unless @nonterminals[symbols]
-    @nonterminals[symbols].firsts
+    return new Set([symbols]) unless @types[symbols]
+    @types[symbols].firsts
 
   _computeFirstOfSequence: (symbols) ->
     firsts = new Set
     for symbol in symbols
-      if @nonterminals[symbol]
-        @nonterminals[symbol].firsts.forEach (s) => firsts.add s
+      if @types[symbol]
+        @types[symbol].firsts.forEach (s) => firsts.add s
       else
         firsts.add symbol
       break unless @_isNullable symbol
     firsts
 
-  # Compute FOLLOW sets (terminals that can follow nonterminals)
+  # Compute FOLLOW sets (terminals that can follow types)
   _computeFollowSets: ->
     changed = true
     while changed
       changed = false
 
       for rule in @rules
-        for symbol, i in rule.rhs when @nonterminals[symbol]
-          oldSize = @nonterminals[symbol].follows.size
+        for symbol, i in rule.rhs when @types[symbol]
+          oldSize = @types[symbol].follows.size
 
           if i is rule.rhs.length - 1
             # Symbol at end: add FOLLOW(LHS)
-            @nonterminals[rule.lhs].follows.forEach (item) =>
-              @nonterminals[symbol].follows.add item
+            @types[rule.lhs].follows.forEach (item) =>
+              @types[symbol].follows.add item
           else
             # Add FIRST(β) where β follows symbol
             beta = rule.rhs[i + 1..]
             firstSet = @_computeFirst beta
 
-            firstSet.forEach (item) => @nonterminals[symbol].follows.add item
+            firstSet.forEach (item) => @types[symbol].follows.add item
 
             # If β is nullable, also add FOLLOW(LHS)
             if @_isNullable beta
-              @nonterminals[rule.lhs].follows.forEach (item) =>
-                @nonterminals[symbol].follows.add item
+              @types[rule.lhs].follows.forEach (item) =>
+                @types[symbol].follows.add item
 
-          changed = true if @nonterminals[symbol].follows.size > oldSize
+          changed = true if @types[symbol].follows.size > oldSize
 
   # Assign FOLLOW sets to reduction items
   _assignItemLookaheads: ->
     for state in @states
       for item from state.reductions
-        follows = @nonterminals[item.rule.lhs]?.follows
+        follows = @types[item.rule.lhs]?.follows
         if follows
           item.lookaheads.clear()
           item.lookaheads.add terminal for terminal from follows
@@ -492,7 +492,7 @@ class Generator
 
   buildParseTable: (itemSets = @states) ->
     states = []
-    {nonterminals, operators} = this
+    {types, operators} = this
     [NONASSOC, SHIFT, REDUCE, ACCEPT] = [0, 1, 2, 3]
 
     for itemSet, k in itemSets
@@ -501,7 +501,7 @@ class Generator
       # Shift and goto actions
       for [stackSymbol, gotoState] from itemSet.transitions when @symbolIds[stackSymbol]?
         for item from itemSet.items when item.nextSymbol is stackSymbol
-          if nonterminals[stackSymbol]
+          if types[stackSymbol]
             state[@symbolIds[stackSymbol]] = gotoState
           else
             state[@symbolIds[stackSymbol]] = [SHIFT, gotoState]
@@ -886,7 +886,7 @@ if require.main is module
 
   showStats = (generator) ->
     terminals = Object.keys(generator.terminalNames or {}).length
-    nonterminals = Object.keys(generator.nonterminals or {}).length
+    types = Object.keys(generator.types or {}).length
     rules = generator.rules?.length or 0
     states = generator.states?.length or 0
     conflicts = generator.conflicts or 0
@@ -895,7 +895,7 @@ if require.main is module
 
     ⏱️ Statistics:
     • Terminals: #{terminals}
-    • Nonterminals: #{nonterminals}
+    • Types: #{types}
     • Rules: #{rules}
     • States: #{states}
     • Conflicts: #{conflicts}
