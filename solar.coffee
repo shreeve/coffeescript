@@ -74,9 +74,9 @@ class Generator
 
     # Initialize symbol table with special symbols
     @symbolTable = new Map
-    @symbolTable.set "$accept", new Type     "$accept", 0
-    @symbolTable.set "$end"   , new Terminal    "$end"   , 1
-    @symbolTable.set "error"  , new Terminal    "error"  , 2
+    @symbolTable.set "$accept", new Type  "$accept", 0
+    @symbolTable.set "$end"   , new Token "$end"   , 1
+    @symbolTable.set "error"  , new Token "error"  , 2
 
     # Code generation setup
     @moduleInclude = grammar.moduleInclude or ''
@@ -136,7 +136,7 @@ class Generator
       # Use existing symbol or create a new one
       unless symbol = @symbolTable.get(name)
         id = symbolId++
-        symbol = if bnf[name] then new Type(name, id) else new Terminal(name, id)
+        symbol = if bnf[name] then new Type(name, id) else new Token(name, id)
         @symbolTable.set name, symbol
       @symbolIds[name] = symbol.id
 
@@ -172,7 +172,7 @@ class Generator
     # Generate parser components
     actionsCode = @_generateActionCode actionGroups
     @ruleData = ruleTable
-    @_buildTerminalMappings types
+    @_buildTokenMappings types
 
     parameters = "yytext, yyleng, yylineno, yy, yystate, $$, _$"
     parameters += ', ' + @parseParams.join(', ') if @parseParams
@@ -228,7 +228,7 @@ class Generator
     if precedence?.prec and operators[precedence.prec]
       rule.precedence = operators[precedence.prec].precedence
     else if rule.precedence is 0
-      # Use rightmost terminal's precedence
+      # Use rightmost token's precedence
       for token in rule.rhs by -1
         if operators[token] and not types[token]
           rule.precedence = operators[token].precedence
@@ -249,12 +249,12 @@ class Generator
       .replace(/YYABORT/g, 'return false')
       .replace(/YYACCEPT/g, 'return true')
 
-  _buildTerminalMappings: (types) ->
-    @terminalNames = {}
+  _buildTokenMappings: (types) ->
+    @tokenNames = {}
 
     for own name, id of @symbolIds when id >= 2
       unless types[name]
-        @terminalNames[id] = name
+        @tokenNames[id] = name
 
   _augmentGrammar: (grammar) ->
     throw new Error "Grammar error: must have at least one rule." if @rules.length is 0
@@ -329,7 +329,7 @@ class Generator
           closureSet.reductions.add(item)
           closureSet.hasConflicts = closureSet.reductions.size > 1 or closureSet.hasShifts
         else if not @types[nextSymbol]
-          # Shift item (terminal)
+          # Shift item (token)
           closureSet.hasShifts = true
           closureSet.hasConflicts = closureSet.reductions.size > 0
         else
@@ -388,8 +388,8 @@ class Generator
   processLookaheads: ->
     @processLookaheads = ->  # Computes once; no-op on subsequent calls
     @_computeNullableSets()  # ε-derivable symbols
-    @_computeFirstSets()     # First terminals
-    @_computeFollowSets()    # Following terminals
+    @_computeFirstSets()     # First tokens
+    @_computeFollowSets()    # Following tokens
     @_assignItemLookaheads() # FOLLOW(A) → item lookaheads
 
   # Determine nullable symbols (can derive ε)
@@ -413,7 +413,7 @@ class Generator
     return symbol.every((s) => @_isNullable s) if Array.isArray symbol
     @types[symbol]?.nullable or false
 
-  # Compute FIRST sets (terminals that can begin derivations)
+  # Compute FIRST sets (tokens that can begin derivations)
   _computeFirstSets: ->
     changed = true
     while changed
@@ -449,7 +449,7 @@ class Generator
       break unless @_isNullable symbol
     firsts
 
-  # Compute FOLLOW sets (terminals that can follow types)
+  # Compute FOLLOW sets (tokens that can follow types)
   _computeFollowSets: ->
     changed = true
     while changed
@@ -484,7 +484,7 @@ class Generator
         follows = @types[item.rule.lhs]?.follows
         if follows
           item.lookaheads.clear()
-          item.lookaheads.add terminal for terminal from follows
+          item.lookaheads.add token for token from follows
 
   # ============================================================================
   # Parse Table Generation
@@ -633,7 +633,7 @@ class Generator
       trace: function trace() {},
       yy: {},
       symbolIds: #{JSON.stringify @symbolIds},
-      terminalNames: #{JSON.stringify(@terminalNames).replace /"([0-9]+)":/g, "$1:"},
+      tokenNames: #{JSON.stringify(@tokenNames).replace /"([0-9]+)":/g, "$1:"},
       ruleData: #{JSON.stringify @ruleData},
       parseTable: #{tableCode.moduleCode},
       defaultActions: #{JSON.stringify(@defaultActions).replace /"([0-9]+)":/g, "$1:"},
@@ -763,15 +763,15 @@ class Generator
       unless action?.length and action[0]
         errStr = ''
         unless recovering
-          expected = ("'#{@terminalNames[p]}'" for own p of parseTable[state] when @terminalNames[p] and p > TERROR)
+          expected = ("'#{@tokenNames[p]}'" for own p of parseTable[state] when @tokenNames[p] and p > TERROR)
         errStr = if lexer.showPosition
-          "Parse error on line #{yylineno + 1}:\n#{lexer.showPosition()}\nExpecting #{expected.join(', ')}, got '#{@terminalNames[symbol] or symbol}'"
+          "Parse error on line #{yylineno + 1}:\n#{lexer.showPosition()}\nExpecting #{expected.join(', ')}, got '#{@tokenNames[symbol] or symbol}'"
         else
-          "Parse error on line #{yylineno + 1}: Unexpected #{if symbol is EOF then "end of input" else "'#{@terminalNames[symbol] or symbol}'"}"
+          "Parse error on line #{yylineno + 1}: Unexpected #{if symbol is EOF then "end of input" else "'#{@tokenNames[symbol] or symbol}'"}"
 
           @parseError errStr, {
             text: lexer.match
-            token: @terminalNames[symbol] or symbol
+            token: @tokenNames[symbol] or symbol
             line: lexer.yylineno
             loc: yyloc
             expected
@@ -885,7 +885,7 @@ if require.main is module
     """
 
   showStats = (generator) ->
-    terminals = Object.keys(generator.terminalNames or {}).length
+    tokens = Object.keys(generator.tokenNames or {}).length
     types = Object.keys(generator.types or {}).length
     rules = generator.rules?.length or 0
     states = generator.states?.length or 0
@@ -894,7 +894,7 @@ if require.main is module
     console.log """
 
     ⏱️ Statistics:
-    • Terminals: #{terminals}
+    • Tokens: #{tokens}
     • Types: #{types}
     • Rules: #{rules}
     • States: #{states}
