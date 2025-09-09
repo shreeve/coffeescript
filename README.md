@@ -33,79 +33,93 @@ CoffeeScript Code → Parser → Data Nodes → [Choose Your Backend!]
 
 Every grammar action in CS3 can be represented using one of these seven data node types. All special directives begin with `$` for consistency and easy identification.
 
+### Position Tracking
+
+Every node includes position information for error reporting, source maps, and tooling:
+
+```typescript
+$pos: [startLine, startCol, endLine, endCol]  // 1-indexed
+```
+
+Example: `$pos: [10, 2, 14, 5]` means the node spans from line 10 column 2 to line 14 column 5.
+
 ### Complete Type Signatures
 
 ```typescript
 // 1. Reference Node
-{$ref: string, prop?: string, call?: string, args?: any[]}
+{$ref: string, prop?: string, call?: string, args?: any[], $pos?: Pos}
 
 // 2. Type Node
-{$type: string, ...properties: any}
+{$type: string, ...properties: any, $pos?: Pos}
 
 // 3. Array Node
-{$array: any[]} | {$array: {$concat: any[][]}}
+{$array: any[], $pos?: Pos} | {$array: {$concat: any[][]}, $pos?: Pos}
 
 // 4. Operation Node
-{$op: string, target?: any, args: any[], prop?: string}
+{$op: string, target?: any, args: any[], prop?: string, $pos?: Pos}
 
 // 5. Conditional Node
-{$cond: {test: any, then: any, else: any}}
+{$cond: {test: any, then: any, else: any}, $pos?: Pos}
 
 // 6. Sequence Node
-{$seq: any[], $as?: string, $use?: string}
+{$seq: any[], $as?: string, $use?: string, $pos?: Pos}
 
 // 7. Plain Object Node
-{[key: string]: any}  // No $ prefixed keys
+{[key: string]: any, $pos?: Pos}  // No other $ prefixed keys
+
+type Pos = [number, number, number, number]  // [startLine, startCol, endLine, endCol]
 ```
 
 ## 1. Reference Node (`$ref`)
 
 **Purpose:** Parameter references with optional property access or method calls
 
-**Signature:** `{$ref: string, prop?: string, call?: string, args?: any[]}`
+**Signature:** `{$ref: string, prop?: string, call?: string, args?: any[], $pos?: Pos}`
 
 ### Examples
 ```coffee
 # Simple reference
-$1                              → {$ref: '1'}
-$2                              → {$ref: '2'}
-<passthrough>                   → {$ref: '1'}
+$1                              → {$ref: '1', $pos: [1, 1, 1, 2]}
+$2                              → {$ref: '2', $pos: [2, 5, 2, 6]}
+<passthrough>                   → {$ref: '1', $pos: [1, 1, 1, 12]}
 
 # Property access
-$1.original                     → {$ref: '1', prop: 'original'}
-$1.generated                    → {$ref: '1', prop: 'generated'}
+$1.original                     → {$ref: '1', prop: 'original', $pos: [3, 1, 3, 11]}
+$1.generated                    → {$ref: '1', prop: 'generated', $pos: [4, 1, 4, 12]}
 
 # Method calls
-$1.toString()                   → {$ref: '1', call: 'toString', args: []}
-$1.slice(1, -1)                → {$ref: '1', call: 'slice', args: [1, -1]}
+$1.toString()                   → {$ref: '1', call: 'toString', args: [], $pos: [5, 1, 5, 13]}
+$1.slice(1, -1)                → {$ref: '1', call: 'slice', args: [1, -1], $pos: [6, 1, 6, 15]}
 ```
 
 ## 2. Type Node (`$type`)
 
 **Purpose:** Creates Abstract Syntax Tree nodes with the specified type and properties
 
-**Signature:** `{$type: string, ...properties: any}`
+**Signature:** `{$type: string, ...properties: any, $pos?: Pos}`
 
 ### Examples
 ```coffee
 # Simple AST nodes
-new Value $1                    → {$type: 'Value', base: {$ref: '1'}, properties: []}
-new IdentifierLiteral $1        → {$type: 'IdentifierLiteral', name: {$ref: '1'}}
-new Block                       → {$type: 'Block', statements: []}
+new Value $1                    → {$type: 'Value', base: {$ref: '1'}, properties: [], $pos: [1, 1, 1, 12]}
+new IdentifierLiteral $1        → {$type: 'IdentifierLiteral', name: {$ref: '1'}, $pos: [2, 1, 2, 24]}
+new Block                       → {$type: 'Block', statements: [], $pos: [3, 1, 3, 9]}
 
 # Complex AST nodes
 new If $2, $3, type: $1         → {
   $type: 'If',
   test: {$ref: '2'},
   consequent: {$ref: '3'},
-  kind: {$ref: '1'}
+  kind: {$ref: '1'},
+  $pos: [10, 1, 14, 5]
 }
 
 new Op '+', $1, $3              → {
   $type: 'Op',
   operator: '+',
   left: {$ref: '1'},
-  right: {$ref: '3'}
+  right: {$ref: '3'},
+  $pos: [15, 3, 15, 18]
 }
 ```
 
@@ -113,43 +127,43 @@ new Op '+', $1, $3              → {
 
 **Purpose:** Array literals and concatenation operations
 
-**Signature:** `{$array: any[]} | {$array: {$concat: any[][]}}`
+**Signature:** `{$array: any[], $pos?: Pos} | {$array: {$concat: any[][]}, $pos?: Pos}`
 
 ### Examples
 ```coffee
 # Array literals
-[]                              → {$array: []}
-[$1]                            → {$array: [{$ref: '1'}]}
-[$1, $3]                        → {$array: [{$ref: '1'}, {$ref: '3'}]}
+[]                              → {$array: [], $pos: [1, 1, 1, 2]}
+[$1]                            → {$array: [{$ref: '1'}], $pos: [2, 1, 2, 4]}
+[$1, $3]                        → {$array: [{$ref: '1'}, {$ref: '3'}], $pos: [3, 1, 3, 8]}
 
 # Concatenation
-$1.concat $3                    → {$array: {$concat: [{$ref: '1'}, {$ref: '3'}]}}
-[].concat $2, $3                → {$array: [{$ref: '2'}, {$ref: '3'}]}
+$1.concat $3                    → {$array: {$concat: [{$ref: '1'}, {$ref: '3'}]}, $pos: [4, 1, 4, 12]}
+[].concat $2, $3                → {$array: [{$ref: '2'}, {$ref: '3'}], $pos: [5, 1, 5, 16]}
 ```
 
 ## 4. Operation Node (`$op`)
 
 **Purpose:** Method calls, mutations, and helper functions
 
-**Signature:** `{$op: string, target?: any, args: any[], prop?: string}`
+**Signature:** `{$op: string, target?: any, args: any[], prop?: string, $pos?: Pos}`
 
 ### Examples
 ```coffee
 # Method calls on nodes
-$1.addBody $2                   → {$op: 'addBody', target: {$ref: '1'}, args: [{$ref: '2'}]}
-$1.push $3                      → {$op: 'push', target: {$ref: '1'}, args: [{$ref: '3'}]}
+$1.addBody $2                   → {$op: 'addBody', target: {$ref: '1'}, args: [{$ref: '2'}], $pos: [1, 1, 1, 13]}
+$1.push $3                      → {$op: 'push', target: {$ref: '1'}, args: [{$ref: '3'}], $pos: [2, 1, 2, 10]}
 
 # Helper functions
-Block.wrap [$1]                 → {$op: 'Block.wrap', args: [{$array: [{$ref: '1'}]}]}
-extend $2, soak: yes            → {$op: 'extend', args: [{$ref: '2'}, {soak: true}]}
-LOC(1) $1                       → {$op: 'LOC', args: [1, {$ref: '1'}]}
+Block.wrap [$1]                 → {$op: 'Block.wrap', args: [{$array: [{$ref: '1'}]}], $pos: [3, 1, 3, 15]}
+extend $2, soak: yes            → {$op: 'extend', args: [{$ref: '2'}, {soak: true}], $pos: [4, 1, 4, 20]}
+LOC(1) $1                       → {$op: 'LOC', args: [1, {$ref: '1'}], $pos: [5, 1, 5, 9]}
 ```
 
 ## 5. Conditional Node (`$cond`)
 
 **Purpose:** Ternary conditionals and if-then-else expressions
 
-**Signature:** `{$cond: {test: any, then: any, else: any}}`
+**Signature:** `{$cond: {test: any, then: any, else: any}, $pos?: Pos}`
 
 ### Examples
 ```coffee
@@ -159,7 +173,8 @@ if $2.exclusive then 'exclusive' else 'inclusive' → {
     test: {$ref: '2', prop: 'exclusive'},
     then: 'exclusive',
     else: 'inclusive'
-  }
+  },
+  $pos: [1, 1, 1, 50]
 }
 ```
 
@@ -167,7 +182,7 @@ if $2.exclusive then 'exclusive' else 'inclusive' → {
 
 **Purpose:** Multiple operations executed in order, with optional temporary variables
 
-**Signature:** `{$seq: any[], $as?: string, $use?: string}`
+**Signature:** `{$seq: any[], $as?: string, $use?: string, $pos?: Pos}`
 
 ### Examples
 ```coffee
@@ -176,7 +191,8 @@ if $2.exclusive then 'exclusive' else 'inclusive' → {
   $seq: [
     {$type: 'Value', base: {$ref: '1'}, properties: [], $as: 'temp'},
     {$op: 'add', target: {$use: 'temp'}, args: [{$ref: '2'}]}
-  ]
+  ],
+  $pos: [1, 1, 1, 21]
 }
 
 # Multi-statement actions
@@ -184,7 +200,8 @@ $2.implicit = $1.generated; $2  → {
   $seq: [
     {$op: 'set', target: {$ref: '2'}, prop: 'implicit', value: {$ref: '1', prop: 'generated'}},
     {$ref: '2'}
-  ]
+  ],
+  $pos: [2, 1, 2, 30]
 }
 
 # Destructuring
@@ -192,7 +209,8 @@ $2.implicit = $1.generated; $2  → {
   $seq: [
     {$op: 'destructure', pattern: ['name', 'index'], value: {$ref: '3'}},
     {$use: 'destructured'}
-  ]
+  ],
+  $pos: [3, 1, 3, 18]
 }
 ```
 
@@ -200,18 +218,18 @@ $2.implicit = $1.generated; $2  → {
 
 **Purpose:** Simple property objects without any special directives
 
-**Signature:** `{[key: string]: any}` (no `$` prefixed keys)
+**Signature:** `{[key: string]: any, $pos?: Pos}` (no other `$` prefixed keys)
 
 ### Examples
 ```coffee
 # Option objects
-soak: yes                       → {soak: true}
-exclusive: no                   → {exclusive: false}
+soak: yes                       → {soak: true, $pos: [1, 1, 1, 8]}
+exclusive: no                   → {exclusive: false, $pos: [2, 1, 2, 12]}
 
 # FOR loop options
-source: $2                      → {source: {$ref: '2'}}
-source: $2, guard: $4           → {source: {$ref: '2'}, guard: {$ref: '4'}}
-source: $2, object: yes         → {source: {$ref: '2'}, object: true}
+source: $2                      → {source: {$ref: '2'}, $pos: [3, 1, 3, 10]}
+source: $2, guard: $4           → {source: {$ref: '2'}, guard: {$ref: '4'}, $pos: [4, 1, 4, 21]}
+source: $2, object: yes         → {source: {$ref: '2'}, object: true, $pos: [5, 1, 5, 23]}
 ```
 
 ## Terminology
@@ -221,7 +239,8 @@ source: $2, object: yes         → {source: {$ref: '2'}, object: true}
 - **Data Node** - Any of the 7 node types (the data structures we create)
 - **Node Type** - One of the 7 categories (Reference, Type, Array, Operation, Conditional, Sequence, Plain Object)
 - **Pattern Type** - One of the 12 grammar action patterns we match during transformation
-- **Directive** - Any property starting with `$` (e.g., `$ref`, `$type`, `$op`)
+- **Directive** - Any property starting with `$` (e.g., `$ref`, `$type`, `$op`, `$pos`)
+- **Position** - The `$pos` array tracking source location: `[startLine, startCol, endLine, endCol]` (1-indexed)
 - **Processor** - Code that interprets a data node for a specific backend (ES6Processor, PythonProcessor, etc.)
 - **Backend** - Complete implementation for a target language (ES6Backend, WASMBackend, etc.)
 
@@ -311,6 +330,9 @@ if x > 0:
 ```coffee
 class ES6Backend
   processNode: (node) ->
+    # Position info available for error reporting
+    pos = node.$pos  # [startLine, startCol, endLine, endCol]
+
     return @processReference(node)    if node.$ref?
     return @processASTNode(node)      if node.$type?
     return @processArray(node)        if node.$array?
@@ -323,6 +345,7 @@ class PythonBackend
   # Same interface, different implementation!
   processNode: (node) ->
     # Python-specific code generation
+    # Can use node.$pos for source maps
 ```
 
 ## Implementation Details
@@ -365,6 +388,10 @@ patterns = [
 
 ```coffee
 processNode = (node, params) ->
+  # Position available for all nodes
+  if node.$pos? and params.trackPositions
+    @recordPosition(node.$pos)
+
   # Check for $ directives
   if node.$ref?    then return processReference(node, params)
   if node.$type?   then return createASTNode(node, params)
@@ -373,7 +400,7 @@ processNode = (node, params) ->
   if node.$cond?   then return processConditional(node, params)
   if node.$seq?    then return processSequence(node, params)
 
-  # No $ fields = plain object
+  # No $ fields (except $pos) = plain object
   return processPlainObject(node, params)
 ```
 
