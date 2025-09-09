@@ -63,7 +63,7 @@ class Generator
   constructor: (grammar, options = {}) ->
 
     # Configuration
-    @options = Object.assign {}, grammar.options, options
+    @options = { ...grammar.options, ...options }
     @parseParams = grammar.parseParams
     @yy = {}
 
@@ -277,7 +277,7 @@ class Generator
 
   buildLRAutomaton: ->
     acceptItem = new Item @productions[@acceptProductionIndex]
-    firstState = @_closure new LRState(acceptItem)
+    firstState = @_closure new State(acceptItem)
     firstState.id = 0
     firstState.signature = @_computeStateSignature(firstState)
 
@@ -294,7 +294,7 @@ class Generator
         if sym isnt '$end'
           symbols.add sym
       for symbol from symbols
-        @_insertLRState symbol, itemSet, states, stateMap
+        @_insertState symbol, itemSet, states, stateMap
 
     @states = states
 
@@ -306,7 +306,7 @@ class Generator
 
   # Compute closure of an LR item set (lookaheads assigned later using FOLLOW sets)
   _closure: (itemSet) ->
-    closureSet = new LRState
+    closureSet = new State
     workingSet = new Set itemSet.items
     itemCores  = new Map # item.id -> item
 
@@ -346,7 +346,7 @@ class Generator
 
   # Compute GOTO(state, symbol) - transitions from one state to another
   _goto: (itemSet, symbol) ->
-    gotoSet = new LRState
+    gotoSet = new State
 
     for item from itemSet.items when item.nextSymbol is symbol
       # Create advanced item (lookaheads will be set from FOLLOW sets later)
@@ -356,7 +356,7 @@ class Generator
     if gotoSet.items.size is 0 then gotoSet else @_closure gotoSet
 
   # Insert new state into automaton
-  _insertLRState: (symbol, itemSet, states, stateMap) ->
+  _insertState: (symbol, itemSet, states, stateMap) ->
     # Build kernel signature (advanced items) before computing closure
     kernel = []
     for item from itemSet.items when item.nextSymbol is symbol
@@ -421,29 +421,29 @@ class Generator
 
       for production in @productions
         firsts = @_computeFirst production.rhs
-        oldSize = production.first.size
-        production.first.clear()
-        firsts.forEach (item) => production.first.add item
-        changed = true if production.first.size > oldSize
+        oldSize = production.firsts.size
+        production.firsts.clear()
+        firsts.forEach (item) => production.firsts.add item
+        changed = true if production.firsts.size > oldSize
 
       for symbol, nonterminal of @nonterminals
-        oldSize = nonterminal.first.size
-        nonterminal.first.clear()
+        oldSize = nonterminal.firsts.size
+        nonterminal.firsts.clear()
         for production in nonterminal.productions
-          production.first.forEach (s) => nonterminal.first.add s
-        changed = true if nonterminal.first.size > oldSize
+          production.firsts.forEach (s) => nonterminal.firs ts.add s
+        changed = true if nonterminal.firsts.size > oldSize
 
   _computeFirst: (symbols) ->
     return new Set if symbols is ''
     return @_computeFirstOfSequence symbols if Array.isArray symbols
     return new Set([symbols]) unless @nonterminals[symbols]
-    @nonterminals[symbols].first
+    @nonterminals[symbols].firsts
 
   _computeFirstOfSequence: (symbols) ->
     firsts = new Set
     for symbol in symbols
       if @nonterminals[symbol]
-        @nonterminals[symbol].first.forEach (s) => firsts.add s
+        @nonterminals[symbol].firsts.forEach (s) => firsts.add s
       else
         firsts.add symbol
       break unless @_isNullable symbol
