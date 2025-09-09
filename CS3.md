@@ -1,8 +1,10 @@
-# CS3: The Road to CoffeeScript 3
+# CS3: The Road to CoffeeScript 3 (and Beyond to Rip)
 
 ## The Vision
 
 CoffeeScript 3 represents a **revolutionary leap** in parser architecture: transforming all 399 grammar rules from function-based actions to **pure data structures**. This enables CoffeeScript to compile not just to JavaScript, but to **any target language**.
+
+More importantly, CS3 is the **technological foundation** for the evolution into **Rip** — a next-generation programming language that takes these data-oriented principles to their ultimate conclusion.
 
 ```
 CoffeeScript Code → Parser → Data Nodes → [Choose Your Backend!]
@@ -413,6 +415,29 @@ CoffeeScript 3 isn't just an update—it's a **paradigm shift**. By treating the
 
 The grammar becomes a **universal translator**, and CoffeeScript becomes not just a language, but a **platform for language innovation**.
 
+## The Ultimate Destination: Rip
+
+While CoffeeScript 3 revolutionizes the existing language, it also serves as the **proving ground** for something greater: **Rip**, a new programming language that:
+
+- **Builds on** CS3's data-oriented grammar foundation
+- **Transcends** the JavaScript ecosystem limitations
+- **Targets** multiple platforms natively from day one
+- **Embraces** the "grammar as data" philosophy at its core
+
+The journey from CoffeeScript → CS3 → Rip represents an evolution from:
+- **Language tied to JavaScript** → **Language with multiple targets** → **Truly universal language**
+
+### Why This Path?
+
+1. **CS3 proves the concept** with an existing, battle-tested language
+2. **Real-world validation** through CoffeeScript's user base
+3. **Incremental evolution** allows learning and refinement
+4. **Community building** around the data-oriented approach
+
+Rip will inherit all the lessons learned from CS3, starting with a clean slate and the power of universal compilation built-in from the beginning.
+
 ---
 
 *"The best abstractions are those that hide complexity while revealing possibility."* - CS3 Philosophy
+
+*"Every language should compile to every platform."* - The Rip Manifesto
