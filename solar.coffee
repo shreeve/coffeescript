@@ -111,7 +111,7 @@ class Generator
     @types = {}
     @operators = @_processOperators grammar.operators
 
-    @_buildRules grammar.bnf, @rules, @types, @operators
+    @_buildRules grammar.bnf, @types, @operators
     @_augmentGrammar grammar
 
   _processOperators: (ops) ->
@@ -123,11 +123,11 @@ class Generator
         operators[precedence[k]] = {precedence: i + 1, assoc: precedence[0]}
     operators
 
-  _buildRules: (bnf, rules, types, operators) ->
+  _buildRules: (bnf, types, operators) ->
     actionGroups = {}
-    ruleTable = [0]
-    @symbolIds = {"$accept": 0, "$end": 1, "error": 2}  # Add reserved symbols
-    symbolId = 3 # Next available symbol ID (after special symbols)
+    ruleTable    = [0]
+    @symbolIds   = {"$accept": 0, "$end": 1, "error": 2}  # Add reserved symbols
+    symbolId     = 3 # Next available symbol ID (after special symbols)
 
     # Add symbol to symbol table if not already present
     addSymbol = (name) =>
@@ -151,21 +151,21 @@ class Generator
         [symbols, action, precedence] = @_parseHandle handle
 
         # Add symbols to grammar
-        addSymbol symbol for symbol in symbols
+        addSymbol sym for sym in symbols
 
         # Process semantic actions
         if action
           action = @_processSemanticAction action, symbols
-          label = 'case ' + (rules.length + 1) + ':'
+          label = 'case ' + (@rules.length + 1) + ':'
           actionGroups[action]?.push(label) or actionGroups[action] = [label]
 
         # Create rule
-        rule = new Rule symbol, symbols, rules.length + 1
+        rule = new Rule symbol, symbols, @rules.length + 1
 
         # Set precedence
         @_assignPrecedence rule, precedence, operators, types
 
-        rules.push rule
+        @rules.push rule
         ruleTable.push [@symbolIds[symbol], if symbols[0] is '' then 0 else symbols.length]
         types[symbol].rules.push rule
 
