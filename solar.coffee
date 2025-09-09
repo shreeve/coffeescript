@@ -141,9 +141,9 @@ class Generator
       @symbolIds[name] = symbol.id
 
     # Process types and their rules
-    for own symbol, rules of bnf
-      addSymbol symbol
-      types[symbol] = @symbolTable.get symbol
+    for own type, rules of bnf
+      addSymbol type
+      types[type] = @symbolTable.get type
 
       handles = if typeof rules is 'string' then rules.split(/\s*\|\s*/g) else rules[..]
 
@@ -151,7 +151,7 @@ class Generator
         [symbols, action, precedence] = @_parseHandle handle
 
         # Add symbols to grammar
-        addSymbol sym for sym in symbols
+        addSymbol symbol for symbol in symbols
 
         # Process semantic actions
         if action
@@ -160,14 +160,14 @@ class Generator
           actionGroups[action]?.push(label) or actionGroups[action] = [label]
 
         # Create rule
-        rule = new Rule symbol, symbols, @rules.length + 1
+        rule = new Rule type, symbols, @rules.length + 1
 
         # Set precedence
         @_assignPrecedence rule, precedence, operators, types
 
         @rules.push rule
-        ruleTable.push [@symbolIds[symbol], if symbols[0] is '' then 0 else symbols.length]
-        types[symbol].rules.push rule
+        ruleTable.push [@symbolIds[type], if symbols[0] is '' then 0 else symbols.length]
+        types[type].rules.push rule
 
     # Generate parser components
     actionsCode = @_generateActionCode actionGroups
