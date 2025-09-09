@@ -31,22 +31,38 @@ CoffeeScript Code → Parser → Data Nodes → [Choose Your Backend!]
 
 ## The Seven Data Node Types
 
-Every grammar action in CS3 can be represented using one of these seven data node types. All special directives begin with `$` for consistency and easy identification:
+Every grammar action in CS3 can be represented using one of these seven data node types. All special directives begin with `$` for consistency and easy identification.
 
-```coffee
-DataNode =
-  | {$ref: string, prop?: string, call?: string}    # Reference with optional access
-  | {$type: string, ...props}                        # AST Node creation
-  | {$array: Array | {$concat: Array}}              # Array operations
-  | {$op: string, target?: node, args: []}          # Operations/mutations
-  | {$cond: {test: node, then: node, else: node}}   # Conditional expressions
-  | {$seq: [...operations]}                          # Sequence of operations
-  | {...props}                                       # Plain object (no $ fields)
+### Complete Type Signatures
+
+```typescript
+// 1. Reference Node
+{$ref: string, prop?: string, call?: string, args?: any[]}
+
+// 2. Type Node
+{$type: string, ...properties: any}
+
+// 3. Array Node
+{$array: any[]} | {$array: {$concat: any[][]}}
+
+// 4. Operation Node
+{$op: string, target?: any, args: any[], prop?: string}
+
+// 5. Conditional Node
+{$cond: {test: any, then: any, else: any}}
+
+// 6. Sequence Node
+{$seq: any[], $as?: string, $use?: string}
+
+// 7. Plain Object Node
+{[key: string]: any}  // No $ prefixed keys
 ```
 
-## 1. Reference Nodes (`$ref`)
+## 1. Reference Node (`$ref`)
 
-Parameter references with optional property access or method calls.
+**Purpose:** Parameter references with optional property access or method calls
+
+**Signature:** `{$ref: string, prop?: string, call?: string, args?: any[]}`
 
 ### Examples
 ```coffee
@@ -64,9 +80,11 @@ $1.toString()                   → {$ref: '1', call: 'toString', args: []}
 $1.slice(1, -1)                → {$ref: '1', call: 'slice', args: [1, -1]}
 ```
 
-## 2. AST Node Creation (`$type`)
+## 2. Type Node (`$type`)
 
-Creates Abstract Syntax Tree nodes with the specified type and properties.
+**Purpose:** Creates Abstract Syntax Tree nodes with the specified type and properties
+
+**Signature:** `{$type: string, ...properties: any}`
 
 ### Examples
 ```coffee
@@ -91,9 +109,11 @@ new Op '+', $1, $3              → {
 }
 ```
 
-## 3. Array Operations (`$array`)
+## 3. Array Node (`$array`)
 
-Array literals and concatenation operations.
+**Purpose:** Array literals and concatenation operations
+
+**Signature:** `{$array: any[]} | {$array: {$concat: any[][]}}`
 
 ### Examples
 ```coffee
@@ -107,9 +127,11 @@ $1.concat $3                    → {$array: {$concat: [{$ref: '1'}, {$ref: '3'}
 [].concat $2, $3                → {$array: [{$ref: '2'}, {$ref: '3'}]}
 ```
 
-## 4. Operations (`$op`)
+## 4. Operation Node (`$op`)
 
-Method calls, mutations, and helper functions.
+**Purpose:** Method calls, mutations, and helper functions
+
+**Signature:** `{$op: string, target?: any, args: any[], prop?: string}`
 
 ### Examples
 ```coffee
@@ -123,9 +145,11 @@ extend $2, soak: yes            → {$op: 'extend', args: [{$ref: '2'}, {soak: t
 LOC(1) $1                       → {$op: 'LOC', args: [1, {$ref: '1'}]}
 ```
 
-## 5. Conditionals (`$cond`)
+## 5. Conditional Node (`$cond`)
 
-Ternary conditionals and if-then-else expressions.
+**Purpose:** Ternary conditionals and if-then-else expressions
+
+**Signature:** `{$cond: {test: any, then: any, else: any}}`
 
 ### Examples
 ```coffee
@@ -139,9 +163,11 @@ if $2.exclusive then 'exclusive' else 'inclusive' → {
 }
 ```
 
-## 6. Sequences (`$seq`)
+## 6. Sequence Node (`$seq`)
 
-Multiple operations executed in order, with optional temporary variables.
+**Purpose:** Multiple operations executed in order, with optional temporary variables
+
+**Signature:** `{$seq: any[], $as?: string, $use?: string}`
 
 ### Examples
 ```coffee
@@ -170,9 +196,11 @@ $2.implicit = $1.generated; $2  → {
 }
 ```
 
-## 7. Plain Objects
+## 7. Plain Object Node
 
-Simple property objects without any special directives.
+**Purpose:** Simple property objects without any special directives
+
+**Signature:** `{[key: string]: any}` (no `$` prefixed keys)
 
 ### Examples
 ```coffee
@@ -186,28 +214,39 @@ source: $2, guard: $4           → {source: {$ref: '2'}, guard: {$ref: '4'}}
 source: $2, object: yes         → {source: {$ref: '2'}, object: true}
 ```
 
+## Terminology
+
+**Official CS3 Terms:**
+
+- **Data Node** - Any of the 7 node types (the data structures we create)
+- **Node Type** - One of the 7 categories (Reference, Type, Array, Operation, Conditional, Sequence, Plain Object)
+- **Pattern Type** - One of the 12 grammar action patterns we match during transformation
+- **Directive** - Any property starting with `$` (e.g., `$ref`, `$type`, `$op`)
+- **Processor** - Code that interprets a data node for a specific backend (ES6Processor, PythonProcessor, etc.)
+- **Backend** - Complete implementation for a target language (ES6Backend, WASMBackend, etc.)
+
 ## Pattern Analysis
 
 ### 12 Pattern Types → 7 Data Node Types
 
 Our analysis discovered that **all 399 grammar rules** follow just 12 patterns, which map elegantly to 7 data node types:
 
-```
-PATTERN TYPES (What we match)           → DATA NODE TYPES (What we store)
-────────────────────────────────────────────────────────────────────────
-1.  Passthroughs ($1, <passthrough>)    → {$ref}
-2.  Property access ($1.original)       → {$ref with prop}
-3.  Method calls ($1.toString())        → {$ref with call}
-4.  Simple AST (new Value $1)           → {$type: ...}
-5.  Arrays ([], [$1], concat)           → {$array: ...}
-6.  Objects (soak: yes)                 → {...props}
-7.  Mutations ($1.add $2)               → {$op: ...}
-8.  Conditionals (if...then...else)     → {$cond: ...}
-9.  Chained ops ((new X).add)           → {$seq: ...}
-10. Multi-statement (x = y; z)          → {$seq: ...}
-11. Helpers (Block.wrap, extend)        → {$op: ...}
-12. Object.assign                       → {$op: ...}
-```
+| Pattern Type | Example | Maps To | Node Type |
+|-------------|---------|---------|----------|
+| 1. Passthroughs | `$1`, `<passthrough>` | → | **Reference Node** |
+| 2. Property access | `$1.original` | → | **Reference Node** (with prop) |
+| 3. Method calls | `$1.toString()` | → | **Reference Node** (with call) |
+| 4. Simple AST | `new Value $1` | → | **Type Node** |
+| 5. Arrays | `[]`, `[$1]` | → | **Array Node** |
+| 6. Plain objects | `soak: yes` | → | **Plain Object Node** |
+| 7. Mutations | `$1.add $2` | → | **Operation Node** |
+| 8. Conditionals | `if...then...else` | → | **Conditional Node** |
+| 9. Chained ops | `(new X).add` | → | **Sequence Node** |
+| 10. Multi-statement | `x = y; z` | → | **Sequence Node** |
+| 11. Helpers | `Block.wrap`, `extend` | → | **Operation Node** |
+| 12. Object.assign | `Object.assign $2, ...` | → | **Operation Node** |
+
+**The Rule:** Every grammar action → matches 1 of 12 patterns → becomes 1 of 7 node types
 
 ### Frequency Distribution
 

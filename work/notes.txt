@@ -81,3 +81,7 @@ language: {
   rewriter,          // → transforms TOKEN STREAM
   compiler           // → executes/transpiles AST
 }
+
+# ==[ Tons of grammars in EBNF ]==
+
+• https://github.com/mingodad/plgh
