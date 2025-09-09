@@ -1,0 +1,23 @@
+
+==[ Initial state ]==
+
+20:49:58  shreeve@ice  ~/Data/Code/coffeescript> time cake build:parser
+cake build:parser  10.25s user 0.25s system 106% cpu 9.879 total
+20:50:12  shreeve@ice  ~/Data/Code/coffeescript> time cake build:parser
+cake build:parser  10.24s user 0.24s system 106% cpu 9.890 total
+20:50:24  shreeve@ice  ~/Data/Code/coffeescript> time cake build:parser
+cake build:parser  10.23s user 0.24s system 105% cpu 9.892 total
+20:50:37  shreeve@ice  ~/Data/Code/coffeescript> time cake build
+cake build  13.15s user 0.37s system 119% cpu 11.291 total
+20:50:51  shreeve@ice  ~/Data/Code/coffeescript> time cake build
+cake build  13.28s user 0.38s system 120% cpu 11.377 total
+20:51:04  shreeve@ice  ~/Data/Code/coffeescript> time cake build
+cake build  13.19s user 0.36s system 119% cpu 11.334 total
+20:51:16  shreeve@ice  ~/Data/Code/coffeescript> npm test
+
+> coffeescript@2.7.0 test
+> node ./bin/cake test
+
+(node:73524) ExperimentalWarning: Importing JSON modules is an experimental feature. This feature could change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+passed 1473 tests in 3.77 seconds
