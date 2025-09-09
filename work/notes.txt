@@ -70,3 +70,14 @@ $ ls -l lib/coffeescript/parser.js
 # NOTE: same speed, 91%+ reduction in size (8.9% original size)
 
 --
+
+language: {
+  syntax: {           // → generates the PARSER
+    grammar,          //   ├─ production rules
+    operators,        //   ├─ precedence/associativity
+    start             //   └─ entry point
+  }, => parser
+  lexer,             // → generates TOKENS
+  rewriter,          // → transforms TOKEN STREAM
+  compiler           // → executes/transpiles AST
+}

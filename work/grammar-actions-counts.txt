@@ -1,0 +1,694 @@
+   1 # ============================================================
+   1 # Rule 2: 'STRING'
+   1 # Lines: 202-210
+   1 # Multi-line action:
+   1 #   new StringLiteral(
+   1 #           $1.slice 1, -1 # strip artificial quotes and unwrap to primitive string
+   1 #           quote:        $1.quote
+   1 #           initialChunk: $1.initialChunk
+   1 #           finalChunk:   $1.finalChunk
+   1 #           indent:       $1.indent
+   1 #           double:       $1.double
+   1 #           heregex:      $1.heregex
+   1 #         )
+   1 # ============================================================
+   1 # Rule 2: 'FOR OWN ForVariables'
+   1 # Lines: 762-763
+   1 # Multi-line action:
+   1 #   [name, index] = $3
+   1 #           new For [], {name, index, own: yes, ownTag: (LOC(2) new Literal($2))}
+   1 # ============================================================
+   2 # Action: (new Value $1).add $2
+   2 # Action: (Object.assign $2, postfix: yes).addBody LOC(1) Block.wrap([$1])
+   4 # Action: []
+   2 # Action: [].concat $1, $3
+   1 # Action: [].concat $2
+   1 # Action: [$1, $3]
+  10 # Action: [$1]
+   1 # Action: [LOC(1)(new Access new PropertyName('prototype'), shorthand: yes, soak: yes), LOC(2)(new Access $2)]
+   1 # Action: [LOC(1)(new Access new PropertyName('prototype'), shorthand: yes), LOC(2)(new Access $2)]
+  60 # Action: <passthrough>
+   3 # Action: $1
+   1 # Action: $1.add $2
+   4 # Action: $1.addBody $2
+   2 # Action: $1.addElse $3
+   2 # Action: $1.addElse LOC(3,5) new If $4, $5, type: $3
+   2 # Action: $1.addSource $2
+   4 # Action: $1.concat $2
+   1 # Action: $1.concat $2, $4, $5
+   6 # Action: $1.concat $3
+  11 # Action: $1.concat $4
+   1 # Action: $1.push $3
+   5 # Action: $2
+   1 # Action: $2.concat $3
+   1 # Action: $2.implicit = $1.generated; $2
+   2 # Action: $2.postfix = yes; $2.addBody $1
+   1 # Action: $3
+   1 # Action: Block.wrap [$1]
+   1 # Action: exclusive: no
+   1 # Action: exclusive: yes
+   1 # Action: extend $2, soak: yes
+   1 # Action: LOC(1, 3) new SwitchWhen $2, $3
+   1 # Action: new Access $2
+   1 # Action: new Access $2, soak: yes
+   1 # Action: new Access new PropertyName('prototype'), shorthand: yes
+   1 # Action: new Access new PropertyName('prototype'), shorthand: yes, soak: yes
+   1 # Action: new Arr []
+   1 # Action: new Arr [].concat $2, $3
+   1 # Action: new Arr $2
+   1 # Action: new Assign $1, $3
+   2 # Action: new Assign $1, $4
+   1 # Action: new Assign LOC(1)(new Value $1), $3, 'object',
+   1 # Action: new Assign LOC(1)(new Value $1), $3, null,
+   1 # Action: new AwaitReturn $3,   returnKeyword: LOC(2)(new Literal $2)
+   1 # Action: new AwaitReturn null, returnKeyword: LOC(2)(new Literal $2)
+   1 # Action: new Block
+   1 # Action: new BooleanLiteral $1.toString(), originalValue: $1.original
+   1 # Action: new Call (new Value $1), $3, $2.soak
+   2 # Action: new Call $1, $3, $2.soak
+   1 # Action: new Catch $2
+   1 # Action: new Catch $3, $2
+   1 # Action: new Catch $3, LOC(2)(new Value($2))
+   1 # Action: new Class
+   1 # Action: new Class $2
+   1 # Action: new Class $2, $4
+   1 # Action: new Class $2, $4, $5
+   1 # Action: new Class $2, null, $3
+   1 # Action: new Class null, $3
+   1 # Action: new Class null, $3, $4
+   1 # Action: new Class null, null, $2
+   1 # Action: new Code [], $2, $1
+   1 # Action: new Code [], LOC(2)(Block.wrap [$2]), $1
+   1 # Action: new Code $2, $5, $4, LOC(1)(new Literal $1)
+   1 # Action: new Code $2, LOC(5)(Block.wrap [$5]), $4,
+   2 # Action: new DynamicImportCall LOC(1)(new DynamicImport), $2
+   1 # Action: new Elision
+   1 # Action: new Existence $1
+   2 # Action: new Expansion
+   1 # Action: new ExportAllDeclaration new Literal($2), $4
+   1 # Action: new ExportAllDeclaration new Literal($2), $4, $6
+   1 # Action: new ExportDefaultDeclaration $3
+   1 # Action: new ExportDefaultDeclaration new Value $4
+   1 # Action: new ExportNamedDeclaration $2
+   1 # Action: new ExportNamedDeclaration LOC(2,4)(new Assign $2, $4, null,
+   1 # Action: new ExportNamedDeclaration LOC(2,5)(new Assign $2, $5, null,
+   1 # Action: new ExportNamedDeclaration LOC(2,6)(new Assign $2, $5, null,
+   1 # Action: new ExportNamedDeclaration new ExportSpecifierList []
+   1 # Action: new ExportNamedDeclaration new ExportSpecifierList $3
+   1 # Action: new ExportNamedDeclaration new ExportSpecifierList([]), $5
+   1 # Action: new ExportNamedDeclaration new ExportSpecifierList([]), $5, $7
+   1 # Action: new ExportNamedDeclaration new ExportSpecifierList($3), $7
+   1 # Action: new ExportNamedDeclaration new ExportSpecifierList($3), $7, $9
+   1 # Action: new ExportSpecifier $1
+   1 # Action: new ExportSpecifier $1, $3
+   1 # Action: new ExportSpecifier $1, LOC(3)(new DefaultLiteral $3)
+   1 # Action: new ExportSpecifier LOC(1)(new DefaultLiteral $1)
+   1 # Action: new ExportSpecifier LOC(1)(new DefaultLiteral($1)), $3
+   1 # Action: new For [], name: $2[0], index: $2[1]
+   1 # Action: new For [], source: (LOC(2) new Value($2))
+   2 # Action: new For [], source: (LOC(2) new Value($2)), step: $4
+   2 # Action: new FuncGlyph $1
+   1 # Action: new IdentifierLiteral $1
+   2 # Action: new If $2, $3, type: $1
+   4 # Action: new If $3, LOC(1)(Block.wrap [$1]), type: $2, postfix: true
+   1 # Action: new ImportDeclaration new ImportClause($2, $4), $6
+   1 # Action: new ImportDeclaration new ImportClause($2, $4), $6, $8
+   1 # Action: new ImportDeclaration new ImportClause($2, new ImportSpecifierList $5), $9
+   1 # Action: new ImportDeclaration new ImportClause($2, new ImportSpecifierList $5), $9, $11
+   1 # Action: new ImportDeclaration new ImportClause($2, null), $4
+   1 # Action: new ImportDeclaration new ImportClause($2, null), $4, $6
+   1 # Action: new ImportDeclaration new ImportClause(null, $2), $4
+   1 # Action: new ImportDeclaration new ImportClause(null, $2), $4, $6
+   1 # Action: new ImportDeclaration new ImportClause(null, new ImportSpecifierList []), $5
+   1 # Action: new ImportDeclaration new ImportClause(null, new ImportSpecifierList []), $5, $7
+   1 # Action: new ImportDeclaration new ImportClause(null, new ImportSpecifierList $3), $7
+   1 # Action: new ImportDeclaration new ImportClause(null, new ImportSpecifierList $3), $7, $9
+   1 # Action: new ImportDeclaration null, $2
+   1 # Action: new ImportDeclaration null, $2, $4
+   1 # Action: new ImportDefaultSpecifier $1
+   1 # Action: new ImportNamespaceSpecifier new Literal($1), $3
+   1 # Action: new ImportSpecifier $1
+   1 # Action: new ImportSpecifier $1, $3
+   1 # Action: new ImportSpecifier LOC(1)(new DefaultLiteral $1)
+   1 # Action: new ImportSpecifier LOC(1)(new DefaultLiteral($1)), $3
+   1 # Action: new Index $1
+   1 # Action: new InfinityLiteral $1.toString(), originalValue: $1.original
+   1 # Action: new Interpolation
+   1 # Action: new Interpolation $2
+   1 # Action: new Interpolation $3
+   1 # Action: new JSXTag $1.toString(),
+   2 # Action: new MetaProperty LOC(1)(new IdentifierLiteral $1), LOC(3)(new Access $3)
+   1 # Action: new NaNLiteral $1
+   1 # Action: new NullLiteral $1
+   1 # Action: new NumberLiteral $1.toString(), parsedValue: $1.parsedValue
+   1 # Action: new Obj $2, $1.generated
+   1 # Action: new Op '--', $1, null, true
+   1 # Action: new Op '--', $2
+   1 # Action: new Op '-' , $1, $3
+   1 # Action: new Op '-', $2), prec: 'UNARY_MATH'
+   1 # Action: new Op '+' , $1, $3
+   1 # Action: new Op '+', $2), prec: 'UNARY_MATH'
+   1 # Action: new Op '++', $1, null, true
+   1 # Action: new Op '++', $2
+   1 # Action: new Op $1 , $2
+   7 # Action: new Op $1, $2
+   2 # Action: new Op $1, $3
+   1 # Action: new Op $1, new Value new Literal ''
+   1 # Action: new Op $1.concat($2), $3
+   1 # Action: new Op $1.toString(), $2, undefined, undefined, originalOperator: $1.original
+   7 # Action: new Op $2, $1, $3
+   1 # Action: new Op $2.toString(), $1, $3, undefined, invertOperator: $2.invert?.original ? $2.invert
+   3 # Action: new Op $2.toString(), $1, $3, undefined, originalOperator: $2.original
+   1 # Action: new Param $1
+   1 # Action: new Param $1, $3
+   1 # Action: new Param $1, null, on
+   1 # Action: new Param $2, null, postfix: no
+   1 # Action: new Parens $2
+   1 # Action: new Parens $3
+   1 # Action: new PassthroughLiteral $1.toString(), here: $1.here, generated: $1.generated
+   1 # Action: new PropertyName $1.toString()
+   2 # Action: new Range $1, $3, if $2.exclusive then 'exclusive' else 'inclusive'
+   2 # Action: new Range $1, null, if $2.exclusive then 'exclusive' else 'inclusive'
+   2 # Action: new Range $2, $4, if $3.exclusive then 'exclusive' else 'inclusive'
+   1 # Action: new Range null, $2, if $1.exclusive then 'exclusive' else 'inclusive'
+   1 # Action: new Range null, null, if $1.exclusive then 'exclusive' else 'inclusive'
+   1 # Action: new RegexLiteral $1.toString(), delimiter: $1.delimiter, heregexCommentTokens: $1.heregexCommentTokens
+   1 # Action: new RegexWithInterpolations $2, heregexCommentTokens: $3.heregexCommentTokens
+   1 # Action: new Return
+   1 # Action: new Return $2
+   1 # Action: new Return new Value $3
+   1 # Action: new Root $1
+   1 # Action: new Root new Block
+   1 # Action: new Slice $1
+   2 # Action: new Splat $1
+   1 # Action: new Splat $2, {postfix: no}
+   1 # Action: new Splat $2, postfix: no
+   1 # Action: new Splat new Value $1
+   1 # Action: new Splat new Value($2), postfix: no
+   1 # Action: new StatementLiteral $1
+   1 # Action: new StringWithInterpolations Block.wrap($2), quote: $1.quote, startQuote: LOC(1)(new Literal $1.toString())
+   1 # Action: new Super LOC(3)(new Access $3), LOC(1)(new Literal $1)
+   1 # Action: new Super LOC(3)(new Index $3),  LOC(1)(new Literal $1)
+   1 # Action: new Super LOC(4)(new Index $4),  LOC(1)(new Literal $1)
+   2 # Action: new SuperCall LOC(1)(new Super), $3, $2.soak, $1
+   2 # Action: new Switch $2, $4
+   2 # Action: new Switch $2, $4, LOC(5,6) $6
+   1 # Action: new Switch null, $3
+   1 # Action: new Switch null, $3, LOC(4,5) $5
+   1 # Action: new SwitchWhen $2, $3
+   1 # Action: new TaggedTemplateCall $1, $3, $2.soak
+   1 # Action: new Throw $2
+   1 # Action: new Throw new Value $3
+   1 # Action: new Try $2
+   1 # Action: new Try $2, $3
+   1 # Action: new Try $2, $3, $5, LOC(4)(new Literal $4)
+   1 # Action: new Try $2, null, $4, LOC(3)(new Literal $3)
+   1 # Action: new UndefinedLiteral $1
+  13 # Action: new Value $1
+   1 # Action: new Value LOC(1)(new ThisLiteral $1), [LOC(2)(new Access($2))], 'this'
+   1 # Action: new Value LOC(1)(new ThisLiteral $1), [LOC(3)(new ComputedPropertyName($3))], 'this'
+   1 # Action: new Value new ComputedPropertyName $2
+   2 # Action: new Value new ThisLiteral $1
+   1 # Action: new Value($1).add $2
+   2 # Action: new While $2
+   3 # Action: new While $2, guard: $4
+   2 # Action: new While $2, invert: true
+   3 # Action: new While $2, invert: true, guard: $4
+   1 # Action: new While(LOC(1)(new BooleanLiteral 'true'), isLoop: yes).addBody $2
+   1 # Action: new While(LOC(1)(new BooleanLiteral 'true'), isLoop: yes).addBody LOC(2) Block.wrap [$2]
+   1 # Action: new YieldReturn $3,   returnKeyword: LOC(2)(new Literal $2)
+   1 # Action: new YieldReturn null, returnKeyword: LOC(2)(new Literal $2)
+   1 # Action: soak: no
+   1 # Action: soak: yes
+   2 # Action: source: $2
+   2 # Action: source: $2, from: yes
+   4 # Action: source: $2, guard: $4
+   4 # Action: source: $2, guard: $4, from: yes
+   4 # Action: source: $2, guard: $4, object: yes
+   8 # Action: source: $2, guard: $4, step: $6
+   2 # Action: source: $2, object: yes
+   4 # Action: source: $2, step:  $4
+   8 # Action: source: $2, step:  $4, guard: $6
+   1 # ============================================================
+   1 # Accessor
+   1 # AlphaNumeric
+   1 # Arg
+   1 # ArgElision
+   1 # ArgElisionList
+   1 # ArgList
+   1 # Arguments
+   1 # Array
+   1 # Assign
+   1 # Assignable
+   1 # AssignList
+   1 # AssignObj
+   1 # AwaitReturn
+   1 # Block
+   1 # Body
+   1 # Catch
+   1 # Class
+   1 # Code
+   1 # CodeLine
+   1 # DoIife
+   1 # Elision
+   1 # Elisions
+   1 # Export
+   1 # ExportSpecifier
+   1 # ExportSpecifierList
+   1 # Expression
+   1 # ExpressionLine
+   1 # For
+   1 # ForBody
+   1 # ForLineBody
+   1 # ForLineSource
+   1 # ForSource
+   1 # ForStart
+   1 # ForValue
+   1 # ForVariables
+   1 # FuncDirective
+   1 # FuncGlyph
+   1 # Identifier
+   1 # If
+   1 # IfBlock
+   1 # IfBlockLine
+   1 # IfLine
+   1 # Import
+   1 # ImportDefaultSpecifier
+   1 # ImportNamespaceSpecifier
+   1 # ImportSpecifier
+   1 # ImportSpecifierList
+   1 # Index
+   1 # IndexValue
+   1 # InterpolationChunk
+   1 # Interpolations
+   1 # Invocation
+   1 # Line
+   1 # Literal
+   1 # Loop
+   1 # MetaProperty
+   2 # Multi-line action:
+   1 # ObjAssignable
+   1 # Object
+   1 # ObjRestValue
+   1 # ObjSpreadExpr
+   1 # ObjSpreadIdentifier
+   1 # Operation
+   1 # OperationLine
+   1 # OptComma
+   1 # OptElisions
+   1 # OptFuncExist
+   1 # Param
+   1 # ParamList
+   1 # ParamVar
+   1 # Parenthetical
+   1 # Property
+   1 # Range
+   1 # RangeDots
+   1 # Regex
+   1 # Return
+   1 # Root
+   1 # SimpleArgs
+   1 # SimpleAssignable
+   1 # SimpleObjAssignable
+   1 # Slice
+   1 # Splat
+   1 # Statement
+   1 # String
+   1 # Super
+   1 # Switch
+   1 # This
+   1 # ThisProperty
+   1 # Throw
+   1 # Try
+   1 # Value
+   1 # When
+   1 # Whens
+   1 # While
+   1 # WhileLineSource
+   1 # WhileSource
+   1 # Yield
+   1 # YieldReturn
+   1 # ============================================================
+   1 # Rule: '-     Expression'
+   1 # Rule: '-- SimpleAssignable'
+   1 # Rule: '->'
+   1 # Rule: ', Elisions'
+   2 # Rule: ','
+   1 # Rule: ':: Property'
+   1 # Rule: '::'
+   1 # Rule: '?:: Property'
+   1 # Rule: '?::'
+   1 # Rule: '?. Property'
+   1 # Rule: '.  Property'
+   1 # Rule: '... Expression'
+   1 # Rule: '... ObjSpreadExpr'
+   1 # Rule: '... ParamVar'
+   1 # Rule: '... SimpleObjAssignable'
+   3 # Rule: '...'
+   1 # Rule: '..'
+   5 # Rule: ''
+   1 # Rule: '( Body )'
+   1 # Rule: '( INDENT Body OUTDENT )'
+   1 # Rule: '[ ]'
+   1 # Rule: '[ ArgElisionList OptElisions ]'
+   1 # Rule: '[ Elisions ]'
+   1 # Rule: '[ Expression ]'
+   1 # Rule: '[ Expression RangeDots Expression ]'
+   1 # Rule: '[ ExpressionLine RangeDots Expression ]'
+   1 # Rule: '{ AssignList OptComma }'
+   1 # Rule: '@ [ Expression ]'
+   1 # Rule: '@ Property'
+   1 # Rule: '@'
+   1 # Rule: '+     Expression'
+   1 # Rule: '++ SimpleAssignable'
+   1 # Rule: '=>'
+   2 # Rule: 'AlphaNumeric'
+   2 # Rule: 'Arg'
+   1 # Rule: 'ArgElision'
+   1 # Rule: 'ArgElisionList , ArgElision'
+   1 # Rule: 'ArgElisionList OptComma TERMINATOR ArgElision'
+   1 # Rule: 'ArgElisionList OptElisions INDENT ArgElisionList OptElisions OUTDENT'
+   1 # Rule: 'ArgList , Arg'
+   1 # Rule: 'ArgList OptComma INDENT ArgList OptComma OUTDENT'
+   1 # Rule: 'ArgList OptComma TERMINATOR Arg'
+   3 # Rule: 'Array'
+   1 # Rule: 'Assign'
+   1 # Rule: 'Assignable = Expression'
+   1 # Rule: 'Assignable = INDENT Expression OUTDENT'
+   1 # Rule: 'Assignable = TERMINATOR Expression'
+   1 # Rule: 'Assignable'
+   1 # Rule: 'AssignList , AssignObj'
+   1 # Rule: 'AssignList OptComma INDENT AssignList OptComma OUTDENT'
+   1 # Rule: 'AssignList OptComma TERMINATOR AssignObj'
+   1 # Rule: 'AssignObj'
+   1 # Rule: 'AWAIT Expression'
+   1 # Rule: 'AWAIT INDENT Object OUTDENT'
+   1 # Rule: 'AWAIT RETURN Expression'
+   1 # Rule: 'AWAIT RETURN'
+   1 # Rule: 'AwaitReturn'
+   1 # Rule: 'Body TERMINATOR Line'
+   1 # Rule: 'Body TERMINATOR'
+   1 # Rule: 'Body'
+   1 # Rule: 'BOOL'
+   1 # Rule: 'CALL_START ArgList OptComma CALL_END'
+   1 # Rule: 'CALL_START CALL_END'
+   1 # Rule: 'CATCH Block'
+   1 # Rule: 'CATCH Identifier Block'
+   1 # Rule: 'CATCH Object Block'
+   1 # Rule: 'CLASS Block'
+   1 # Rule: 'CLASS EXTENDS Expression Block'
+   1 # Rule: 'CLASS EXTENDS Expression'
+   1 # Rule: 'CLASS SimpleAssignable Block'
+   1 # Rule: 'CLASS SimpleAssignable EXTENDS Expression Block'
+   1 # Rule: 'CLASS SimpleAssignable EXTENDS Expression'
+   1 # Rule: 'CLASS SimpleAssignable'
+   1 # Rule: 'Class'
+   1 # Rule: 'CLASS'
+   1 # Rule: 'Code Accessor'
+   1 # Rule: 'Code'
+   1 # Rule: 'CodeLine'
+   2 # Rule: 'DEFAULT AS Identifier'
+   2 # Rule: 'DEFAULT'
+   1 # Rule: 'DO Expression'
+   1 # Rule: 'DO ExpressionLine'
+   1 # Rule: 'DO_IIFE Code'
+   1 # Rule: 'DO_IIFE CodeLine'
+   1 # Rule: 'DoIife'
+   2 # Rule: 'DYNAMIC_IMPORT Arguments'
+   1 # Rule: 'Elision TERMINATOR'
+   1 # Rule: 'Elision'
+   1 # Rule: 'Elisions Arg'
+   1 # Rule: 'Elisions Elision'
+   1 # Rule: 'EXPORT { } FROM String ASSERT Object'
+   1 # Rule: 'EXPORT { } FROM String'
+   1 # Rule: 'EXPORT { }'
+   1 # Rule: 'EXPORT { ExportSpecifierList OptComma } FROM String ASSERT Object'
+   1 # Rule: 'EXPORT { ExportSpecifierList OptComma } FROM String'
+   1 # Rule: 'EXPORT { ExportSpecifierList OptComma }'
+   1 # Rule: 'EXPORT Class'
+   1 # Rule: 'EXPORT DEFAULT Expression'
+   1 # Rule: 'EXPORT DEFAULT INDENT Object OUTDENT'
+   1 # Rule: 'EXPORT EXPORT_ALL FROM String ASSERT Object'
+   1 # Rule: 'EXPORT EXPORT_ALL FROM String'
+   1 # Rule: 'EXPORT Identifier = Expression'
+   1 # Rule: 'EXPORT Identifier = INDENT Expression OUTDENT'
+   1 # Rule: 'EXPORT Identifier = TERMINATOR Expression'
+   1 # Rule: 'Export'
+   1 # Rule: 'ExportSpecifier'
+   1 # Rule: 'ExportSpecifierList , ExportSpecifier'
+   1 # Rule: 'ExportSpecifierList OptComma INDENT ExportSpecifierList OptComma OUTDENT'
+   1 # Rule: 'ExportSpecifierList OptComma TERMINATOR ExportSpecifier'
+   1 # Rule: 'Expression   ForBody'
+   1 # Rule: 'Expression -  Expression'
+   1 # Rule: 'Expression ?'
+   1 # Rule: 'Expression ...'
+   1 # Rule: 'Expression **       Expression'
+   1 # Rule: 'Expression &        Expression'
+   1 # Rule: 'Expression &&       Expression'
+   1 # Rule: 'Expression ^        Expression'
+   1 # Rule: 'Expression +  Expression'
+   1 # Rule: 'Expression |        Expression'
+   1 # Rule: 'Expression ||       Expression'
+   1 # Rule: 'Expression BIN?     Expression'
+   1 # Rule: 'Expression COMPARE  Expression'
+   1 # Rule: 'Expression MATH     Expression'
+   1 # Rule: 'Expression POST_IF Expression'
+   1 # Rule: 'Expression POST_IF ExpressionLine'
+   1 # Rule: 'Expression RangeDots Expression'
+   1 # Rule: 'Expression RangeDots'
+   1 # Rule: 'Expression RELATION Expression'
+   1 # Rule: 'Expression SHIFT    Expression'
+   1 # Rule: 'Expression WhileSource'
+   4 # Rule: 'Expression'
+   1 # Rule: 'ExpressionLine RangeDots Expression'
+   1 # Rule: 'ExpressionLine RangeDots'
+   3 # Rule: 'ExpressionLine'
+   1 # Rule: 'FOR ForVariables'
+   1 # Rule: 'FOR OWN ForVariables'
+   1 # Rule: 'FOR Range BY Expression'
+   1 # Rule: 'FOR Range BY ExpressionLine'
+   1 # Rule: 'FOR Range'
+   1 # Rule: 'For'
+   1 # Rule: 'ForBody      Block'
+   1 # Rule: 'FORFROM Expression WHEN Expression'
+   1 # Rule: 'FORFROM Expression WHEN ExpressionLine'
+   1 # Rule: 'FORFROM Expression'
+   1 # Rule: 'FORFROM ExpressionLine WHEN Expression'
+   1 # Rule: 'FORFROM ExpressionLine WHEN ExpressionLine'
+   1 # Rule: 'FORFROM ExpressionLine'
+   1 # Rule: 'FORIN Expression BY Expression WHEN Expression'
+   1 # Rule: 'FORIN Expression BY Expression WHEN ExpressionLine'
+   1 # Rule: 'FORIN Expression BY Expression'
+   1 # Rule: 'FORIN Expression BY ExpressionLine WHEN Expression'
+   1 # Rule: 'FORIN Expression BY ExpressionLine WHEN ExpressionLine'
+   1 # Rule: 'FORIN Expression BY ExpressionLine'
+   1 # Rule: 'FORIN Expression WHEN Expression BY Expression'
+   1 # Rule: 'FORIN Expression WHEN Expression BY ExpressionLine'
+   1 # Rule: 'FORIN Expression WHEN Expression'
+   1 # Rule: 'FORIN Expression WHEN ExpressionLine BY Expression'
+   1 # Rule: 'FORIN Expression WHEN ExpressionLine BY ExpressionLine'
+   1 # Rule: 'FORIN Expression WHEN ExpressionLine'
+   1 # Rule: 'FORIN Expression'
+   1 # Rule: 'FORIN ExpressionLine BY Expression WHEN Expression'
+   1 # Rule: 'FORIN ExpressionLine BY Expression WHEN ExpressionLine'
+   1 # Rule: 'FORIN ExpressionLine BY Expression'
+   1 # Rule: 'FORIN ExpressionLine BY ExpressionLine WHEN Expression'
+   1 # Rule: 'FORIN ExpressionLine BY ExpressionLine WHEN ExpressionLine'
+   1 # Rule: 'FORIN ExpressionLine BY ExpressionLine'
+   1 # Rule: 'FORIN ExpressionLine WHEN Expression BY Expression'
+   1 # Rule: 'FORIN ExpressionLine WHEN Expression BY ExpressionLine'
+   1 # Rule: 'FORIN ExpressionLine WHEN Expression'
+   1 # Rule: 'FORIN ExpressionLine WHEN ExpressionLine BY Expression'
+   1 # Rule: 'FORIN ExpressionLine WHEN ExpressionLine BY ExpressionLine'
+   1 # Rule: 'FORIN ExpressionLine WHEN ExpressionLine'
+   1 # Rule: 'FORIN ExpressionLine'
+   1 # Rule: 'ForLineBody  Block'
+   1 # Rule: 'FOROF Expression WHEN Expression'
+   1 # Rule: 'FOROF Expression WHEN ExpressionLine'
+   1 # Rule: 'FOROF Expression'
+   1 # Rule: 'FOROF ExpressionLine WHEN Expression'
+   1 # Rule: 'FOROF ExpressionLine WHEN ExpressionLine'
+   1 # Rule: 'FOROF ExpressionLine'
+   1 # Rule: 'ForStart ForLineSource'
+   1 # Rule: 'ForStart ForSource'
+   1 # Rule: 'ForValue , ForValue'
+   1 # Rule: 'ForValue'
+   1 # Rule: 'FUNC_EXIST'
+   1 # Rule: 'FuncDirective'
+   1 # Rule: 'FuncGlyph Block'
+   1 # Rule: 'FuncGlyph Line'
+   1 # Rule: 'Identifier AS DEFAULT'
+   2 # Rule: 'Identifier AS Identifier'
+   7 # Rule: 'Identifier'
+   1 # Rule: 'IDENTIFIER'
+   1 # Rule: 'IF Expression Block'
+   1 # Rule: 'IF ExpressionLine Block'
+   1 # Rule: 'If'
+   1 # Rule: 'IfBlock ELSE Block'
+   1 # Rule: 'IfBlock ELSE IF Expression Block'
+   1 # Rule: 'IfBlock'
+   1 # Rule: 'IfBlockLine ELSE Block'
+   1 # Rule: 'IfBlockLine ELSE IF ExpressionLine Block'
+   1 # Rule: 'IfBlockLine'
+   1 # Rule: 'IfLine'
+   1 # Rule: 'IMPORT { } FROM String ASSERT Object'
+   1 # Rule: 'IMPORT { } FROM String'
+   1 # Rule: 'IMPORT { ImportSpecifierList OptComma } FROM String ASSERT Object'
+   1 # Rule: 'IMPORT { ImportSpecifierList OptComma } FROM String'
+   1 # Rule: 'IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String ASSERT Object'
+   1 # Rule: 'IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String'
+   1 # Rule: 'IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String ASSERT Object'
+   1 # Rule: 'IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String'
+   1 # Rule: 'IMPORT ImportDefaultSpecifier FROM String ASSERT Object'
+   1 # Rule: 'IMPORT ImportDefaultSpecifier FROM String'
+   1 # Rule: 'IMPORT ImportNamespaceSpecifier FROM String ASSERT Object'
+   1 # Rule: 'IMPORT ImportNamespaceSpecifier FROM String'
+   1 # Rule: 'IMPORT String ASSERT Object'
+   1 # Rule: 'IMPORT String'
+   1 # Rule: 'IMPORT_ALL AS Identifier'
+   1 # Rule: 'IMPORT_META . Property'
+   1 # Rule: 'Import'
+   1 # Rule: 'ImportSpecifier'
+   1 # Rule: 'ImportSpecifierList , ImportSpecifier'
+   1 # Rule: 'ImportSpecifierList OptComma INDENT ImportSpecifierList OptComma OUTDENT'
+   1 # Rule: 'ImportSpecifierList OptComma TERMINATOR ImportSpecifier'
+   1 # Rule: 'INDENT ArgElisionList OptElisions OUTDENT'
+   1 # Rule: 'INDENT ArgList OptComma OUTDENT'
+   1 # Rule: 'INDENT Body OUTDENT'
+   1 # Rule: 'INDENT ExportSpecifierList OptComma OUTDENT'
+   1 # Rule: 'INDENT ImportSpecifierList OptComma OUTDENT'
+   1 # Rule: 'INDENT OUTDENT'
+   1 # Rule: 'INDEX_SOAK  Index'
+   1 # Rule: 'INDEX_START INDENT IndexValue OUTDENT INDEX_END'
+   1 # Rule: 'INDEX_START IndexValue INDEX_END'
+   1 # Rule: 'Index'
+   1 # Rule: 'INFINITY'
+   1 # Rule: 'INTERPOLATION_START Body INTERPOLATION_END'
+   1 # Rule: 'INTERPOLATION_START INDENT Body OUTDENT INTERPOLATION_END'
+   1 # Rule: 'INTERPOLATION_START INTERPOLATION_END'
+   1 # Rule: 'InterpolationChunk'
+   1 # Rule: 'Interpolations InterpolationChunk'
+   1 # Rule: 'Invocation'
+   1 # Rule: 'JS'
+   1 # Rule: 'JSX_TAG'
+   1 # Rule: 'LEADING_WHEN SimpleArgs Block TERMINATOR'
+   1 # Rule: 'LEADING_WHEN SimpleArgs Block'
+   1 # Rule: 'Line'
+   1 # Rule: 'Literal'
+   1 # Rule: 'LOOP Block'
+   1 # Rule: 'LOOP Expression'
+   1 # Rule: 'Loop'
+   1 # Rule: 'MetaProperty'
+   1 # Rule: 'NAN'
+   1 # Rule: 'NEW_TARGET . Property'
+   1 # Rule: 'NULL'
+   1 # Rule: 'NUMBER'
+   1 # Rule: 'ObjAssignable : Expression'
+   1 # Rule: 'ObjAssignable'
+   4 # Rule: 'Object'
+   1 # Rule: 'ObjRestValue'
+   1 # Rule: 'ObjSpreadExpr ...'
+   1 # Rule: 'ObjSpreadExpr Accessor'
+   1 # Rule: 'ObjSpreadExpr OptFuncExist Arguments'
+   1 # Rule: 'ObjSpreadIdentifier'
+   1 # Rule: 'Operation'
+   1 # Rule: 'OperationLine'
+   1 # Rule: 'OptComma'
+   1 # Rule: 'PARAM_START ParamList PARAM_END FuncGlyph Block'
+   1 # Rule: 'PARAM_START ParamList PARAM_END FuncGlyph Line'
+   1 # Rule: 'Param'
+   1 # Rule: 'ParamList , Param'
+   1 # Rule: 'ParamList OptComma INDENT ParamList OptComma OUTDENT'
+   1 # Rule: 'ParamList OptComma TERMINATOR Param'
+   1 # Rule: 'ParamVar ...'
+   1 # Rule: 'ParamVar = Expression'
+   1 # Rule: 'ParamVar'
+   2 # Rule: 'Parenthetical'
+   1 # Rule: 'Property'
+   1 # Rule: 'PROPERTY'
+   1 # Rule: 'Range'
+   1 # Rule: 'RangeDots Expression'
+   1 # Rule: 'RangeDots'
+   1 # Rule: 'REGEX_START Invocation REGEX_END'
+   1 # Rule: 'Regex'
+   1 # Rule: 'REGEX'
+   1 # Rule: 'RETURN Expression'
+   1 # Rule: 'RETURN INDENT Object OUTDENT'
+   1 # Rule: 'Return'
+   1 # Rule: 'RETURN'
+   1 # Rule: 'SimpleArgs , Expression'
+   1 # Rule: 'SimpleArgs , ExpressionLine'
+   1 # Rule: 'SimpleAssignable --'
+   1 # Rule: 'SimpleAssignable ++'
+   1 # Rule: 'SimpleAssignable'
+   1 # Rule: 'SimpleObjAssignable ...'
+   1 # Rule: 'SimpleObjAssignable = Expression'
+   1 # Rule: 'SimpleObjAssignable Accessor'
+   1 # Rule: 'SimpleObjAssignable OptFuncExist Arguments'
+   1 # Rule: 'SimpleObjAssignable'
+   1 # Rule: 'Slice'
+   1 # Rule: 'Splat'
+   1 # Rule: 'Statement    ForBody'
+   1 # Rule: 'Statement  POST_IF Expression'
+   1 # Rule: 'Statement  POST_IF ExpressionLine'
+   1 # Rule: 'Statement  WhileSource'
+   1 # Rule: 'Statement'
+   1 # Rule: 'STATEMENT'
+   1 # Rule: 'STRING_START Interpolations STRING_END'
+   2 # Rule: 'String'
+   1 # Rule: 'STRING'
+   1 # Rule: 'SUPER . Property'
+   1 # Rule: 'SUPER INDEX_START Expression INDEX_END'
+   1 # Rule: 'SUPER INDEX_START INDENT Expression OUTDENT INDEX_END'
+   2 # Rule: 'SUPER OptFuncExist Arguments'
+   2 # Rule: 'Super'
+   1 # Rule: 'SWITCH Expression INDENT Whens ELSE Block OUTDENT'
+   1 # Rule: 'SWITCH Expression INDENT Whens OUTDENT'
+   1 # Rule: 'SWITCH ExpressionLine INDENT Whens ELSE Block OUTDENT'
+   1 # Rule: 'SWITCH ExpressionLine INDENT Whens OUTDENT'
+   1 # Rule: 'SWITCH INDENT Whens ELSE Block OUTDENT'
+   1 # Rule: 'SWITCH INDENT Whens OUTDENT'
+   1 # Rule: 'Switch'
+   2 # Rule: 'This'
+   1 # Rule: 'THIS'
+   4 # Rule: 'ThisProperty'
+   1 # Rule: 'THROW Expression'
+   1 # Rule: 'THROW INDENT Object OUTDENT'
+   1 # Rule: 'Throw'
+   1 # Rule: 'TRY Block Catch FINALLY Block'
+   1 # Rule: 'TRY Block Catch'
+   1 # Rule: 'TRY Block FINALLY Block'
+   1 # Rule: 'TRY Block'
+   1 # Rule: 'Try'
+   1 # Rule: 'UNARY Expression'
+   1 # Rule: 'UNARY ExpressionLine'
+   1 # Rule: 'UNARY_MATH Expression'
+   1 # Rule: 'UNDEFINED'
+   1 # Rule: 'UNTIL Expression WHEN Expression'
+   1 # Rule: 'UNTIL Expression'
+   1 # Rule: 'UNTIL ExpressionLine WHEN Expression'
+   1 # Rule: 'UNTIL ExpressionLine WHEN ExpressionLine'
+   1 # Rule: 'UNTIL ExpressionLine'
+   1 # Rule: 'Value Accessor'
+   1 # Rule: 'Value OptFuncExist Arguments'
+   1 # Rule: 'Value OptFuncExist String'
+   1 # Rule: 'Value'
+   1 # Rule: 'When'
+   1 # Rule: 'Whens When'
+   1 # Rule: 'WHILE Expression WHEN Expression'
+   1 # Rule: 'WHILE Expression'
+   1 # Rule: 'WHILE ExpressionLine WHEN Expression'
+   1 # Rule: 'WHILE ExpressionLine WHEN ExpressionLine'
+   1 # Rule: 'WHILE ExpressionLine'
+   1 # Rule: 'While'
+   1 # Rule: 'WhileLineSource Block'
+   1 # Rule: 'WhileSource Block'
+   1 # Rule: 'YIELD Expression'
+   1 # Rule: 'YIELD FROM Expression'
+   1 # Rule: 'YIELD INDENT Object OUTDENT'
+   1 # Rule: 'YIELD RETURN Expression'
+   1 # Rule: 'YIELD RETURN'
+   1 # Rule: 'Yield'
+   1 # Rule: 'YIELD'
+   1 # Rule: 'YieldReturn'
+   1 # ============================================================

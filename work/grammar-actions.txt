@@ -1,0 +1,1901 @@
+# Extracted Actions from /Users/shreeve/Data/Code/coffeescript/src/grammar.coffee
+# Generated: 2025-09-09T18:35:05.076Z
+
+
+# Root
+# ============================================================
+
+# Rule 1: ''
+# Lines: 101-101
+# Action: new Root new Block
+
+# Rule 2: 'Body'
+# Lines: 102-102
+# Action: new Root $1
+
+# Body
+# ============================================================
+
+# Rule 1: 'Line'
+# Lines: 107-107
+# Action: Block.wrap [$1]
+
+# Rule 2: 'Body TERMINATOR Line'
+# Lines: 108-108
+# Action: $1.push $3
+
+# Rule 3: 'Body TERMINATOR'
+# Lines: 109-109
+# Action: <passthrough>
+
+# Line
+# ============================================================
+
+# Rule 1: 'Expression'
+# Lines: 116-116
+# Action: <passthrough>
+
+# Rule 2: 'ExpressionLine'
+# Lines: 117-117
+# Action: <passthrough>
+
+# Rule 3: 'Statement'
+# Lines: 118-118
+# Action: <passthrough>
+
+# Rule 4: 'FuncDirective'
+# Lines: 119-119
+# Action: <passthrough>
+
+# FuncDirective
+# ============================================================
+
+# Rule 1: 'YieldReturn'
+# Lines: 123-123
+# Action: <passthrough>
+
+# Rule 2: 'AwaitReturn'
+# Lines: 124-124
+# Action: <passthrough>
+
+# Statement
+# ============================================================
+
+# Rule 1: 'Return'
+# Lines: 129-129
+# Action: <passthrough>
+
+# Rule 2: 'STATEMENT'
+# Lines: 130-130
+# Action: new StatementLiteral $1
+
+# Rule 3: 'Import'
+# Lines: 131-131
+# Action: <passthrough>
+
+# Rule 4: 'Export'
+# Lines: 132-132
+# Action: <passthrough>
+
+# Expression
+# ============================================================
+
+# Rule 1: 'Value'
+# Lines: 140-140
+# Action: <passthrough>
+
+# Rule 2: 'Code'
+# Lines: 141-141
+# Action: <passthrough>
+
+# Rule 3: 'Operation'
+# Lines: 142-142
+# Action: <passthrough>
+
+# Rule 4: 'Assign'
+# Lines: 143-143
+# Action: <passthrough>
+
+# Rule 5: 'If'
+# Lines: 144-144
+# Action: <passthrough>
+
+# Rule 6: 'Try'
+# Lines: 145-145
+# Action: <passthrough>
+
+# Rule 7: 'While'
+# Lines: 146-146
+# Action: <passthrough>
+
+# Rule 8: 'For'
+# Lines: 147-147
+# Action: <passthrough>
+
+# Rule 9: 'Switch'
+# Lines: 148-148
+# Action: <passthrough>
+
+# Rule 10: 'Class'
+# Lines: 149-149
+# Action: <passthrough>
+
+# Rule 11: 'Throw'
+# Lines: 150-150
+# Action: <passthrough>
+
+# Rule 12: 'Yield'
+# Lines: 151-151
+# Action: <passthrough>
+
+# ExpressionLine
+# ============================================================
+
+# Rule 1: 'CodeLine'
+# Lines: 158-158
+# Action: <passthrough>
+
+# Rule 2: 'IfLine'
+# Lines: 159-159
+# Action: <passthrough>
+
+# Rule 3: 'OperationLine'
+# Lines: 160-160
+# Action: <passthrough>
+
+# Yield
+# ============================================================
+
+# Rule 1: 'YIELD'
+# Lines: 164-164
+# Action: new Op $1, new Value new Literal ''
+
+# Rule 2: 'YIELD Expression'
+# Lines: 165-165
+# Action: new Op $1, $2
+
+# Rule 3: 'YIELD INDENT Object OUTDENT'
+# Lines: 166-166
+# Action: new Op $1, $3
+
+# Rule 4: 'YIELD FROM Expression'
+# Lines: 167-167
+# Action: new Op $1.concat($2), $3
+
+# Block
+# ============================================================
+
+# Rule 1: 'INDENT OUTDENT'
+# Lines: 174-174
+# Action: new Block
+
+# Rule 2: 'INDENT Body OUTDENT'
+# Lines: 175-175
+# Action: $2
+
+# Identifier
+# ============================================================
+
+# Rule 1: 'IDENTIFIER'
+# Lines: 179-179
+# Action: new IdentifierLiteral $1
+
+# Rule 2: 'JSX_TAG'
+# Lines: 180-180
+# Action: new JSXTag $1.toString(),
+
+# Property
+# ============================================================
+
+# Rule 1: 'PROPERTY'
+# Lines: 189-189
+# Action: new PropertyName $1.toString()
+
+# AlphaNumeric
+# ============================================================
+
+# Rule 1: 'NUMBER'
+# Lines: 195-195
+# Action: new NumberLiteral $1.toString(), parsedValue: $1.parsedValue
+
+# Rule 2: 'String'
+# Lines: 196-196
+# Action: <passthrough>
+
+# String
+# ============================================================
+
+# Rule 1: 'STRING_START Interpolations STRING_END'
+# Lines: 210-210
+# Action: new StringWithInterpolations Block.wrap($2), quote: $1.quote, startQuote: LOC(1)(new Literal $1.toString())
+
+# Rule 2: 'STRING'
+# Lines: 202-210
+# Multi-line action:
+#   new StringLiteral(
+#           $1.slice 1, -1 # strip artificial quotes and unwrap to primitive string
+#           quote:        $1.quote
+#           initialChunk: $1.initialChunk
+#           finalChunk:   $1.finalChunk
+#           indent:       $1.indent
+#           double:       $1.double
+#           heregex:      $1.heregex
+#         )
+
+# Interpolations
+# ============================================================
+
+# Rule 1: 'InterpolationChunk'
+# Lines: 214-214
+# Action: [$1]
+
+# Rule 2: 'Interpolations InterpolationChunk'
+# Lines: 215-215
+# Action: $1.concat $2
+
+# InterpolationChunk
+# ============================================================
+
+# Rule 1: 'INTERPOLATION_START Body INTERPOLATION_END'
+# Lines: 219-219
+# Action: new Interpolation $2
+
+# Rule 2: 'INTERPOLATION_START INDENT Body OUTDENT INTERPOLATION_END'
+# Lines: 220-220
+# Action: new Interpolation $3
+
+# Rule 3: 'INTERPOLATION_START INTERPOLATION_END'
+# Lines: 221-221
+# Action: new Interpolation
+
+# Rule 4: 'String'
+# Lines: 222-222
+# Action: $1
+
+# Regex
+# ============================================================
+
+# Rule 1: 'REGEX'
+# Lines: 228-228
+# Action: new RegexLiteral $1.toString(), delimiter: $1.delimiter, heregexCommentTokens: $1.heregexCommentTokens
+
+# Rule 2: 'REGEX_START Invocation REGEX_END'
+# Lines: 229-229
+# Action: new RegexWithInterpolations $2, heregexCommentTokens: $3.heregexCommentTokens
+
+# Literal
+# ============================================================
+
+# Rule 1: 'AlphaNumeric'
+# Lines: 235-235
+# Action: <passthrough>
+
+# Rule 2: 'JS'
+# Lines: 236-236
+# Action: new PassthroughLiteral $1.toString(), here: $1.here, generated: $1.generated
+
+# Rule 3: 'Regex'
+# Lines: 237-237
+# Action: <passthrough>
+
+# Rule 4: 'UNDEFINED'
+# Lines: 238-238
+# Action: new UndefinedLiteral $1
+
+# Rule 5: 'NULL'
+# Lines: 239-239
+# Action: new NullLiteral $1
+
+# Rule 6: 'BOOL'
+# Lines: 240-240
+# Action: new BooleanLiteral $1.toString(), originalValue: $1.original
+
+# Rule 7: 'INFINITY'
+# Lines: 241-241
+# Action: new InfinityLiteral $1.toString(), originalValue: $1.original
+
+# Rule 8: 'NAN'
+# Lines: 242-242
+# Action: new NaNLiteral $1
+
+# Assign
+# ============================================================
+
+# Rule 1: 'Assignable = Expression'
+# Lines: 247-247
+# Action: new Assign $1, $3
+
+# Rule 2: 'Assignable = TERMINATOR Expression'
+# Lines: 248-248
+# Action: new Assign $1, $4
+
+# Rule 3: 'Assignable = INDENT Expression OUTDENT'
+# Lines: 249-249
+# Action: new Assign $1, $4
+
+# AssignObj
+# ============================================================
+
+# Rule 1: 'ObjAssignable'
+# Lines: 255-255
+# Action: new Value $1
+
+# Rule 2: 'ObjRestValue'
+# Lines: 256-256
+# Action: <passthrough>
+
+# Rule 3: 'ObjAssignable : Expression'
+# Lines: 257-257
+# Action: new Assign LOC(1)(new Value $1), $3, 'object',
+
+# Rule 4: 'SimpleObjAssignable = Expression'
+# Lines: 262-262
+# Action: new Assign LOC(1)(new Value $1), $3, null,
+
+# SimpleObjAssignable
+# ============================================================
+
+# Rule 1: 'Identifier'
+# Lines: 270-270
+# Action: <passthrough>
+
+# Rule 2: 'Property'
+# Lines: 271-271
+# Action: <passthrough>
+
+# Rule 3: 'ThisProperty'
+# Lines: 272-272
+# Action: <passthrough>
+
+# ObjAssignable
+# ============================================================
+
+# Rule 1: 'SimpleObjAssignable'
+# Lines: 276-276
+# Action: <passthrough>
+
+# Rule 2: '[ Expression ]'
+# Lines: 277-277
+# Action: new Value new ComputedPropertyName $2
+
+# Rule 3: '@ [ Expression ]'
+# Lines: 278-278
+# Action: new Value LOC(1)(new ThisLiteral $1), [LOC(3)(new ComputedPropertyName($3))], 'this'
+
+# Rule 4: 'AlphaNumeric'
+# Lines: 279-279
+# Action: <passthrough>
+
+# ObjRestValue
+# ============================================================
+
+# Rule 1: 'SimpleObjAssignable ...'
+# Lines: 284-284
+# Action: new Splat new Value $1
+
+# Rule 2: '... SimpleObjAssignable'
+# Lines: 285-285
+# Action: new Splat new Value($2), postfix: no
+
+# Rule 3: 'ObjSpreadExpr ...'
+# Lines: 286-286
+# Action: new Splat $1
+
+# Rule 4: '... ObjSpreadExpr'
+# Lines: 287-287
+# Action: new Splat $2, postfix: no
+
+# ObjSpreadExpr
+# ============================================================
+
+# Rule 1: 'ObjSpreadIdentifier'
+# Lines: 291-291
+# Action: <passthrough>
+
+# Rule 2: 'Object'
+# Lines: 292-292
+# Action: <passthrough>
+
+# Rule 3: 'Parenthetical'
+# Lines: 293-293
+# Action: <passthrough>
+
+# Rule 4: 'Super'
+# Lines: 294-294
+# Action: <passthrough>
+
+# Rule 5: 'This'
+# Lines: 295-295
+# Action: <passthrough>
+
+# Rule 6: 'SUPER OptFuncExist Arguments'
+# Lines: 296-296
+# Action: new SuperCall LOC(1)(new Super), $3, $2.soak, $1
+
+# Rule 7: 'DYNAMIC_IMPORT Arguments'
+# Lines: 297-297
+# Action: new DynamicImportCall LOC(1)(new DynamicImport), $2
+
+# Rule 8: 'SimpleObjAssignable OptFuncExist Arguments'
+# Lines: 298-298
+# Action: new Call (new Value $1), $3, $2.soak
+
+# Rule 9: 'ObjSpreadExpr OptFuncExist Arguments'
+# Lines: 299-299
+# Action: new Call $1, $3, $2.soak
+
+# ObjSpreadIdentifier
+# ============================================================
+
+# Rule 1: 'SimpleObjAssignable Accessor'
+# Lines: 303-303
+# Action: (new Value $1).add $2
+
+# Rule 2: 'ObjSpreadExpr Accessor'
+# Lines: 304-304
+# Action: (new Value $1).add $2
+
+# Return
+# ============================================================
+
+# Rule 1: 'RETURN Expression'
+# Lines: 309-309
+# Action: new Return $2
+
+# Rule 2: 'RETURN INDENT Object OUTDENT'
+# Lines: 310-310
+# Action: new Return new Value $3
+
+# Rule 3: 'RETURN'
+# Lines: 311-311
+# Action: new Return
+
+# YieldReturn
+# ============================================================
+
+# Rule 1: 'YIELD RETURN Expression'
+# Lines: 315-315
+# Action: new YieldReturn $3,   returnKeyword: LOC(2)(new Literal $2)
+
+# Rule 2: 'YIELD RETURN'
+# Lines: 316-316
+# Action: new YieldReturn null, returnKeyword: LOC(2)(new Literal $2)
+
+# AwaitReturn
+# ============================================================
+
+# Rule 1: 'AWAIT RETURN Expression'
+# Lines: 320-320
+# Action: new AwaitReturn $3,   returnKeyword: LOC(2)(new Literal $2)
+
+# Rule 2: 'AWAIT RETURN'
+# Lines: 321-321
+# Action: new AwaitReturn null, returnKeyword: LOC(2)(new Literal $2)
+
+# Code
+# ============================================================
+
+# Rule 1: 'PARAM_START ParamList PARAM_END FuncGlyph Block'
+# Lines: 327-327
+# Action: new Code $2, $5, $4, LOC(1)(new Literal $1)
+
+# Rule 2: 'FuncGlyph Block'
+# Lines: 328-328
+# Action: new Code [], $2, $1
+
+# CodeLine
+# ============================================================
+
+# Rule 1: 'PARAM_START ParamList PARAM_END FuncGlyph Line'
+# Lines: 333-333
+# Action: new Code $2, LOC(5)(Block.wrap [$5]), $4,
+
+# Rule 2: 'FuncGlyph Line'
+# Lines: 335-335
+# Action: new Code [], LOC(2)(Block.wrap [$2]), $1
+
+# FuncGlyph
+# ============================================================
+
+# Rule 1: '->'
+# Lines: 341-341
+# Action: new FuncGlyph $1
+
+# Rule 2: '=>'
+# Lines: 342-342
+# Action: new FuncGlyph $1
+
+# OptComma
+# ============================================================
+
+# Rule 1: ''
+# Lines: 347-347
+# Action: <passthrough>
+
+# Rule 2: ','
+# Lines: 348-348
+# Action: <passthrough>
+
+# ParamList
+# ============================================================
+
+# Rule 1: ''
+# Lines: 353-353
+# Action: []
+
+# Rule 2: 'Param'
+# Lines: 354-354
+# Action: [$1]
+
+# Rule 3: 'ParamList , Param'
+# Lines: 355-355
+# Action: $1.concat $3
+
+# Rule 4: 'ParamList OptComma TERMINATOR Param'
+# Lines: 356-356
+# Action: $1.concat $4
+
+# Rule 5: 'ParamList OptComma INDENT ParamList OptComma OUTDENT'
+# Lines: 357-357
+# Action: $1.concat $4
+
+# Param
+# ============================================================
+
+# Rule 1: 'ParamVar'
+# Lines: 363-363
+# Action: new Param $1
+
+# Rule 2: 'ParamVar ...'
+# Lines: 364-364
+# Action: new Param $1, null, on
+
+# Rule 3: '... ParamVar'
+# Lines: 365-365
+# Action: new Param $2, null, postfix: no
+
+# Rule 4: 'ParamVar = Expression'
+# Lines: 366-366
+# Action: new Param $1, $3
+
+# Rule 5: '...'
+# Lines: 367-367
+# Action: new Expansion
+
+# ParamVar
+# ============================================================
+
+# Rule 1: 'Identifier'
+# Lines: 372-372
+# Action: <passthrough>
+
+# Rule 2: 'ThisProperty'
+# Lines: 373-373
+# Action: <passthrough>
+
+# Rule 3: 'Array'
+# Lines: 374-374
+# Action: <passthrough>
+
+# Rule 4: 'Object'
+# Lines: 375-375
+# Action: <passthrough>
+
+# Splat
+# ============================================================
+
+# Rule 1: 'Expression ...'
+# Lines: 380-380
+# Action: new Splat $1
+
+# Rule 2: '... Expression'
+# Lines: 381-381
+# Action: new Splat $2, {postfix: no}
+
+# SimpleAssignable
+# ============================================================
+
+# Rule 1: 'Identifier'
+# Lines: 386-386
+# Action: new Value $1
+
+# Rule 2: 'Value Accessor'
+# Lines: 387-387
+# Action: $1.add $2
+
+# Rule 3: 'Code Accessor'
+# Lines: 388-388
+# Action: new Value($1).add $2
+
+# Rule 4: 'ThisProperty'
+# Lines: 389-389
+# Action: <passthrough>
+
+# Assignable
+# ============================================================
+
+# Rule 1: 'SimpleAssignable'
+# Lines: 394-394
+# Action: <passthrough>
+
+# Rule 2: 'Array'
+# Lines: 395-395
+# Action: new Value $1
+
+# Rule 3: 'Object'
+# Lines: 396-396
+# Action: new Value $1
+
+# Value
+# ============================================================
+
+# Rule 1: 'Assignable'
+# Lines: 402-402
+# Action: <passthrough>
+
+# Rule 2: 'Literal'
+# Lines: 403-403
+# Action: new Value $1
+
+# Rule 3: 'Parenthetical'
+# Lines: 404-404
+# Action: new Value $1
+
+# Rule 4: 'Range'
+# Lines: 405-405
+# Action: new Value $1
+
+# Rule 5: 'Invocation'
+# Lines: 406-406
+# Action: new Value $1
+
+# Rule 6: 'DoIife'
+# Lines: 407-407
+# Action: new Value $1
+
+# Rule 7: 'This'
+# Lines: 408-408
+# Action: <passthrough>
+
+# Rule 8: 'Super'
+# Lines: 409-409
+# Action: new Value $1
+
+# Rule 9: 'MetaProperty'
+# Lines: 410-410
+# Action: new Value $1
+
+# Super
+# ============================================================
+
+# Rule 1: 'SUPER . Property'
+# Lines: 415-415
+# Action: new Super LOC(3)(new Access $3), LOC(1)(new Literal $1)
+
+# Rule 2: 'SUPER INDEX_START Expression INDEX_END'
+# Lines: 416-416
+# Action: new Super LOC(3)(new Index $3),  LOC(1)(new Literal $1)
+
+# Rule 3: 'SUPER INDEX_START INDENT Expression OUTDENT INDEX_END'
+# Lines: 417-417
+# Action: new Super LOC(4)(new Index $4),  LOC(1)(new Literal $1)
+
+# MetaProperty
+# ============================================================
+
+# Rule 1: 'NEW_TARGET . Property'
+# Lines: 423-423
+# Action: new MetaProperty LOC(1)(new IdentifierLiteral $1), LOC(3)(new Access $3)
+
+# Rule 2: 'IMPORT_META . Property'
+# Lines: 424-424
+# Action: new MetaProperty LOC(1)(new IdentifierLiteral $1), LOC(3)(new Access $3)
+
+# Accessor
+# ============================================================
+
+# Rule 1: '.  Property'
+# Lines: 430-430
+# Action: new Access $2
+
+# Rule 2: '?. Property'
+# Lines: 431-431
+# Action: new Access $2, soak: yes
+
+# Rule 3: ':: Property'
+# Lines: 432-432
+# Action: [LOC(1)(new Access new PropertyName('prototype'), shorthand: yes), LOC(2)(new Access $2)]
+
+# Rule 4: '?:: Property'
+# Lines: 433-433
+# Action: [LOC(1)(new Access new PropertyName('prototype'), shorthand: yes, soak: yes), LOC(2)(new Access $2)]
+
+# Rule 5: '::'
+# Lines: 434-434
+# Action: new Access new PropertyName('prototype'), shorthand: yes
+
+# Rule 6: '?::'
+# Lines: 435-435
+# Action: new Access new PropertyName('prototype'), shorthand: yes, soak: yes
+
+# Rule 7: 'Index'
+# Lines: 436-436
+# Action: <passthrough>
+
+# Index
+# ============================================================
+
+# Rule 1: 'INDEX_START IndexValue INDEX_END'
+# Lines: 441-441
+# Action: $2
+
+# Rule 2: 'INDEX_START INDENT IndexValue OUTDENT INDEX_END'
+# Lines: 442-442
+# Action: $3
+
+# Rule 3: 'INDEX_SOAK  Index'
+# Lines: 443-443
+# Action: extend $2, soak: yes
+
+# IndexValue
+# ============================================================
+
+# Rule 1: 'Expression'
+# Lines: 447-447
+# Action: new Index $1
+
+# Rule 2: 'Slice'
+# Lines: 448-448
+# Action: new Slice $1
+
+# Object
+# ============================================================
+
+# Rule 1: '{ AssignList OptComma }'
+# Lines: 453-453
+# Action: new Obj $2, $1.generated
+
+# AssignList
+# ============================================================
+
+# Rule 1: ''
+# Lines: 459-459
+# Action: []
+
+# Rule 2: 'AssignObj'
+# Lines: 460-460
+# Action: [$1]
+
+# Rule 3: 'AssignList , AssignObj'
+# Lines: 461-461
+# Action: $1.concat $3
+
+# Rule 4: 'AssignList OptComma TERMINATOR AssignObj'
+# Lines: 462-462
+# Action: $1.concat $4
+
+# Rule 5: 'AssignList OptComma INDENT AssignList OptComma OUTDENT'
+# Lines: 463-463
+# Action: $1.concat $4
+
+# Class
+# ============================================================
+
+# Rule 1: 'CLASS'
+# Lines: 469-469
+# Action: new Class
+
+# Rule 2: 'CLASS Block'
+# Lines: 470-470
+# Action: new Class null, null, $2
+
+# Rule 3: 'CLASS EXTENDS Expression'
+# Lines: 471-471
+# Action: new Class null, $3
+
+# Rule 4: 'CLASS EXTENDS Expression Block'
+# Lines: 472-472
+# Action: new Class null, $3, $4
+
+# Rule 5: 'CLASS SimpleAssignable'
+# Lines: 473-473
+# Action: new Class $2
+
+# Rule 6: 'CLASS SimpleAssignable Block'
+# Lines: 474-474
+# Action: new Class $2, null, $3
+
+# Rule 7: 'CLASS SimpleAssignable EXTENDS Expression'
+# Lines: 475-475
+# Action: new Class $2, $4
+
+# Rule 8: 'CLASS SimpleAssignable EXTENDS Expression Block'
+# Lines: 476-476
+# Action: new Class $2, $4, $5
+
+# Import
+# ============================================================
+
+# Rule 1: 'IMPORT String'
+# Lines: 480-480
+# Action: new ImportDeclaration null, $2
+
+# Rule 2: 'IMPORT String ASSERT Object'
+# Lines: 481-481
+# Action: new ImportDeclaration null, $2, $4
+
+# Rule 3: 'IMPORT ImportDefaultSpecifier FROM String'
+# Lines: 482-482
+# Action: new ImportDeclaration new ImportClause($2, null), $4
+
+# Rule 4: 'IMPORT ImportDefaultSpecifier FROM String ASSERT Object'
+# Lines: 483-483
+# Action: new ImportDeclaration new ImportClause($2, null), $4, $6
+
+# Rule 5: 'IMPORT ImportNamespaceSpecifier FROM String'
+# Lines: 484-484
+# Action: new ImportDeclaration new ImportClause(null, $2), $4
+
+# Rule 6: 'IMPORT ImportNamespaceSpecifier FROM String ASSERT Object'
+# Lines: 485-485
+# Action: new ImportDeclaration new ImportClause(null, $2), $4, $6
+
+# Rule 7: 'IMPORT { } FROM String'
+# Lines: 486-486
+# Action: new ImportDeclaration new ImportClause(null, new ImportSpecifierList []), $5
+
+# Rule 8: 'IMPORT { } FROM String ASSERT Object'
+# Lines: 487-487
+# Action: new ImportDeclaration new ImportClause(null, new ImportSpecifierList []), $5, $7
+
+# Rule 9: 'IMPORT { ImportSpecifierList OptComma } FROM String'
+# Lines: 488-488
+# Action: new ImportDeclaration new ImportClause(null, new ImportSpecifierList $3), $7
+
+# Rule 10: 'IMPORT { ImportSpecifierList OptComma } FROM String ASSERT Object'
+# Lines: 489-489
+# Action: new ImportDeclaration new ImportClause(null, new ImportSpecifierList $3), $7, $9
+
+# Rule 11: 'IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String'
+# Lines: 490-490
+# Action: new ImportDeclaration new ImportClause($2, $4), $6
+
+# Rule 12: 'IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String ASSERT Object'
+# Lines: 491-491
+# Action: new ImportDeclaration new ImportClause($2, $4), $6, $8
+
+# Rule 13: 'IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String'
+# Lines: 492-492
+# Action: new ImportDeclaration new ImportClause($2, new ImportSpecifierList $5), $9
+
+# Rule 14: 'IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String ASSERT Object'
+# Lines: 493-493
+# Action: new ImportDeclaration new ImportClause($2, new ImportSpecifierList $5), $9, $11
+
+# ImportSpecifierList
+# ============================================================
+
+# Rule 1: 'ImportSpecifier'
+# Lines: 497-497
+# Action: [$1]
+
+# Rule 2: 'ImportSpecifierList , ImportSpecifier'
+# Lines: 498-498
+# Action: $1.concat $3
+
+# Rule 3: 'ImportSpecifierList OptComma TERMINATOR ImportSpecifier'
+# Lines: 499-499
+# Action: $1.concat $4
+
+# Rule 4: 'INDENT ImportSpecifierList OptComma OUTDENT'
+# Lines: 500-500
+# Action: $2
+
+# Rule 5: 'ImportSpecifierList OptComma INDENT ImportSpecifierList OptComma OUTDENT'
+# Lines: 501-501
+# Action: $1.concat $4
+
+# ImportSpecifier
+# ============================================================
+
+# Rule 1: 'Identifier'
+# Lines: 505-505
+# Action: new ImportSpecifier $1
+
+# Rule 2: 'Identifier AS Identifier'
+# Lines: 506-506
+# Action: new ImportSpecifier $1, $3
+
+# Rule 3: 'DEFAULT'
+# Lines: 507-507
+# Action: new ImportSpecifier LOC(1)(new DefaultLiteral $1)
+
+# Rule 4: 'DEFAULT AS Identifier'
+# Lines: 508-508
+# Action: new ImportSpecifier LOC(1)(new DefaultLiteral($1)), $3
+
+# ImportDefaultSpecifier
+# ============================================================
+
+# Rule 1: 'Identifier'
+# Lines: 512-512
+# Action: new ImportDefaultSpecifier $1
+
+# ImportNamespaceSpecifier
+# ============================================================
+
+# Rule 1: 'IMPORT_ALL AS Identifier'
+# Lines: 516-516
+# Action: new ImportNamespaceSpecifier new Literal($1), $3
+
+# Export
+# ============================================================
+
+# Rule 1: 'EXPORT { }'
+# Lines: 520-520
+# Action: new ExportNamedDeclaration new ExportSpecifierList []
+
+# Rule 2: 'EXPORT { ExportSpecifierList OptComma }'
+# Lines: 521-521
+# Action: new ExportNamedDeclaration new ExportSpecifierList $3
+
+# Rule 3: 'EXPORT Class'
+# Lines: 522-522
+# Action: new ExportNamedDeclaration $2
+
+# Rule 4: 'EXPORT Identifier = Expression'
+# Lines: 523-523
+# Action: new ExportNamedDeclaration LOC(2,4)(new Assign $2, $4, null,
+
+# Rule 5: 'EXPORT Identifier = TERMINATOR Expression'
+# Lines: 525-525
+# Action: new ExportNamedDeclaration LOC(2,5)(new Assign $2, $5, null,
+
+# Rule 6: 'EXPORT Identifier = INDENT Expression OUTDENT'
+# Lines: 527-527
+# Action: new ExportNamedDeclaration LOC(2,6)(new Assign $2, $5, null,
+
+# Rule 7: 'EXPORT DEFAULT Expression'
+# Lines: 529-529
+# Action: new ExportDefaultDeclaration $3
+
+# Rule 8: 'EXPORT DEFAULT INDENT Object OUTDENT'
+# Lines: 530-530
+# Action: new ExportDefaultDeclaration new Value $4
+
+# Rule 9: 'EXPORT EXPORT_ALL FROM String'
+# Lines: 531-531
+# Action: new ExportAllDeclaration new Literal($2), $4
+
+# Rule 10: 'EXPORT EXPORT_ALL FROM String ASSERT Object'
+# Lines: 532-532
+# Action: new ExportAllDeclaration new Literal($2), $4, $6
+
+# Rule 11: 'EXPORT { } FROM String'
+# Lines: 533-533
+# Action: new ExportNamedDeclaration new ExportSpecifierList([]), $5
+
+# Rule 12: 'EXPORT { } FROM String ASSERT Object'
+# Lines: 534-534
+# Action: new ExportNamedDeclaration new ExportSpecifierList([]), $5, $7
+
+# Rule 13: 'EXPORT { ExportSpecifierList OptComma } FROM String'
+# Lines: 535-535
+# Action: new ExportNamedDeclaration new ExportSpecifierList($3), $7
+
+# Rule 14: 'EXPORT { ExportSpecifierList OptComma } FROM String ASSERT Object'
+# Lines: 536-536
+# Action: new ExportNamedDeclaration new ExportSpecifierList($3), $7, $9
+
+# ExportSpecifierList
+# ============================================================
+
+# Rule 1: 'ExportSpecifier'
+# Lines: 540-540
+# Action: [$1]
+
+# Rule 2: 'ExportSpecifierList , ExportSpecifier'
+# Lines: 541-541
+# Action: $1.concat $3
+
+# Rule 3: 'ExportSpecifierList OptComma TERMINATOR ExportSpecifier'
+# Lines: 542-542
+# Action: $1.concat $4
+
+# Rule 4: 'INDENT ExportSpecifierList OptComma OUTDENT'
+# Lines: 543-543
+# Action: $2
+
+# Rule 5: 'ExportSpecifierList OptComma INDENT ExportSpecifierList OptComma OUTDENT'
+# Lines: 544-544
+# Action: $1.concat $4
+
+# ExportSpecifier
+# ============================================================
+
+# Rule 1: 'Identifier'
+# Lines: 548-548
+# Action: new ExportSpecifier $1
+
+# Rule 2: 'Identifier AS Identifier'
+# Lines: 549-549
+# Action: new ExportSpecifier $1, $3
+
+# Rule 3: 'Identifier AS DEFAULT'
+# Lines: 550-550
+# Action: new ExportSpecifier $1, LOC(3)(new DefaultLiteral $3)
+
+# Rule 4: 'DEFAULT'
+# Lines: 551-551
+# Action: new ExportSpecifier LOC(1)(new DefaultLiteral $1)
+
+# Rule 5: 'DEFAULT AS Identifier'
+# Lines: 552-552
+# Action: new ExportSpecifier LOC(1)(new DefaultLiteral($1)), $3
+
+# Invocation
+# ============================================================
+
+# Rule 1: 'Value OptFuncExist String'
+# Lines: 557-557
+# Action: new TaggedTemplateCall $1, $3, $2.soak
+
+# Rule 2: 'Value OptFuncExist Arguments'
+# Lines: 558-558
+# Action: new Call $1, $3, $2.soak
+
+# Rule 3: 'SUPER OptFuncExist Arguments'
+# Lines: 559-559
+# Action: new SuperCall LOC(1)(new Super), $3, $2.soak, $1
+
+# Rule 4: 'DYNAMIC_IMPORT Arguments'
+# Lines: 560-560
+# Action: new DynamicImportCall LOC(1)(new DynamicImport), $2
+
+# OptFuncExist
+# ============================================================
+
+# Rule 1: ''
+# Lines: 565-565
+# Action: soak: no
+
+# Rule 2: 'FUNC_EXIST'
+# Lines: 566-566
+# Action: soak: yes
+
+# Arguments
+# ============================================================
+
+# Rule 1: 'CALL_START CALL_END'
+# Lines: 571-571
+# Action: []
+
+# Rule 2: 'CALL_START ArgList OptComma CALL_END'
+# Lines: 572-572
+# Action: $2.implicit = $1.generated; $2
+
+# This
+# ============================================================
+
+# Rule 1: 'THIS'
+# Lines: 577-577
+# Action: new Value new ThisLiteral $1
+
+# Rule 2: '@'
+# Lines: 578-578
+# Action: new Value new ThisLiteral $1
+
+# ThisProperty
+# ============================================================
+
+# Rule 1: '@ Property'
+# Lines: 583-583
+# Action: new Value LOC(1)(new ThisLiteral $1), [LOC(2)(new Access($2))], 'this'
+
+# Array
+# ============================================================
+
+# Rule 1: '[ ]'
+# Lines: 588-588
+# Action: new Arr []
+
+# Rule 2: '[ Elisions ]'
+# Lines: 589-589
+# Action: new Arr $2
+
+# Rule 3: '[ ArgElisionList OptElisions ]'
+# Lines: 590-590
+# Action: new Arr [].concat $2, $3
+
+# RangeDots
+# ============================================================
+
+# Rule 1: '..'
+# Lines: 595-595
+# Action: exclusive: no
+
+# Rule 2: '...'
+# Lines: 596-596
+# Action: exclusive: yes
+
+# Range
+# ============================================================
+
+# Rule 1: '[ Expression RangeDots Expression ]'
+# Lines: 601-601
+# Action: new Range $2, $4, if $3.exclusive then 'exclusive' else 'inclusive'
+
+# Rule 2: '[ ExpressionLine RangeDots Expression ]'
+# Lines: 602-602
+# Action: new Range $2, $4, if $3.exclusive then 'exclusive' else 'inclusive'
+
+# Slice
+# ============================================================
+
+# Rule 1: 'Expression RangeDots Expression'
+# Lines: 607-607
+# Action: new Range $1, $3, if $2.exclusive then 'exclusive' else 'inclusive'
+
+# Rule 2: 'Expression RangeDots'
+# Lines: 608-608
+# Action: new Range $1, null, if $2.exclusive then 'exclusive' else 'inclusive'
+
+# Rule 3: 'ExpressionLine RangeDots Expression'
+# Lines: 609-609
+# Action: new Range $1, $3, if $2.exclusive then 'exclusive' else 'inclusive'
+
+# Rule 4: 'ExpressionLine RangeDots'
+# Lines: 610-610
+# Action: new Range $1, null, if $2.exclusive then 'exclusive' else 'inclusive'
+
+# Rule 5: 'RangeDots Expression'
+# Lines: 611-611
+# Action: new Range null, $2, if $1.exclusive then 'exclusive' else 'inclusive'
+
+# Rule 6: 'RangeDots'
+# Lines: 612-612
+# Action: new Range null, null, if $1.exclusive then 'exclusive' else 'inclusive'
+
+# ArgList
+# ============================================================
+
+# Rule 1: 'Arg'
+# Lines: 618-618
+# Action: [$1]
+
+# Rule 2: 'ArgList , Arg'
+# Lines: 619-619
+# Action: $1.concat $3
+
+# Rule 3: 'ArgList OptComma TERMINATOR Arg'
+# Lines: 620-620
+# Action: $1.concat $4
+
+# Rule 4: 'INDENT ArgList OptComma OUTDENT'
+# Lines: 621-621
+# Action: $2
+
+# Rule 5: 'ArgList OptComma INDENT ArgList OptComma OUTDENT'
+# Lines: 622-622
+# Action: $1.concat $4
+
+# Arg
+# ============================================================
+
+# Rule 1: 'Expression'
+# Lines: 627-627
+# Action: <passthrough>
+
+# Rule 2: 'ExpressionLine'
+# Lines: 628-628
+# Action: <passthrough>
+
+# Rule 3: 'Splat'
+# Lines: 629-629
+# Action: <passthrough>
+
+# Rule 4: '...'
+# Lines: 630-630
+# Action: new Expansion
+
+# ArgElisionList
+# ============================================================
+
+# Rule 1: 'ArgElision'
+# Lines: 636-636
+# Action: <passthrough>
+
+# Rule 2: 'ArgElisionList , ArgElision'
+# Lines: 637-637
+# Action: $1.concat $3
+
+# Rule 3: 'ArgElisionList OptComma TERMINATOR ArgElision'
+# Lines: 638-638
+# Action: $1.concat $4
+
+# Rule 4: 'INDENT ArgElisionList OptElisions OUTDENT'
+# Lines: 639-639
+# Action: $2.concat $3
+
+# Rule 5: 'ArgElisionList OptElisions INDENT ArgElisionList OptElisions OUTDENT'
+# Lines: 640-640
+# Action: $1.concat $2, $4, $5
+
+# ArgElision
+# ============================================================
+
+# Rule 1: 'Arg'
+# Lines: 644-644
+# Action: [$1]
+
+# Rule 2: 'Elisions Arg'
+# Lines: 645-645
+# Action: $1.concat $2
+
+# OptElisions
+# ============================================================
+
+# Rule 1: 'OptComma'
+# Lines: 649-649
+# Action: []
+
+# Rule 2: ', Elisions'
+# Lines: 650-650
+# Action: [].concat $2
+
+# Elisions
+# ============================================================
+
+# Rule 1: 'Elision'
+# Lines: 654-654
+# Action: [$1]
+
+# Rule 2: 'Elisions Elision'
+# Lines: 655-655
+# Action: $1.concat $2
+
+# Elision
+# ============================================================
+
+# Rule 1: ','
+# Lines: 659-659
+# Action: new Elision
+
+# Rule 2: 'Elision TERMINATOR'
+# Lines: 660-660
+# Action: $1
+
+# SimpleArgs
+# ============================================================
+
+# Rule 1: 'Expression'
+# Lines: 667-667
+# Action: <passthrough>
+
+# Rule 2: 'ExpressionLine'
+# Lines: 668-668
+# Action: <passthrough>
+
+# Rule 3: 'SimpleArgs , Expression'
+# Lines: 669-669
+# Action: [].concat $1, $3
+
+# Rule 4: 'SimpleArgs , ExpressionLine'
+# Lines: 670-670
+# Action: [].concat $1, $3
+
+# Try
+# ============================================================
+
+# Rule 1: 'TRY Block'
+# Lines: 675-675
+# Action: new Try $2
+
+# Rule 2: 'TRY Block Catch'
+# Lines: 676-676
+# Action: new Try $2, $3
+
+# Rule 3: 'TRY Block FINALLY Block'
+# Lines: 677-677
+# Action: new Try $2, null, $4, LOC(3)(new Literal $3)
+
+# Rule 4: 'TRY Block Catch FINALLY Block'
+# Lines: 678-678
+# Action: new Try $2, $3, $5, LOC(4)(new Literal $4)
+
+# Catch
+# ============================================================
+
+# Rule 1: 'CATCH Identifier Block'
+# Lines: 683-683
+# Action: new Catch $3, $2
+
+# Rule 2: 'CATCH Object Block'
+# Lines: 684-684
+# Action: new Catch $3, LOC(2)(new Value($2))
+
+# Rule 3: 'CATCH Block'
+# Lines: 685-685
+# Action: new Catch $2
+
+# Throw
+# ============================================================
+
+# Rule 1: 'THROW Expression'
+# Lines: 690-690
+# Action: new Throw $2
+
+# Rule 2: 'THROW INDENT Object OUTDENT'
+# Lines: 691-691
+# Action: new Throw new Value $3
+
+# Parenthetical
+# ============================================================
+
+# Rule 1: '( Body )'
+# Lines: 699-699
+# Action: new Parens $2
+
+# Rule 2: '( INDENT Body OUTDENT )'
+# Lines: 700-700
+# Action: new Parens $3
+
+# WhileLineSource
+# ============================================================
+
+# Rule 1: 'WHILE ExpressionLine'
+# Lines: 705-705
+# Action: new While $2
+
+# Rule 2: 'WHILE ExpressionLine WHEN ExpressionLine'
+# Lines: 706-706
+# Action: new While $2, guard: $4
+
+# Rule 3: 'UNTIL ExpressionLine'
+# Lines: 707-707
+# Action: new While $2, invert: true
+
+# Rule 4: 'UNTIL ExpressionLine WHEN ExpressionLine'
+# Lines: 708-708
+# Action: new While $2, invert: true, guard: $4
+
+# WhileSource
+# ============================================================
+
+# Rule 1: 'WHILE Expression'
+# Lines: 712-712
+# Action: new While $2
+
+# Rule 2: 'WHILE Expression WHEN Expression'
+# Lines: 713-713
+# Action: new While $2, guard: $4
+
+# Rule 3: 'WHILE ExpressionLine WHEN Expression'
+# Lines: 714-714
+# Action: new While $2, guard: $4
+
+# Rule 4: 'UNTIL Expression'
+# Lines: 715-715
+# Action: new While $2, invert: true
+
+# Rule 5: 'UNTIL Expression WHEN Expression'
+# Lines: 716-716
+# Action: new While $2, invert: true, guard: $4
+
+# Rule 6: 'UNTIL ExpressionLine WHEN Expression'
+# Lines: 717-717
+# Action: new While $2, invert: true, guard: $4
+
+# While
+# ============================================================
+
+# Rule 1: 'WhileSource Block'
+# Lines: 723-723
+# Action: $1.addBody $2
+
+# Rule 2: 'WhileLineSource Block'
+# Lines: 724-724
+# Action: $1.addBody $2
+
+# Rule 3: 'Statement  WhileSource'
+# Lines: 725-725
+# Action: (Object.assign $2, postfix: yes).addBody LOC(1) Block.wrap([$1])
+
+# Rule 4: 'Expression WhileSource'
+# Lines: 726-726
+# Action: (Object.assign $2, postfix: yes).addBody LOC(1) Block.wrap([$1])
+
+# Rule 5: 'Loop'
+# Lines: 727-727
+# Action: $1
+
+# Loop
+# ============================================================
+
+# Rule 1: 'LOOP Block'
+# Lines: 731-731
+# Action: new While(LOC(1)(new BooleanLiteral 'true'), isLoop: yes).addBody $2
+
+# Rule 2: 'LOOP Expression'
+# Lines: 732-732
+# Action: new While(LOC(1)(new BooleanLiteral 'true'), isLoop: yes).addBody LOC(2) Block.wrap [$2]
+
+# For
+# ============================================================
+
+# Rule 1: 'Statement    ForBody'
+# Lines: 739-739
+# Action: $2.postfix = yes; $2.addBody $1
+
+# Rule 2: 'Expression   ForBody'
+# Lines: 740-740
+# Action: $2.postfix = yes; $2.addBody $1
+
+# Rule 3: 'ForBody      Block'
+# Lines: 741-741
+# Action: $1.addBody $2
+
+# Rule 4: 'ForLineBody  Block'
+# Lines: 742-742
+# Action: $1.addBody $2
+
+# ForBody
+# ============================================================
+
+# Rule 1: 'FOR Range'
+# Lines: 746-746
+# Action: new For [], source: (LOC(2) new Value($2))
+
+# Rule 2: 'FOR Range BY Expression'
+# Lines: 747-747
+# Action: new For [], source: (LOC(2) new Value($2)), step: $4
+
+# Rule 3: 'ForStart ForSource'
+# Lines: 748-748
+# Action: $1.addSource $2
+
+# ForLineBody
+# ============================================================
+
+# Rule 1: 'FOR Range BY ExpressionLine'
+# Lines: 752-752
+# Action: new For [], source: (LOC(2) new Value($2)), step: $4
+
+# Rule 2: 'ForStart ForLineSource'
+# Lines: 753-753
+# Action: $1.addSource $2
+
+# ForStart
+# ============================================================
+
+# Rule 1: 'FOR ForVariables'
+# Lines: 757-757
+# Action: new For [], name: $2[0], index: $2[1]
+
+# Rule 2: 'FOR OWN ForVariables'
+# Lines: 762-763
+# Multi-line action:
+#   [name, index] = $3
+#           new For [], {name, index, own: yes, ownTag: (LOC(2) new Literal($2))}
+
+# ForValue
+# ============================================================
+
+# Rule 1: 'Identifier'
+# Lines: 769-769
+# Action: <passthrough>
+
+# Rule 2: 'ThisProperty'
+# Lines: 770-770
+# Action: <passthrough>
+
+# Rule 3: 'Array'
+# Lines: 771-771
+# Action: new Value $1
+
+# Rule 4: 'Object'
+# Lines: 772-772
+# Action: new Value $1
+
+# ForVariables
+# ============================================================
+
+# Rule 1: 'ForValue'
+# Lines: 779-779
+# Action: [$1]
+
+# Rule 2: 'ForValue , ForValue'
+# Lines: 780-780
+# Action: [$1, $3]
+
+# ForSource
+# ============================================================
+
+# Rule 1: 'FORIN Expression'
+# Lines: 787-787
+# Action: source: $2
+
+# Rule 2: 'FOROF Expression'
+# Lines: 788-788
+# Action: source: $2, object: yes
+
+# Rule 3: 'FORIN Expression WHEN Expression'
+# Lines: 789-789
+# Action: source: $2, guard: $4
+
+# Rule 4: 'FORIN ExpressionLine WHEN Expression'
+# Lines: 790-790
+# Action: source: $2, guard: $4
+
+# Rule 5: 'FOROF Expression WHEN Expression'
+# Lines: 791-791
+# Action: source: $2, guard: $4, object: yes
+
+# Rule 6: 'FOROF ExpressionLine WHEN Expression'
+# Lines: 792-792
+# Action: source: $2, guard: $4, object: yes
+
+# Rule 7: 'FORIN Expression BY Expression'
+# Lines: 793-793
+# Action: source: $2, step:  $4
+
+# Rule 8: 'FORIN ExpressionLine BY Expression'
+# Lines: 794-794
+# Action: source: $2, step:  $4
+
+# Rule 9: 'FORIN Expression WHEN Expression BY Expression'
+# Lines: 795-795
+# Action: source: $2, guard: $4, step: $6
+
+# Rule 10: 'FORIN ExpressionLine WHEN Expression BY Expression'
+# Lines: 796-796
+# Action: source: $2, guard: $4, step: $6
+
+# Rule 11: 'FORIN Expression WHEN ExpressionLine BY Expression'
+# Lines: 797-797
+# Action: source: $2, guard: $4, step: $6
+
+# Rule 12: 'FORIN ExpressionLine WHEN ExpressionLine BY Expression'
+# Lines: 798-798
+# Action: source: $2, guard: $4, step: $6
+
+# Rule 13: 'FORIN Expression BY Expression WHEN Expression'
+# Lines: 799-799
+# Action: source: $2, step:  $4, guard: $6
+
+# Rule 14: 'FORIN ExpressionLine BY Expression WHEN Expression'
+# Lines: 800-800
+# Action: source: $2, step:  $4, guard: $6
+
+# Rule 15: 'FORIN Expression BY ExpressionLine WHEN Expression'
+# Lines: 801-801
+# Action: source: $2, step:  $4, guard: $6
+
+# Rule 16: 'FORIN ExpressionLine BY ExpressionLine WHEN Expression'
+# Lines: 802-802
+# Action: source: $2, step:  $4, guard: $6
+
+# Rule 17: 'FORFROM Expression'
+# Lines: 803-803
+# Action: source: $2, from: yes
+
+# Rule 18: 'FORFROM Expression WHEN Expression'
+# Lines: 804-804
+# Action: source: $2, guard: $4, from: yes
+
+# Rule 19: 'FORFROM ExpressionLine WHEN Expression'
+# Lines: 805-805
+# Action: source: $2, guard: $4, from: yes
+
+# ForLineSource
+# ============================================================
+
+# Rule 1: 'FORIN ExpressionLine'
+# Lines: 809-809
+# Action: source: $2
+
+# Rule 2: 'FOROF ExpressionLine'
+# Lines: 810-810
+# Action: source: $2, object: yes
+
+# Rule 3: 'FORIN Expression WHEN ExpressionLine'
+# Lines: 811-811
+# Action: source: $2, guard: $4
+
+# Rule 4: 'FORIN ExpressionLine WHEN ExpressionLine'
+# Lines: 812-812
+# Action: source: $2, guard: $4
+
+# Rule 5: 'FOROF Expression WHEN ExpressionLine'
+# Lines: 813-813
+# Action: source: $2, guard: $4, object: yes
+
+# Rule 6: 'FOROF ExpressionLine WHEN ExpressionLine'
+# Lines: 814-814
+# Action: source: $2, guard: $4, object: yes
+
+# Rule 7: 'FORIN Expression BY ExpressionLine'
+# Lines: 815-815
+# Action: source: $2, step:  $4
+
+# Rule 8: 'FORIN ExpressionLine BY ExpressionLine'
+# Lines: 816-816
+# Action: source: $2, step:  $4
+
+# Rule 9: 'FORIN Expression WHEN Expression BY ExpressionLine'
+# Lines: 817-817
+# Action: source: $2, guard: $4, step: $6
+
+# Rule 10: 'FORIN ExpressionLine WHEN Expression BY ExpressionLine'
+# Lines: 818-818
+# Action: source: $2, guard: $4, step: $6
+
+# Rule 11: 'FORIN Expression WHEN ExpressionLine BY ExpressionLine'
+# Lines: 819-819
+# Action: source: $2, guard: $4, step: $6
+
+# Rule 12: 'FORIN ExpressionLine WHEN ExpressionLine BY ExpressionLine'
+# Lines: 820-820
+# Action: source: $2, guard: $4, step: $6
+
+# Rule 13: 'FORIN Expression BY Expression WHEN ExpressionLine'
+# Lines: 821-821
+# Action: source: $2, step:  $4, guard: $6
+
+# Rule 14: 'FORIN ExpressionLine BY Expression WHEN ExpressionLine'
+# Lines: 822-822
+# Action: source: $2, step:  $4, guard: $6
+
+# Rule 15: 'FORIN Expression BY ExpressionLine WHEN ExpressionLine'
+# Lines: 823-823
+# Action: source: $2, step:  $4, guard: $6
+
+# Rule 16: 'FORIN ExpressionLine BY ExpressionLine WHEN ExpressionLine'
+# Lines: 824-824
+# Action: source: $2, step:  $4, guard: $6
+
+# Rule 17: 'FORFROM ExpressionLine'
+# Lines: 825-825
+# Action: source: $2, from: yes
+
+# Rule 18: 'FORFROM Expression WHEN ExpressionLine'
+# Lines: 826-826
+# Action: source: $2, guard: $4, from: yes
+
+# Rule 19: 'FORFROM ExpressionLine WHEN ExpressionLine'
+# Lines: 827-827
+# Action: source: $2, guard: $4, from: yes
+
+# Switch
+# ============================================================
+
+# Rule 1: 'SWITCH Expression INDENT Whens OUTDENT'
+# Lines: 831-831
+# Action: new Switch $2, $4
+
+# Rule 2: 'SWITCH ExpressionLine INDENT Whens OUTDENT'
+# Lines: 832-832
+# Action: new Switch $2, $4
+
+# Rule 3: 'SWITCH Expression INDENT Whens ELSE Block OUTDENT'
+# Lines: 833-833
+# Action: new Switch $2, $4, LOC(5,6) $6
+
+# Rule 4: 'SWITCH ExpressionLine INDENT Whens ELSE Block OUTDENT'
+# Lines: 834-834
+# Action: new Switch $2, $4, LOC(5,6) $6
+
+# Rule 5: 'SWITCH INDENT Whens OUTDENT'
+# Lines: 835-835
+# Action: new Switch null, $3
+
+# Rule 6: 'SWITCH INDENT Whens ELSE Block OUTDENT'
+# Lines: 836-836
+# Action: new Switch null, $3, LOC(4,5) $5
+
+# Whens
+# ============================================================
+
+# Rule 1: 'When'
+# Lines: 840-840
+# Action: [$1]
+
+# Rule 2: 'Whens When'
+# Lines: 841-841
+# Action: $1.concat $2
+
+# When
+# ============================================================
+
+# Rule 1: 'LEADING_WHEN SimpleArgs Block'
+# Lines: 846-846
+# Action: new SwitchWhen $2, $3
+
+# Rule 2: 'LEADING_WHEN SimpleArgs Block TERMINATOR'
+# Lines: 847-847
+# Action: LOC(1, 3) new SwitchWhen $2, $3
+
+# IfBlock
+# ============================================================
+
+# Rule 1: 'IF Expression Block'
+# Lines: 854-854
+# Action: new If $2, $3, type: $1
+
+# Rule 2: 'IfBlock ELSE IF Expression Block'
+# Lines: 855-855
+# Action: $1.addElse LOC(3,5) new If $4, $5, type: $3
+
+# If
+# ============================================================
+
+# Rule 1: 'IfBlock'
+# Lines: 861-861
+# Action: <passthrough>
+
+# Rule 2: 'IfBlock ELSE Block'
+# Lines: 862-862
+# Action: $1.addElse $3
+
+# Rule 3: 'Statement  POST_IF Expression'
+# Lines: 863-863
+# Action: new If $3, LOC(1)(Block.wrap [$1]), type: $2, postfix: true
+
+# Rule 4: 'Expression POST_IF Expression'
+# Lines: 864-864
+# Action: new If $3, LOC(1)(Block.wrap [$1]), type: $2, postfix: true
+
+# IfBlockLine
+# ============================================================
+
+# Rule 1: 'IF ExpressionLine Block'
+# Lines: 868-868
+# Action: new If $2, $3, type: $1
+
+# Rule 2: 'IfBlockLine ELSE IF ExpressionLine Block'
+# Lines: 869-869
+# Action: $1.addElse LOC(3,5) new If $4, $5, type: $3
+
+# IfLine
+# ============================================================
+
+# Rule 1: 'IfBlockLine'
+# Lines: 873-873
+# Action: <passthrough>
+
+# Rule 2: 'IfBlockLine ELSE Block'
+# Lines: 874-874
+# Action: $1.addElse $3
+
+# Rule 3: 'Statement  POST_IF ExpressionLine'
+# Lines: 875-875
+# Action: new If $3, LOC(1)(Block.wrap [$1]), type: $2, postfix: true
+
+# Rule 4: 'Expression POST_IF ExpressionLine'
+# Lines: 876-876
+# Action: new If $3, LOC(1)(Block.wrap [$1]), type: $2, postfix: true
+
+# OperationLine
+# ============================================================
+
+# Rule 1: 'UNARY ExpressionLine'
+# Lines: 886-886
+# Action: new Op $1, $2
+
+# Rule 2: 'DO ExpressionLine'
+# Lines: 887-887
+# Action: new Op $1, $2
+
+# Rule 3: 'DO_IIFE CodeLine'
+# Lines: 888-888
+# Action: new Op $1, $2
+
+# Operation
+# ============================================================
+
+# Rule 1: 'UNARY Expression'
+# Lines: 892-892
+# Action: new Op $1.toString(), $2, undefined, undefined, originalOperator: $1.original
+
+# Rule 2: 'DO Expression'
+# Lines: 893-893
+# Action: new Op $1, $2
+
+# Rule 3: 'UNARY_MATH Expression'
+# Lines: 894-894
+# Action: new Op $1, $2
+
+# Rule 4: '-     Expression'
+# Lines: 895-895
+# Action: new Op '-', $2), prec: 'UNARY_MATH'
+
+# Rule 5: '+     Expression'
+# Lines: 896-896
+# Action: new Op '+', $2), prec: 'UNARY_MATH'
+
+# Rule 6: 'AWAIT Expression'
+# Lines: 898-898
+# Action: new Op $1, $2
+
+# Rule 7: 'AWAIT INDENT Object OUTDENT'
+# Lines: 899-899
+# Action: new Op $1, $3
+
+# Rule 8: '-- SimpleAssignable'
+# Lines: 901-901
+# Action: new Op '--', $2
+
+# Rule 9: '++ SimpleAssignable'
+# Lines: 902-902
+# Action: new Op '++', $2
+
+# Rule 10: 'SimpleAssignable --'
+# Lines: 903-903
+# Action: new Op '--', $1, null, true
+
+# Rule 11: 'SimpleAssignable ++'
+# Lines: 904-904
+# Action: new Op '++', $1, null, true
+
+# Rule 12: 'Expression ?'
+# Lines: 907-907
+# Action: new Existence $1
+
+# Rule 13: 'Expression +  Expression'
+# Lines: 909-909
+# Action: new Op '+' , $1, $3
+
+# Rule 14: 'Expression -  Expression'
+# Lines: 910-910
+# Action: new Op '-' , $1, $3
+
+# Rule 15: 'Expression MATH     Expression'
+# Lines: 912-912
+# Action: new Op $2, $1, $3
+
+# Rule 16: 'Expression **       Expression'
+# Lines: 913-913
+# Action: new Op $2, $1, $3
+
+# Rule 17: 'Expression SHIFT    Expression'
+# Lines: 914-914
+# Action: new Op $2, $1, $3
+
+# Rule 18: 'Expression COMPARE  Expression'
+# Lines: 915-915
+# Action: new Op $2.toString(), $1, $3, undefined, originalOperator: $2.original
+
+# Rule 19: 'Expression &        Expression'
+# Lines: 916-916
+# Action: new Op $2, $1, $3
+
+# Rule 20: 'Expression ^        Expression'
+# Lines: 917-917
+# Action: new Op $2, $1, $3
+
+# Rule 21: 'Expression |        Expression'
+# Lines: 918-918
+# Action: new Op $2, $1, $3
+
+# Rule 22: 'Expression &&       Expression'
+# Lines: 919-919
+# Action: new Op $2.toString(), $1, $3, undefined, originalOperator: $2.original
+
+# Rule 23: 'Expression ||       Expression'
+# Lines: 920-920
+# Action: new Op $2.toString(), $1, $3, undefined, originalOperator: $2.original
+
+# Rule 24: 'Expression BIN?     Expression'
+# Lines: 921-921
+# Action: new Op $2, $1, $3
+
+# Rule 25: 'Expression RELATION Expression'
+# Lines: 922-922
+# Action: new Op $2.toString(), $1, $3, undefined, invertOperator: $2.invert?.original ? $2.invert
+
+# DoIife
+# ============================================================
+
+# Rule 1: 'DO_IIFE Code'
+# Lines: 933-933
+# Action: new Op $1 , $2
