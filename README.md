@@ -47,7 +47,7 @@ Example: `$pos: [10, 2, 14, 5]` means the node spans from line 10 column 2 to li
 
 ```typescript
 // 1. Reference Node
-{$ref: string, prop?: string, call?: string, args?: any[], $pos?: Pos}
+{$ref: number, prop?: string, call?: string, args?: any[], $pos?: Pos}
 
 // 2. Type Node
 {$type: string, ...properties: any, $pos?: Pos}
@@ -74,22 +74,22 @@ type Pos = [number, number, number, number]  // [startLine, startCol, endLine, e
 
 **Purpose:** Parameter references with optional property access or method calls
 
-**Signature:** `{$ref: string, prop?: string, call?: string, args?: any[], $pos?: Pos}`
+**Signature:** `{$ref: number, prop?: string, call?: string, args?: any[], $pos?: Pos}`
 
 ### Examples
 ```coffee
 # Simple reference
-$1                              → {$ref: '1', $pos: [1, 1, 1, 2]}
-$2                              → {$ref: '2', $pos: [2, 5, 2, 6]}
-<passthrough>                   → {$ref: '1', $pos: [1, 1, 1, 12]}
+$1                              → {$ref: 1, $pos: [1, 1, 1, 2]}
+$2                              → {$ref: 2, $pos: [2, 5, 2, 6]}
+<passthrough>                   → {$ref: 1, $pos: [1, 1, 1, 12]}
 
 # Property access
-$1.original                     → {$ref: '1', prop: 'original', $pos: [3, 1, 3, 11]}
-$1.generated                    → {$ref: '1', prop: 'generated', $pos: [4, 1, 4, 12]}
+$1.original                     → {$ref: 1, prop: 'original', $pos: [3, 1, 3, 11]}
+$1.generated                    → {$ref: 1, prop: 'generated', $pos: [4, 1, 4, 12]}
 
 # Method calls
-$1.toString()                   → {$ref: '1', call: 'toString', args: [], $pos: [5, 1, 5, 13]}
-$1.slice(1, -1)                → {$ref: '1', call: 'slice', args: [1, -1], $pos: [6, 1, 6, 15]}
+$1.toString()                   → {$ref: 1, call: 'toString', args: [], $pos: [5, 1, 5, 13]}
+$1.slice(1, -1)                → {$ref: 1, call: 'slice', args: [1, -1], $pos: [6, 1, 6, 15]}
 ```
 
 ## 2. Type Node (`$type`)
@@ -101,24 +101,24 @@ $1.slice(1, -1)                → {$ref: '1', call: 'slice', args: [1, -1], $po
 ### Examples
 ```coffee
 # Simple AST nodes
-new Value $1                    → {$type: 'Value', base: {$ref: '1'}, properties: [], $pos: [1, 1, 1, 12]}
-new IdentifierLiteral $1        → {$type: 'IdentifierLiteral', name: {$ref: '1'}, $pos: [2, 1, 2, 24]}
+new Value $1                    → {$type: 'Value', base: {$ref: 1}, properties: [], $pos: [1, 1, 1, 12]}
+new IdentifierLiteral $1        → {$type: 'IdentifierLiteral', name: {$ref: 1}, $pos: [2, 1, 2, 24]}
 new Block                       → {$type: 'Block', statements: [], $pos: [3, 1, 3, 9]}
 
 # Complex AST nodes
 new If $2, $3, type: $1         → {
   $type: 'If',
-  test: {$ref: '2'},
-  consequent: {$ref: '3'},
-  kind: {$ref: '1'},
+  test: {$ref: 2},
+  consequent: {$ref: 3},
+  kind: {$ref: 1},
   $pos: [10, 1, 14, 5]
 }
 
 new Op '+', $1, $3              → {
   $type: 'Op',
   operator: '+',
-  left: {$ref: '1'},
-  right: {$ref: '3'},
+  left: {$ref: 1},
+  right: {$ref: 3},
   $pos: [15, 3, 15, 18]
 }
 ```
@@ -133,12 +133,12 @@ new Op '+', $1, $3              → {
 ```coffee
 # Array literals
 []                              → {$array: [], $pos: [1, 1, 1, 2]}
-[$1]                            → {$array: [{$ref: '1'}], $pos: [2, 1, 2, 4]}
-[$1, $3]                        → {$array: [{$ref: '1'}, {$ref: '3'}], $pos: [3, 1, 3, 8]}
+[$1]                            → {$array: [{$ref: 1}], $pos: [2, 1, 2, 4]}
+[$1, $3]                        → {$array: [{$ref: 1}, {$ref: 3}], $pos: [3, 1, 3, 8]}
 
 # Concatenation
-$1.concat $3                    → {$array: {$concat: [{$ref: '1'}, {$ref: '3'}]}, $pos: [4, 1, 4, 12]}
-[].concat $2, $3                → {$array: [{$ref: '2'}, {$ref: '3'}], $pos: [5, 1, 5, 16]}
+$1.concat $3                    → {$array: {$concat: [{$ref: 1}, {$ref: 3}]}, $pos: [4, 1, 4, 12]}
+[].concat $2, $3                → {$array: [{$ref: 2}, {$ref: 3}], $pos: [5, 1, 5, 16]}
 ```
 
 ## 4. Operation Node (`$op`)
@@ -150,13 +150,13 @@ $1.concat $3                    → {$array: {$concat: [{$ref: '1'}, {$ref: '3'}
 ### Examples
 ```coffee
 # Method calls on nodes
-$1.addBody $2                   → {$op: 'addBody', target: {$ref: '1'}, args: [{$ref: '2'}], $pos: [1, 1, 1, 13]}
-$1.push $3                      → {$op: 'push', target: {$ref: '1'}, args: [{$ref: '3'}], $pos: [2, 1, 2, 10]}
+$1.addBody $2                   → {$op: 'addBody', target: {$ref: 1}, args: [{$ref: 2}], $pos: [1, 1, 1, 13]}
+$1.push $3                      → {$op: 'push', target: {$ref: 1}, args: [{$ref: 3}], $pos: [2, 1, 2, 10]}
 
 # Helper functions
-Block.wrap [$1]                 → {$op: 'Block.wrap', args: [{$array: [{$ref: '1'}]}], $pos: [3, 1, 3, 15]}
-extend $2, soak: yes            → {$op: 'extend', args: [{$ref: '2'}, {soak: true}], $pos: [4, 1, 4, 20]}
-LOC(1) $1                       → {$op: 'LOC', args: [1, {$ref: '1'}], $pos: [5, 1, 5, 9]}
+Block.wrap [$1]                 → {$op: 'Block.wrap', args: [{$array: [{$ref: 1}]}], $pos: [3, 1, 3, 15]}
+extend $2, soak: yes            → {$op: 'extend', args: [{$ref: 2}, {soak: true}], $pos: [4, 1, 4, 20]}
+LOC(1) $1                       → {$op: 'LOC', args: [1, {$ref: 1}], $pos: [5, 1, 5, 9]}
 ```
 
 ## 5. Conditional Node (`$cond`)
@@ -170,7 +170,7 @@ LOC(1) $1                       → {$op: 'LOC', args: [1, {$ref: '1'}], $pos: [
 # Ternary expressions
 if $2.exclusive then 'exclusive' else 'inclusive' → {
   $cond: {
-    test: {$ref: '2', prop: 'exclusive'},
+    test: {$ref: 2, prop: 'exclusive'},
     then: 'exclusive',
     else: 'inclusive'
   },
@@ -189,8 +189,8 @@ if $2.exclusive then 'exclusive' else 'inclusive' → {
 # Chained operations
 (new Value $1).add $2           → {
   $seq: [
-    {$type: 'Value', base: {$ref: '1'}, properties: [], $as: 'temp'},
-    {$op: 'add', target: {$use: 'temp'}, args: [{$ref: '2'}]}
+    {$type: 'Value', base: {$ref: 1}, properties: [], $as: 'temp'},
+    {$op: 'add', target: {$use: 'temp'}, args: [{$ref: 2}]}
   ],
   $pos: [1, 1, 1, 21]
 }
@@ -198,8 +198,8 @@ if $2.exclusive then 'exclusive' else 'inclusive' → {
 # Multi-statement actions
 $2.implicit = $1.generated; $2  → {
   $seq: [
-    {$op: 'set', target: {$ref: '2'}, prop: 'implicit', value: {$ref: '1', prop: 'generated'}},
-    {$ref: '2'}
+    {$op: 'set', target: {$ref: 2}, prop: 'implicit', value: {$ref: 1, prop: 'generated'}},
+    {$ref: 2}
   ],
   $pos: [2, 1, 2, 30]
 }
@@ -207,7 +207,7 @@ $2.implicit = $1.generated; $2  → {
 # Destructuring
 [name, index] = $3              → {
   $seq: [
-    {$op: 'destructure', pattern: ['name', 'index'], value: {$ref: '3'}},
+    {$op: 'destructure', pattern: ['name', 'index'], value: {$ref: 3}},
     {$use: 'destructured'}
   ],
   $pos: [3, 1, 3, 18]
@@ -227,9 +227,9 @@ soak: yes                       → {soak: true, $pos: [1, 1, 1, 8]}
 exclusive: no                   → {exclusive: false, $pos: [2, 1, 2, 12]}
 
 # FOR loop options
-source: $2                      → {source: {$ref: '2'}, $pos: [3, 1, 3, 10]}
-source: $2, guard: $4           → {source: {$ref: '2'}, guard: {$ref: '4'}, $pos: [4, 1, 4, 21]}
-source: $2, object: yes         → {source: {$ref: '2'}, object: true, $pos: [5, 1, 5, 23]}
+source: $2                      → {source: {$ref: 2}, $pos: [3, 1, 3, 10]}
+source: $2, guard: $4           → {source: {$ref: 2}, guard: {$ref: 4}, $pos: [4, 1, 4, 21]}
+source: $2, object: yes         → {source: {$ref: 2}, object: true, $pos: [5, 1, 5, 23]}
 ```
 
 ## Terminology
@@ -305,7 +305,7 @@ Grammar → Parser → Data Nodes → Backend Processor → Target Code
 # Data Node (Universal Representation)
 {
   $type: 'If',
-  test: {$type: 'BinaryOp', op: '>', left: {$ref: '1'}, right: {$type: 'Number', value: 0}},
+  test: {$type: 'BinaryOp', op: '>', left: {$ref: 1}, right: {$type: 'Number', value: 0}},
   consequent: {$type: 'Call', callee: 'print', args: [{$type: 'String', value: 'positive'}]},
   alternate: null
 }
@@ -357,23 +357,23 @@ The transformation requires ~12 pattern matchers that map to these 7 data node t
 ```coffee
 patterns = [
   # Simple references
-  /^\$(\d+)$/                    # → {$ref: '1'}
-  /^<passthrough>$/              # → {$ref: '1'}
+  /^\$(\d+)$/                    # → {$ref: 1}
+  /^<passthrough>$/              # → {$ref: 1}
 
   # Property/method access
-  /^\$(\d+)\.(\w+)$/            # → {$ref: '1', prop: '2'}
-  /^\$(\d+)\.(\w+)\((.*)\)$/   # → {$ref: '1', call: '2', args: [3]}
+  /^\$(\d+)\.(\w+)$/            # → {$ref: 1, prop: 'propertyName'}
+  /^\$(\d+)\.(\w+)\((.*)\)$/   # → {$ref: 1, call: 'methodName', args: [...]}
 
   # AST nodes
-  /^new (\w+)\s*(.*)$/          # → {$type: '1', ...parseArgs('2')}
+  /^new (\w+)\s*(.*)$/          # → {$type: 'ClassName', ...parseArgs(...)}
 
   # Arrays
   /^\[(.*)\]$/                  # → {$array: [parseElements('1')]}
   /^\$(\d+)\.concat\s+(.*)$/    # → {$array: {$concat: [...]}}
 
   # Operations
-  /^\$(\d+)\.(add|push|...)$/   # → {$op: '2', target: {$ref: '1'}, ...}
-  /^(Block\.wrap|extend)\s+/    # → {$op: '1', args: [...]}
+  /^\$(\d+)\.(add|push|...)$/   # → {$op: 'methodName', target: {$ref: 1}, ...}
+  /^(Block\.wrap|extend)\s+/    # → {$op: 'helperName', args: [...]}
 
   # Conditionals
   /^if .* then .* else .*$/     # → {$cond: {...}}
@@ -436,12 +436,89 @@ CS3's approach is **unique**: keeping actions IN the grammar but as DATA instead
 5. **Testable**: Data transformations easier than functions
 6. **Portable**: Serializable to JSON, MessagePack, etc.
 
+## Backend Architecture
+
+### Naming Convention
+
+**Backend** = Complete implementation for compiling CS3 data nodes to a target language
+
+Examples:
+- **ES6Backend** - Compiles to ES6 JavaScript
+- **PythonBackend** - Compiles to Python 3
+- **WASMBackend** - Compiles to WebAssembly
+- **TypeScriptBackend** - Compiles to TypeScript with types
+- **RustBackend** - Compiles to Rust
+
+### Directory Structure
+
+```
+coffeescript/
+├── src/
+│   ├── grammar.coffee       # Original grammar
+│   └── grammar-cs3.coffee   # Transformed data-oriented grammar
+├── backends/
+│   ├── es6/
+│   │   ├── index.coffee     # ES6Backend main class
+│   │   ├── emitter.coffee   # Code generation
+│   │   ├── optimizer.coffee # ES6-specific optimizations
+│   │   ├── helpers.js       # Runtime helpers
+│   │   ├── test/            # Backend-specific tests
+│   │   └── README.md        # ES6 backend documentation
+│   ├── python/
+│   │   ├── index.coffee     # PythonBackend main class
+│   │   ├── emitter.coffee   # Python code generation
+│   │   ├── pythonic.coffee  # Python idiom transformer
+│   │   ├── stdlib.py        # Python runtime support
+│   │   └── examples/        # Example compilations
+│   ├── wasm/
+│   │   ├── index.coffee     # WASMBackend main class
+│   │   ├── wat.coffee       # WAT text format emitter
+│   │   ├── binary.coffee    # WASM binary emitter
+│   │   ├── memory.coffee    # Memory management
+│   │   └── spec/            # WASM specifications
+│   └── shared/
+│       ├── base.coffee      # BaseBackend class
+│       ├── visitor.coffee   # AST visitor utilities
+│       └── sourcemap.coffee # Source map generation
+└── work/                     # Development workspace
+```
+
+### Backend Interface
+
+```coffee
+# backends/shared/base.coffee
+class BaseBackend
+  constructor: (@options = {}) ->
+    @sourceMaps = @options.sourceMaps ? false
+    @optimize = @options.optimize ? false
+
+  compile: (dataNodes) ->
+    # Main entry point
+    ast = @preprocess(dataNodes)
+    code = @emit(ast)
+    code = @optimize(code) if @optimize
+    @postprocess(code)
+
+  processNode: (node) ->
+    # Must be implemented by each backend
+    throw new Error("processNode must be implemented")
+```
+
+### Why Directories (Not Single Files)
+
+1. **Complexity** - Backends need multiple components (emitter, optimizer, runtime)
+2. **Testing** - Each backend needs its own test suite
+3. **Documentation** - EBNF grammars, examples, usage guides
+4. **Evolution** - Room to grow as backends mature
+5. **Resources** - Templates, helpers, standard libraries
+
 ## Implementation Roadmap
 
 ### Phase 1: Foundation (Current)
 ✅ Solar parser generator (56.2x speedup)
 ✅ Grammar analysis (399 rules → 12 patterns → 7 node types)
 ✅ CS3 specification document
+✅ Node type definitions with position tracking
 ⬜ Pattern matcher implementation
 
 ### Phase 2: Transformation
@@ -450,11 +527,12 @@ CS3's approach is **unique**: keeping actions IN the grammar but as DATA instead
 ⬜ Create compatibility layer
 ⬜ Validate with test suite (1473 tests)
 
-### Phase 3: Multi-Backend
-⬜ ES6 backend (default, backward compatible)
-⬜ TypeScript backend (with type inference)
-⬜ Python backend (proof of concept)
-⬜ WASM backend (performance)
+### Phase 3: Backend Implementation
+⬜ BaseBackend abstract class (shared/base.coffee)
+⬜ ES6Backend (default, backward compatible)
+⬜ TypeScriptBackend (with type inference)
+⬜ PythonBackend (proof of concept)
+⬜ WASMBackend (performance)
 
 ### Phase 4: Ecosystem
 ⬜ AST explorer tool
