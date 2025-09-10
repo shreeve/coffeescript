@@ -197,12 +197,6 @@ grammar =
 
   Identifier: [
     o 'IDENTIFIER', $ast: 'IdentifierLiteral', base: $ref: 1
-    o 'JSX_TAG'   , $ast: 'JSXTag', arg1: '$1.toString()', arg2: {}
-                                                     tagNameLocationData:                  $1.tagNameToken[2]
-                                                     closingTagOpeningBracketLocationData: $1.closingTagOpeningBracketToken?[2]
-                                                     closingTagSlashLocationData:          $1.closingTagSlashToken?[2]
-                                                     closingTagNameLocationData:           $1.closingTagNameToken?[2]
-                                                     closingTagClosingBracketLocationData: $1.closingTagClosingBracketToken?[2]
   ]
 
   Property: [
@@ -440,8 +434,8 @@ grammar =
   Accessor: [
     o '.  Property' , $ast: 'Access', base: $ref: 2
     o '?. Property' , $ast: 'Access', arg1: {$ref: 2}, arg2: 'soak: yes'
-    o ':: Property' , $ary: ['(new Access new PropertyName('prototype')', 'shorthand: yes)', '(new Access $2)']
-    o '?:: Property', $ary: ['(new Access new PropertyName('prototype')', 'shorthand: yes', 'soak: yes)', '(new Access $2)']
+    o ':: Property' , $ary: ['(new Access new PropertyName(\'prototype\')', 'shorthand: yes)', '(new Access $2)']
+    o '?:: Property', $ary: ['(new Access new PropertyName(\'prototype\')', 'shorthand: yes', 'soak: yes)', '(new Access $2)']
     o '::'          , $ast: 'Access', arg1: {$ast: 'PropertyName'}, arg2: 'shorthand: yes'
     o '?::'         , $ast: 'Access', arg1: {$ast: 'PropertyName'}, arg2: 'shorthand: yes', arg3: 'soak: yes'
     o 'Index'
@@ -531,12 +525,9 @@ grammar =
     o 'EXPORT { }'                                                       , $ast: 'ExportNamedDeclaration', value: {$ast: 'ExportSpecifierList'}
     o 'EXPORT { ExportSpecifierList OptComma }'                          , $ast: 'ExportNamedDeclaration', value: {$ast: 'ExportSpecifierList'}
     o 'EXPORT Class'                                                     , $ast: 'ExportNamedDeclaration', base: $ref: 2
-    o 'EXPORT Identifier = Expression'                                   , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'Assign'}, arg2: {$ref: 4}, arg3: null, arg4: {}
-                                                                                                      moduleDeclaration: 'export')
-    o 'EXPORT Identifier = TERMINATOR Expression'                        , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'Assign'}, arg2: {$ref: 5}, arg3: null, arg4: {}
-                                                                                                      moduleDeclaration: 'export')
-    o 'EXPORT Identifier = INDENT Expression OUTDENT'                    , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'Assign'}, arg2: {$ref: 5}, arg3: null, arg4: {}
-                                                                                                      moduleDeclaration: 'export')
+    o 'EXPORT Identifier = Expression'                                   , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'Assign'}, arg2: {$ref: 4}, arg3: null, arg4: {moduleDeclaration: 'export'}
+    o 'EXPORT Identifier = TERMINATOR Expression'                        , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'Assign'}, arg2: {$ref: 5}, arg3: null, arg4: {moduleDeclaration: 'export'}
+    o 'EXPORT Identifier = INDENT Expression OUTDENT'                    , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'Assign'}, arg2: {$ref: 5}, arg3: null, arg4: {moduleDeclaration: 'export'}
     o 'EXPORT DEFAULT Expression'                                        , $ast: 'ExportDefaultDeclaration', base: $ref: 3
     o 'EXPORT DEFAULT INDENT Object OUTDENT'                             , $ast: 'ExportDefaultDeclaration', value: {$ast: 'Value'}
     o 'EXPORT EXPORT_ALL FROM String'                                    , $ast: 'ExportAllDeclaration', arg1: {$ast: 'Literal'}, arg2: {$ref: 4}
@@ -609,18 +600,18 @@ grammar =
 
   # The CoffeeScript range literal.
   Range: [
-    o '[ Expression RangeDots Expression ]'    , $ast: '@', arg1: {$ref: 2}, arg2: {$ref: 4}, arg3: 'if $3.exclusive then 'exclusive' else 'inclusive''
-    o '[ ExpressionLine RangeDots Expression ]', $ast: '@', arg1: {$ref: 2}, arg2: {$ref: 4}, arg3: 'if $3.exclusive then 'exclusive' else 'inclusive''
+    o '[ Expression RangeDots Expression ]'    , $ast: '@', arg1: {$ref: 2}, arg2: {$ref: 4}, arg3: 'if $3.exclusive then \'exclusive\' else \'inclusive\''
+    o '[ ExpressionLine RangeDots Expression ]', $ast: '@', arg1: {$ref: 2}, arg2: {$ref: 4}, arg3: 'if $3.exclusive then \'exclusive\' else \'inclusive\''
   ]
 
   # Array slice literals.
   Slice: [
-    o 'Expression RangeDots Expression'    , $ast: 'Range', arg1: {$ref: 1}, arg2: {$ref: 3}, arg3: 'if $2.exclusive then 'exclusive' else 'inclusive''
-    o 'Expression RangeDots'               , $ast: 'Range', arg1: {$ref: 1}, arg2: null, arg3: 'if $2.exclusive then 'exclusive' else 'inclusive''
-    o 'ExpressionLine RangeDots Expression', $ast: 'Range', arg1: {$ref: 1}, arg2: {$ref: 3}, arg3: 'if $2.exclusive then 'exclusive' else 'inclusive''
-    o 'ExpressionLine RangeDots'           , $ast: 'Range', arg1: {$ref: 1}, arg2: null, arg3: 'if $2.exclusive then 'exclusive' else 'inclusive''
-    o 'RangeDots Expression'               , $ast: 'Range', arg1: null, arg2: {$ref: 2}, arg3: 'if $1.exclusive then 'exclusive' else 'inclusive''
-    o 'RangeDots'                          , $ast: 'Range', arg1: null, arg2: null, arg3: 'if $1.exclusive then 'exclusive' else 'inclusive''
+    o 'Expression RangeDots Expression'    , $ast: 'Range', arg1: {$ref: 1}, arg2: {$ref: 3}, arg3: 'if $2.exclusive then \'exclusive\' else \'inclusive\''
+    o 'Expression RangeDots'               , $ast: 'Range', arg1: {$ref: 1}, arg2: null, arg3: 'if $2.exclusive then \'exclusive\' else \'inclusive\''
+    o 'ExpressionLine RangeDots Expression', $ast: 'Range', arg1: {$ref: 1}, arg2: {$ref: 3}, arg3: 'if $2.exclusive then \'exclusive\' else \'inclusive\''
+    o 'ExpressionLine RangeDots'           , $ast: 'Range', arg1: {$ref: 1}, arg2: null, arg3: 'if $2.exclusive then \'exclusive\' else \'inclusive\''
+    o 'RangeDots Expression'               , $ast: 'Range', arg1: null, arg2: {$ref: 2}, arg3: 'if $1.exclusive then \'exclusive\' else \'inclusive\''
+    o 'RangeDots'                          , $ast: 'Range', arg1: null, arg2: null, arg3: 'if $1.exclusive then \'exclusive\' else \'inclusive\''
   ]
 
   # The **ArgList** is the list of objects passed into a function call
@@ -739,8 +730,8 @@ grammar =
   ]
 
   Loop: [
-    o 'LOOP Block'     , $ast: 'While', arg1: '(new BooleanLiteral 'true')', arg2: 'isLoop: yes).addBody $2'
-    o 'LOOP Expression', $ast: 'While', arg1: '(new BooleanLiteral 'true')', arg2: 'isLoop: yes).addBody LOC(2) Block.wrap [$2]'
+    o 'LOOP Block'     , $ast: 'While', arg1: '(new BooleanLiteral \'true\')', arg2: 'isLoop: yes).addBody $2'
+    o 'LOOP Expression', $ast: 'While', arg1: '(new BooleanLiteral \'true\')', arg2: 'isLoop: yes).addBody LOC(2) Block.wrap [$2]'
   ]
 
   # Array, object, and range comprehensions, at the most generic level.
