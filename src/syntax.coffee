@@ -318,7 +318,7 @@ grammar =
 
   # Object literals are simply lists of assignments.
   Object: [
-    o 'AssignList OptComma', $ast: 'Obj', properties: 2, generated: {$use: 1, prop: 'generated'}
+    o '{ AssignList OptComma }', $ast: 'Obj', properties: 2, generated: {$use: 1, prop: 'generated'}
   ]
 
   # Assignment of properties within an object literal can be separated by
