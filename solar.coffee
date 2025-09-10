@@ -70,6 +70,7 @@ class Generator
     @yy          = {}
 
     # Grammar structures
+    @types     = {}
     @rules     = []
     @operators = {}
     @conflicts = 0
@@ -110,10 +111,9 @@ class Generator
   # ============================================================================
 
   processGrammar: (grammar) ->
-    @types = {}
     @operators = @_processOperators grammar.operators
 
-    @_buildRules grammar.bnf, @types, @operators
+    @_buildRules grammar.bnf, @operators
     @_augmentGrammar grammar
 
   _processOperators: (ops) ->
@@ -125,7 +125,7 @@ class Generator
         operators[precedence[k]] = {precedence: i + 1, assoc: precedence[0]}
     operators
 
-  _buildRules: (bnf, types, operators) ->
+  _buildRules: (bnf, operators) ->
     actionGroups = {}
     ruleTable    = [0]
     @symbolIds   = {"$accept": 0, "$end": 1, "error": 2}  # Add reserved symbols
@@ -145,7 +145,7 @@ class Generator
     # Process types and their rules
     for own type, rules of bnf
       addSymbol type
-      types[type] = @symbolTable.get type
+      @types[type] = @symbolTable.get type
 
       handles = if typeof rules is 'string' then rules.split(/\s*\|\s*/g) else rules[..]
 
@@ -165,16 +165,16 @@ class Generator
         rule = new Rule type, symbols, @rules.length + 1
 
         # Set precedence
-        @_assignPrecedence rule, precedence, operators, types
+        @_assignPrecedence rule, precedence, operators
 
         @rules.push rule
         ruleTable.push [@symbolIds[type], if symbols[0] is '' then 0 else symbols.length]
-        types[type].rules.push rule
+        @types[type].rules.push rule
 
     # Generate parser components
     actionsCode = @_generateActionCode actionGroups
     @ruleData = ruleTable
-    @_buildTokenMappings types
+    @_buildTokenMappings()
 
     parameters = "yytext, yyleng, yylineno, yy, yystate, $$, _$"
     parameters += ', ' + @parseParams.join(', ') if @parseParams
@@ -226,13 +226,13 @@ class Generator
       .replace(/\$(-?\d+)/g, (_, n) -> "$$[$0" + (parseInt(n, 10) - symbols.length || '') + "]") # Like $1
       .replace( /@(-?\d+)/g, (_, n) -> "_$[$0" +               (n - symbols.length || '') + "]") # Like @1
 
-  _assignPrecedence: (rule, precedence, operators, types) ->
+  _assignPrecedence: (rule, precedence, operators) ->
     if precedence?.prec and operators[precedence.prec]
       rule.precedence = operators[precedence.prec].precedence
     else if rule.precedence is 0
       # Use rightmost token's precedence
       for token in rule.symbols by -1
-        if operators[token] and not types[token]
+        if operators[token] and not @types[token]
           rule.precedence = operators[token].precedence
           break
 
@@ -251,11 +251,11 @@ class Generator
       .replace(/YYABORT/g, 'return false')
       .replace(/YYACCEPT/g, 'return true')
 
-  _buildTokenMappings: (types) ->
+  _buildTokenMappings: ->
     @tokenNames = {}
 
     for own name, id of @symbolIds when id >= 2
-      unless types[name]
+      unless @types[name]
         @tokenNames[id] = name
 
   _augmentGrammar: (grammar) ->
