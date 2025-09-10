@@ -238,13 +238,13 @@ grammar =
   # through and printed to JavaScript.
   Literal: [
     o 'AlphaNumeric'
-    o 'JS'        , $ast: 'PassthroughLiteral', value: {$rhs: 1, method: 'toString'}, here: {$rhs: 1, prop: 'here'}, generated: {$rhs: 1, prop: 'generated'}
+    o 'JS'          , $ast: 'PassthroughLiteral', value: {$rhs: 1, method: 'toString'}, here: {$rhs: 1, prop: 'here'}, generated: {$rhs: 1, prop: 'generated'}
     o 'Regex'
-    o 'UNDEFINED' , $ast: 'UndefinedLiteral', base: 1
-    o 'NULL'      , $ast: 'NullLiteral', base: 1
-    o 'BOOL'      , $ast: 'BooleanLiteral', value: {$rhs: 1, method: 'toString'}, originalValue: {$rhs: 1, prop: 'original'}
-    o 'INFINITY'  , $ast: 'InfinityLiteral', value: {$rhs: 1, method: 'toString'}, originalValue: {$rhs: 1, prop: 'original'}
-    o 'NAN'       , $ast: 'NaNLiteral', base: 1
+    o 'UNDEFINED'   , $ast: 'UndefinedLiteral', base: 1
+    o 'NULL'        , $ast: 'NullLiteral', base: 1
+    o 'BOOL'        , $ast: 'BooleanLiteral', value: {$rhs: 1, method: 'toString'}, originalValue: {$rhs: 1, prop: 'original'}
+    o 'INFINITY'    , $ast: 'InfinityLiteral', value: {$rhs: 1, method: 'toString'}, originalValue: {$rhs: 1, prop: 'original'}
+    o 'NAN'         , $ast: 'NaNLiteral', base: 1
   ]
 
   # Assignment of a variable, property, or index to a value.
@@ -275,8 +275,8 @@ grammar =
 
   ObjAssignable: [
     o 'SimpleObjAssignable'
-    o '[ Expression ]'   , $ast: 'Value', value: {$ast: 'ComputedPropertyName'}
-    o '@ [ Expression ]' , $ast: 'Value', val: {$ast: 'ThisLiteral', value: 1, $pos: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3, $pos: 3}], context: 'this'
+    o '[ Expression ]'     , $ast: 'Value', value: {$ast: 'ComputedPropertyName'}
+    o '@ [ Expression ]'   , $ast: 'Value', val: {$ast: 'ThisLiteral', value: 1, $pos: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3, $pos: 3}], context: 'this'
     o 'AlphaNumeric'
   ]
 
@@ -350,7 +350,7 @@ grammar =
 
   # The list of parameters that a function accepts can be of any length.
   ParamList: [
-    o '', $ary: []
+    o ''                                                    , $ary: []
     o 'Param'                                               , $ary: [1]
     o 'ParamList , Param'                                   , $ops: 'array', append: [1, 3]
     o 'ParamList OptComma TERMINATOR Param'                 , $ops: 'array', append: [1, 4]
@@ -392,8 +392,8 @@ grammar =
   # Everything that can be assigned to.
   Assignable: [
     o 'SimpleAssignable'
-    o 'Array'         , $ast: 'Value', val: 1
-    o 'Object'        , $ast: 'Value', val: 1
+    o 'Array'           , $ast: 'Value', val: 1
+    o 'Object'          , $ast: 'Value', val: 1
   ]
 
   # The types of things that can be treated as values -- assigned to, invoked
@@ -559,7 +559,7 @@ grammar =
 
   # An optional existence check on a function.
   OptFuncExist: [
-    o '', soak: false
+    o ''          , soak: false
     o 'FUNC_EXIST', soak: true
   ]
 
@@ -624,7 +624,7 @@ grammar =
     o 'Expression'
     o 'ExpressionLine'
     o 'Splat'
-    o '...'         , $ast: 'Expansion'
+    o '...'           , $ast: 'Expansion'
   ]
 
   # The **ArgElisionList** is the list of objects, contents of an array literal
@@ -751,9 +751,9 @@ grammar =
   ]
 
   ForStart: [
-    o 'FOR ForVariables'       , $ast: 'For', arg1: {$ary: [{}]}, arg2: 'name: $2[0]', arg3: 'index: $2[1]'
+    o 'FOR ForVariables'      , $ast: 'For', arg1: {$ary: [{}]}, arg2: 'name: $2[0]', arg3: 'index: $2[1]'
     o 'FOR AWAIT ForVariables', $seq: [{$var: 'name', value: {$rhs: 3, index: 0}}, {$var: 'index', value: {$rhs: 3, index: 1}}, {$ast: 'For', body: {$ary: []}, name: {$use: 'name'}, index: {$use: 'index'}, await: true, awaitTag: {$ast: 'Literal', value: 2, $pos: 2}}]
-    o 'FOR OWN ForVariables', $seq: [{$var: 'name', value: {$rhs: 3, index: 0}}, {$var: 'index', value: {$rhs: 3, index: 1}}, {$ast: 'For', body: {$ary: []}, name: {$use: 'name'}, index: {$use: 'index'}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}}]
+    o 'FOR OWN ForVariables'  , $seq: [{$var: 'name', value: {$rhs: 3, index: 0}}, {$var: 'index', value: {$rhs: 3, index: 1}}, {$ast: 'For', body: {$ary: []}, name: {$use: 'name'}, index: {$use: 'index'}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}}]
   ]
 
   # An array of all accepted values for a variable inside the loop.
@@ -761,8 +761,8 @@ grammar =
   ForValue: [
     o 'Identifier'
     o 'ThisProperty'
-    o 'Array'     , $ast: 'Value', val: 1
-    o 'Object'    , $ast: 'Value', val: 1
+    o 'Array'       , $ast: 'Value', val: 1
+    o 'Object'      , $ast: 'Value', val: 1
   ]
 
   # An array or range comprehension has variables for the current element
@@ -882,37 +882,37 @@ grammar =
   ]
 
   Operation: [
-    o 'UNARY Expression'                     , $ast: 'Op', args: [{$rhs: 1, method: 'toString'}, 2, undefined, undefined], originalOperator: {$rhs: 1, prop: 'original'}
-    o 'DO Expression'                        , $ast: 'Op', args: [1, 2]
-    o 'UNARY_MATH Expression'                , $ast: 'Op', args: [1, 2]
-    o '-     Expression', {$ast: 'Op', args: ['-', 2]}, prec: 'UNARY_MATH'
-    o '+     Expression', {$ast: 'Op', args: ['+', 2]}, prec: 'UNARY_MATH'
+    o 'UNARY Expression'              , $ast: 'Op', args: [{$rhs: 1, method: 'toString'}, 2, undefined, undefined], originalOperator: {$rhs: 1, prop: 'original'}
+    o 'DO Expression'                 , $ast: 'Op', args: [1, 2]
+    o 'UNARY_MATH Expression'         , $ast: 'Op', args: [1, 2]
+    o '-     Expression'              , {$ast: 'Op', args: ['-', 2]}, prec: 'UNARY_MATH'
+    o '+     Expression'              , {$ast: 'Op', args: ['+', 2]}, prec: 'UNARY_MATH'
 
-    o 'AWAIT Expression'                     , $ast: 'Op', args: [1, 2]
-    o 'AWAIT INDENT Object OUTDENT'          , $ast: 'Op', args: [1, 3]
+    o 'AWAIT Expression'              , $ast: 'Op', args: [1, 2]
+    o 'AWAIT INDENT Object OUTDENT'   , $ast: 'Op', args: [1, 3]
 
-    o '-- SimpleAssignable'                  , $ast: 'Op', args: ['--', 2]
-    o '++ SimpleAssignable'                  , $ast: 'Op', args: ['++', 2]
-    o 'SimpleAssignable --'                  , $ast: 'Op', args: ['--', 1, null, true]
-    o 'SimpleAssignable ++'                  , $ast: 'Op', args: ['++', 1, null, true]
+    o '-- SimpleAssignable'           , $ast: 'Op', args: ['--', 2]
+    o '++ SimpleAssignable'           , $ast: 'Op', args: ['++', 2]
+    o 'SimpleAssignable --'           , $ast: 'Op', args: ['--', 1, null, true]
+    o 'SimpleAssignable ++'           , $ast: 'Op', args: ['++', 1, null, true]
 
     # [The existential operator](https://coffeescript.org/#existential-operator).
-    o 'Expression ?'                         , $ast: 'Existence', base: 1
+    o 'Expression ?'                  , $ast: 'Existence', base: 1
 
-    o 'Expression +  Expression'             , $ast: 'Op', args: ['+', 1, 3]
-    o 'Expression -  Expression'             , $ast: 'Op', args: ['-', 1, 3]
+    o 'Expression +  Expression'      , $ast: 'Op', args: ['+', 1, 3]
+    o 'Expression -  Expression'      , $ast: 'Op', args: ['-', 1, 3]
 
-    o 'Expression MATH     Expression'       , $ast: 'Op', args: [2, 1, 3]
-    o 'Expression **       Expression'       , $ast: 'Op', args: [2, 1, 3]
-    o 'Expression SHIFT    Expression'       , $ast: 'Op', args: [2, 1, 3]
-    o 'Expression COMPARE  Expression'       , $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
-    o 'Expression &        Expression'       , $ast: 'Op', args: [2, 1, 3]
-    o 'Expression ^        Expression'       , $ast: 'Op', args: [2, 1, 3]
-    o 'Expression |        Expression'       , $ast: 'Op', args: [2, 1, 3]
-    o 'Expression &&       Expression'       , $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
-    o 'Expression ||       Expression'       , $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
-    o 'Expression BIN?     Expression'       , $ast: 'Op', args: [2, 1, 3]
-    o 'Expression RELATION Expression'       , $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], invertOperator: {$ite: {test: {$rhs: 2, prop: 'invert', prop2: 'original'}, then: {$rhs: 2, prop: 'invert', prop2: 'original'}, else: {$rhs: 2, prop: 'invert'}}}
+    o 'Expression MATH     Expression', $ast: 'Op', args: [2, 1, 3]
+    o 'Expression **       Expression', $ast: 'Op', args: [2, 1, 3]
+    o 'Expression SHIFT    Expression', $ast: 'Op', args: [2, 1, 3]
+    o 'Expression COMPARE  Expression', $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
+    o 'Expression &        Expression', $ast: 'Op', args: [2, 1, 3]
+    o 'Expression ^        Expression', $ast: 'Op', args: [2, 1, 3]
+    o 'Expression |        Expression', $ast: 'Op', args: [2, 1, 3]
+    o 'Expression &&       Expression', $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
+    o 'Expression ||       Expression', $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
+    o 'Expression BIN?     Expression', $ast: 'Op', args: [2, 1, 3]
+    o 'Expression RELATION Expression', $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], invertOperator: {$ite: {test: {$rhs: 2, prop: 'invert', prop2: 'original'}, then: {$rhs: 2, prop: 'invert', prop2: 'original'}, else: {$rhs: 2, prop: 'invert'}}}
 
     o 'SimpleAssignable COMPOUND_ASSIGN
        Expression'                             , $ast: 'Assign', variable: 1, value: 3, operator: {$rhs: 2, method: 'toString'}, originalContext: {$rhs: 2, prop: 'original'}
