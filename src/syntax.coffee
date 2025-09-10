@@ -440,7 +440,7 @@ grammar =
   Index: [
     o 'INDEX_START IndexValue INDEX_END'               , $rhs: 2
     o 'INDEX_START INDENT IndexValue OUTDENT INDEX_END', $rhs: 3
-    o 'INDEX_SOAK  Index'                              , # TODO: Transform manually: extend $2, soak: yes
+    o 'INDEX_SOAK  Index'                              , $ops: 'prop', set: {target: 2, property: 'soak', value: true}
   ]
 
   IndexValue: [
@@ -560,7 +560,7 @@ grammar =
   # An optional existence check on a function.
   OptFuncExist: [
     o '', $obj: yes, soak: no
-    o 'FUNC_EXIST', # TODO: Transform manually: soak: yes
+    o 'FUNC_EXIST', $obj: {soak: true}
   ]
 
   # The list of arguments to a function call.
@@ -589,8 +589,8 @@ grammar =
 
   # Inclusive and exclusive range dots.
   RangeDots: [
-    o '..' , # TODO: Transform manually: exclusive: no
-    o '...', # TODO: Transform manually: exclusive: yes
+    o '..' , $obj: {exclusive: false}
+    o '...', $obj: {exclusive: true}
   ]
 
   # The CoffeeScript range literal.
@@ -644,7 +644,7 @@ grammar =
 
   OptElisions: [
     o 'OptComma'  , $ary: [{}]
-    o ', Elisions', # TODO: Transform manually: [].concat $2
+    o ', Elisions', $ops: 'array', gather: [[], 2]
   ]
 
   Elisions: [
@@ -663,8 +663,8 @@ grammar =
   SimpleArgs: [
     o 'Expression'
     o 'ExpressionLine'
-    o 'SimpleArgs , Expression'    , # TODO: Transform manually: [].concat $1, $3
-    o 'SimpleArgs , ExpressionLine', # TODO: Transform manually: [].concat $1, $3
+    o 'SimpleArgs , Expression'    , $ops: 'array', gather: [1, 3]
+    o 'SimpleArgs , ExpressionLine', $ops: 'array', gather: [1, 3]
   ]
 
   # The variants of *try/catch/finally* exception handling blocks.
@@ -777,47 +777,47 @@ grammar =
   # clause. If it’s an array comprehension, you can also choose to step through
   # in fixed-size increments.
   ForSource: [
-    o 'FORIN Expression'                                      , # TODO: Transform manually: source: $2
-    o 'FOROF Expression'                                      , # TODO: Transform manually: source: $2, object: yes
-    o 'FORIN Expression WHEN Expression'                      , # TODO: Transform manually: source: $2, guard: $4
-    o 'FORIN ExpressionLine WHEN Expression'                  , # TODO: Transform manually: source: $2, guard: $4
-    o 'FOROF Expression WHEN Expression'                      , # TODO: Transform manually: source: $2, guard: $4, object: yes
-    o 'FOROF ExpressionLine WHEN Expression'                  , # TODO: Transform manually: source: $2, guard: $4, object: yes
-    o 'FORIN Expression BY Expression'                        , # TODO: Transform manually: source: $2, step:  $4
-    o 'FORIN ExpressionLine BY Expression'                    , # TODO: Transform manually: source: $2, step:  $4
-    o 'FORIN Expression WHEN Expression BY Expression'        , # TODO: Transform manually: source: $2, guard: $4, step: $6
-    o 'FORIN ExpressionLine WHEN Expression BY Expression'    , # TODO: Transform manually: source: $2, guard: $4, step: $6
-    o 'FORIN Expression WHEN ExpressionLine BY Expression'    , # TODO: Transform manually: source: $2, guard: $4, step: $6
-    o 'FORIN ExpressionLine WHEN ExpressionLine BY Expression', # TODO: Transform manually: source: $2, guard: $4, step: $6
-    o 'FORIN Expression BY Expression WHEN Expression'        , # TODO: Transform manually: source: $2, step:  $4, guard: $6
-    o 'FORIN ExpressionLine BY Expression WHEN Expression'    , # TODO: Transform manually: source: $2, step:  $4, guard: $6
-    o 'FORIN Expression BY ExpressionLine WHEN Expression'    , # TODO: Transform manually: source: $2, step:  $4, guard: $6
-    o 'FORIN ExpressionLine BY ExpressionLine WHEN Expression', # TODO: Transform manually: source: $2, step:  $4, guard: $6
-    o 'FORFROM Expression'                                    , # TODO: Transform manually: source: $2, from: yes
-    o 'FORFROM Expression WHEN Expression'                    , # TODO: Transform manually: source: $2, guard: $4, from: yes
-    o 'FORFROM ExpressionLine WHEN Expression'                , # TODO: Transform manually: source: $2, guard: $4, from: yes
+    o 'FORIN Expression'                                      , $obj: {source: 2}
+    o 'FOROF Expression'                                      , $obj: {source: 2, object: true}
+    o 'FORIN Expression WHEN Expression'                      , $obj: {source: 2, guard: 4}
+    o 'FORIN ExpressionLine WHEN Expression'                  , $obj: {source: 2, guard: 4}
+    o 'FOROF Expression WHEN Expression'                      , $obj: {source: 2, guard: 4, object: true}
+    o 'FOROF ExpressionLine WHEN Expression'                  , $obj: {source: 2, guard: 4, object: true}
+    o 'FORIN Expression BY Expression'                        , $obj: {source: 2, step: 4}
+    o 'FORIN ExpressionLine BY Expression'                    , $obj: {source: 2, step: 4}
+    o 'FORIN Expression WHEN Expression BY Expression'        , $obj: {source: 2, guard: 4, step: 6}
+    o 'FORIN ExpressionLine WHEN Expression BY Expression'    , $obj: {source: 2, guard: 4, step: 6}
+    o 'FORIN Expression WHEN ExpressionLine BY Expression'    , $obj: {source: 2, guard: 4, step: 6}
+    o 'FORIN ExpressionLine WHEN ExpressionLine BY Expression', $obj: {source: 2, guard: 4, step: 6}
+    o 'FORIN Expression BY Expression WHEN Expression'        , $obj: {source: 2, step: 4, guard: 6}
+    o 'FORIN ExpressionLine BY Expression WHEN Expression'    , $obj: {source: 2, step: 4, guard: 6}
+    o 'FORIN Expression BY ExpressionLine WHEN Expression'    , $obj: {source: 2, step: 4, guard: 6}
+    o 'FORIN ExpressionLine BY ExpressionLine WHEN Expression', $obj: {source: 2, step: 4, guard: 6}
+    o 'FORFROM Expression'                                    , $obj: {source: 2, from: true}
+    o 'FORFROM Expression WHEN Expression'                    , $obj: {source: 2, guard: 4, from: true}
+    o 'FORFROM ExpressionLine WHEN Expression'                , $obj: {source: 2, guard: 4, from: true}
   ]
 
   ForLineSource: [
-    o 'FORIN ExpressionLine'                                      , # TODO: Transform manually: source: $2
-    o 'FOROF ExpressionLine'                                      , # TODO: Transform manually: source: $2, object: yes
-    o 'FORIN Expression WHEN ExpressionLine'                      , # TODO: Transform manually: source: $2, guard: $4
-    o 'FORIN ExpressionLine WHEN ExpressionLine'                  , # TODO: Transform manually: source: $2, guard: $4
-    o 'FOROF Expression WHEN ExpressionLine'                      , # TODO: Transform manually: source: $2, guard: $4, object: yes
-    o 'FOROF ExpressionLine WHEN ExpressionLine'                  , # TODO: Transform manually: source: $2, guard: $4, object: yes
-    o 'FORIN Expression BY ExpressionLine'                        , # TODO: Transform manually: source: $2, step:  $4
-    o 'FORIN ExpressionLine BY ExpressionLine'                    , # TODO: Transform manually: source: $2, step:  $4
-    o 'FORIN Expression WHEN Expression BY ExpressionLine'        , # TODO: Transform manually: source: $2, guard: $4, step: $6
-    o 'FORIN ExpressionLine WHEN Expression BY ExpressionLine'    , # TODO: Transform manually: source: $2, guard: $4, step: $6
-    o 'FORIN Expression WHEN ExpressionLine BY ExpressionLine'    , # TODO: Transform manually: source: $2, guard: $4, step: $6
-    o 'FORIN ExpressionLine WHEN ExpressionLine BY ExpressionLine', # TODO: Transform manually: source: $2, guard: $4, step: $6
-    o 'FORIN Expression BY Expression WHEN ExpressionLine'        , # TODO: Transform manually: source: $2, step:  $4, guard: $6
-    o 'FORIN ExpressionLine BY Expression WHEN ExpressionLine'    , # TODO: Transform manually: source: $2, step:  $4, guard: $6
-    o 'FORIN Expression BY ExpressionLine WHEN ExpressionLine'    , # TODO: Transform manually: source: $2, step:  $4, guard: $6
-    o 'FORIN ExpressionLine BY ExpressionLine WHEN ExpressionLine', # TODO: Transform manually: source: $2, step:  $4, guard: $6
-    o 'FORFROM ExpressionLine'                                    , # TODO: Transform manually: source: $2, from: yes
-    o 'FORFROM Expression WHEN ExpressionLine'                    , # TODO: Transform manually: source: $2, guard: $4, from: yes
-    o 'FORFROM ExpressionLine WHEN ExpressionLine'                , # TODO: Transform manually: source: $2, guard: $4, from: yes
+    o 'FORIN ExpressionLine'                                      , $obj: {source: 2}
+    o 'FOROF ExpressionLine'                                      , $obj: {source: 2, object: true}
+    o 'FORIN Expression WHEN ExpressionLine'                      , $obj: {source: 2, guard: 4}
+    o 'FORIN ExpressionLine WHEN ExpressionLine'                  , $obj: {source: 2, guard: 4}
+    o 'FOROF Expression WHEN ExpressionLine'                      , $obj: {source: 2, guard: 4, object: true}
+    o 'FOROF ExpressionLine WHEN ExpressionLine'                  , $obj: {source: 2, guard: 4, object: true}
+    o 'FORIN Expression BY ExpressionLine'                        , $obj: {source: 2, step: 4}
+    o 'FORIN ExpressionLine BY ExpressionLine'                    , $obj: {source: 2, step: 4}
+    o 'FORIN Expression WHEN Expression BY ExpressionLine'        , $obj: {source: 2, guard: 4, step: 6}
+    o 'FORIN ExpressionLine WHEN Expression BY ExpressionLine'    , $obj: {source: 2, guard: 4, step: 6}
+    o 'FORIN Expression WHEN ExpressionLine BY ExpressionLine'    , $obj: {source: 2, guard: 4, step: 6}
+    o 'FORIN ExpressionLine WHEN ExpressionLine BY ExpressionLine', $obj: {source: 2, guard: 4, step: 6}
+    o 'FORIN Expression BY Expression WHEN ExpressionLine'        , $obj: {source: 2, step: 4, guard: 6}
+    o 'FORIN ExpressionLine BY Expression WHEN ExpressionLine'    , $obj: {source: 2, step: 4, guard: 6}
+    o 'FORIN Expression BY ExpressionLine WHEN ExpressionLine'    , $obj: {source: 2, step: 4, guard: 6}
+    o 'FORIN ExpressionLine BY ExpressionLine WHEN ExpressionLine', $obj: {source: 2, step: 4, guard: 6}
+    o 'FORFROM ExpressionLine'                                    , $obj: {source: 2, from: true}
+    o 'FORFROM Expression WHEN ExpressionLine'                    , $obj: {source: 2, guard: 4, from: true}
+    o 'FORFROM ExpressionLine WHEN ExpressionLine'                , $obj: {source: 2, guard: 4, from: true}
   ]
 
   Switch: [
