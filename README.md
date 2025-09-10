@@ -15,7 +15,7 @@ CoffeeScript 3 (CS3) represents a **paradigm shift** in parser architecture: tra
 CS3 uses 6 main directives to represent all grammar actions as pure data:
 
 1. **`$ast`** - Creates AST nodes
-2. **`$ary`** - Creates arrays  
+2. **`$ary`** - Creates arrays
 3. **`$ops`** - Performs operations (categorized by type)
 4. **`$use`** - Universal references (stack elements, properties, methods, variables)
 5. **`$seq`** - Sequences of operations

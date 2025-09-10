@@ -53,7 +53,7 @@ Plain objects are created without any directive - just use properties directly:
 
 ```coffee
 source: 2, guard: 4               # Plain object with properties
-soak: true                        # Single property object  
+soak: true                        # Single property object
 exclusive: false                  # Boolean property
 ```
 
