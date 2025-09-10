@@ -297,11 +297,12 @@ o = (patternString, action, options) ->
         transformed = transformAction(action, currentRule)
         if transformed
           # Format for clean CoffeeScript
-          if transformed.indexOf(',') > -1 or transformed.indexOf('{') > -1
-            # Multi-line for complex objects
+          # $seq directives look better multi-line, everything else single line
+          if transformed.startsWith('$seq:')
             outputLines.push "#{indent}o '#{pattern}',"
             outputLines.push "#{indent}  #{transformed}"
           else
+            # Single line for all other directives
             outputLines.push "#{indent}o '#{pattern}', #{transformed}"
         else
           outputLines.push line
