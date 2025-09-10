@@ -1,137 +1,26 @@
 # ==============================================================================
 # CS3 Syntax - Data-Oriented Grammar for CoffeeScript 3
 #
-# Automatically generated from grammar.coffee
-#
-# KEY CHANGES:
-# - Actions are pure data objects, NOT functions
-# - Uses CS3 directives: $ast, $rhs, $obj, $seq, $ops, $ary, $ite
-# - Export key is 'grammar' not 'bnf' to signal data-oriented format
-#
-# EXAMPLES:
-#   Old: o 'Body', -> new Root $1
-#   New: o 'Body', $ast: 'Root', body: 1
+# Run `cake build:parser` to regenerate `lib/parser.js`
 # ==============================================================================
 
-# The CoffeeScript parser is generated from this grammar file using a
-# bottom-up parser generator. CoffeeScript has a powerful and expressive grammar
-# that requires the flexibility of an [SLR(1)](https://en.wikipedia.org/wiki/LR_grammar)
-# parser. While LALR(1) parsers are more common, they are too restrictive to
-# easily express CoffeeScript's rich syntax, particularly its context-sensitive
-# features and flexible statement boundaries. The parser generator creates an
-# SLR parser that can handle this grammar effectively. To create the parser, we
-# list the pattern to match on the left-hand side, and the action to take
-# (usually the creation of syntax tree nodes) on the right. As the parser runs, it
-# shifts tokens from our token stream, from left to right, and
-# [attempts to match](https://en.wikipedia.org/wiki/Bottom-up_parsing)
-# the token sequence against the rules below. When a match can be made, it
-# reduces into the [nonterminal](https://en.wikipedia.org/wiki/Terminal_and_nonterminal_symbols)
-# (the enclosing name at the top), and we proceed from there.
-#
-# If you run the `cake build:parser` command, the parser generator constructs a parse table
-# from our rules and saves it into `lib/parser.js`.
+o = (pattern, action, options) ->
+  pattern = pattern.trim().replace /\s{2,}/g, ' '
+  [pattern, action ? {$use: 1}, options]
 
-# Since we're going to be wrapped in a parser function in any case, if our
-# action immediately returns a value, we can optimize by removing the function
-# wrapper and just returning the value directly.
-
-# Our handy DSL for grammar generation, thanks to
-# [Tim Caswell](https://github.com/creationix). For every rule in the grammar,
-# we pass the pattern-defining string, the action to run, and extra options,
-# optionally. If no action is specified, we simply pass the value of the
-# previous nonterminal.
-# CS3: The 'o' function now handles pure data actions
-o = (patternString, action, options) ->
-  patternString = patternString.replace /\s{2,}/g, ' '
-  # Action is now a data object, not a function
-  [patternString, action, options]
-  patternString = patternString.replace /\s{2,}/g, ' '
-  patternCount = patternString.split(' ').length
-  if action
-    # This code block does string replacements in the generated `parser.js`
-    # file, replacing the calls to the `LOC` function and other strings as
-    # listed below.
-    action = if match = unwrap.exec action then match[1] else "(#{action}())"
-
-    # All runtime functions we need are defined on `yy`
-    action = action.replace /\bnew /g, '$&yy.'
-    action = action.replace /\b(?:Block\.wrap|extend)\b/g, 'yy.$&'
-
-    # Returns strings of functions to add to `parser.js` which add extra data
-    # that nodes may have, such as comments or location data. Location data
-    # is added to the first parameter passed in, and the parameter is returned.
-    # If the parameter is not a node, it will just be passed through unaffected.
-    getAddDataToNodeFunctionString = (first, last, forceUpdateLocation = yes) ->
-      "yy.addDataToNode(yy, @#{first}, #{if first[0] is '$' then '$$' else '$'}#{first}, #{if last then "@#{last}, #{if last[0] is '$' then '$$' else '$'}#{last}" else 'null, null'}, #{if forceUpdateLocation then 'true' else 'false'})"
-
-    # This code replaces the calls to `LOC` with the `yy.addDataToNode` string
-    # defined above. The `LOC` function, when used below in the grammar rules,
-    # is used to make sure that newly created node class objects get correct
-    # location data assigned to them. By default, the grammar will assign the
-    # location data spanned by *all* of the tokens on the left (e.g. a string
-    # such as `'Body TERMINATOR Line'`) to the “top-level” node returned by
-    # the grammar rule (the function on the right). But for “inner” node class
-    # objects created by grammar rules, they won’t get correct location data
-    # assigned to them without adding `LOC`.
-
-    # For example, consider the grammar rule `'NEW_TARGET . Property'`, which
-    # is handled by a function that returns
-    # `new MetaProperty LOC(1)(new IdentifierLiteral $1), LOC(3)(new Access $3)`.
-    # The `1` in `LOC(1)` refers to the first token (`NEW_TARGET`) and the `3`
-    # in `LOC(3)` refers to the third token (`Property`). In order for the
-    # `new IdentifierLiteral` to get assigned the location data corresponding
-    # to `new` in the source code, we use
-    # `LOC(1)(new IdentifierLiteral ...)` to mean “assign the location data of
-    # the *first* token of this grammar rule (`NEW_TARGET`) to this
-    # `new IdentifierLiteral`”. The `LOC(3)` means “assign the location data of
-    # the *third* token of this grammar rule (`Property`) to this
-    # `new Access`”.
-    returnsLoc = /^LOC/.test action
-    action = action.replace /LOC\(([0-9]*)\)/g, getAddDataToNodeFunctionString('$1')
-    # A call to `LOC` with two arguments, e.g. `LOC(2,4)`, sets the location
-    # data for the generated node on both of the referenced tokens  (the second
-    # and fourth in this example).
-    action = action.replace /LOC\(([0-9]*),\s*([0-9]*)\)/g, getAddDataToNodeFunctionString('$1', '$2')
-    performActionFunctionString = "$$ = #{getAddDataToNodeFunctionString(1, patternCount, not returnsLoc)}(#{action});"
-  else
-    performActionFunctionString = '$$ = $1;'
-
-  [patternString, performActionFunctionString, options]
-
-# Grammatical Rules
-# -----------------
-
-# In all of the rules that follow, you'll see the name of the nonterminal as
-# the key to a list of alternative matches. With each match's action, the
-# dollar-sign variables are provided by the parser as references to the value of
-# their numeric position, so in this rule:
-#
-#     'Expression UNLESS Expression'
-#
-# `$1` would be the value of the first `Expression`, `$2` would be the token
-# for the `UNLESS` terminal, and `$3` would be the value of the second
-# `Expression`.
-
-# CS3 Grammar Rules
 grammar =
 
-  # The **Root** is the top-level node in the syntax tree. Since we parse bottom-up,
-  # all parsing must end here.
   Root: [
     o ''    , $ast: '@', body: []
     o 'Body', $ast: '@', body: 1
   ]
 
-  # Any list of statements and expressions, separated by line breaks or semicolons.
   Body: [
     o 'Line'                , $ary: [1]
     o 'Body TERMINATOR Line', $ops: 'array', append: [1, 3]
     o 'Body TERMINATOR'
   ]
 
-  # Block and statements, which make up a line in a body. FuncDirective is a
-  # statement, but not included in Statement because that results in an ambiguous
-  # grammar.
   Line: [
     o 'Expression'
     o 'ExpressionLine'
@@ -147,15 +36,11 @@ grammar =
   # Pure statements which cannot be expressions.
   Statement: [
     o 'Return'
-    o 'STATEMENT', $ast: 'StatementLiteral', base: 1
+    o 'STATEMENT', $ast: 'StatementLiteral', value: 1
     o 'Import'
     o 'Export'
   ]
 
-  # All the different types of expressions in our language. The basic unit of
-  # CoffeeScript is the **Expression** -- everything that can be an expression
-  # is one. Blocks serve as the building blocks of many other rules, making
-  # them somewhat circular.
   Expression: [
     o 'Value'
     o 'Code'
@@ -196,7 +81,7 @@ grammar =
   ]
 
   Identifier: [
-    o 'IDENTIFIER', $ast: 'IdentifierLiteral', base: 1
+    o 'IDENTIFIER', $ast: 'IdentifierLiteral', value: 1
   ]
 
   Property: [
@@ -221,8 +106,8 @@ grammar =
   ]
 
   InterpolationChunk: [
-    o 'INTERPOLATION_START Body INTERPOLATION_END'               , $ast: 'Interpolation', base: 2
-    o 'INTERPOLATION_START INDENT Body OUTDENT INTERPOLATION_END', $ast: 'Interpolation', base: 3
+    o 'INTERPOLATION_START Body INTERPOLATION_END'               , $ast: 'Interpolation', expression: 2
+    o 'INTERPOLATION_START INDENT Body OUTDENT INTERPOLATION_END', $ast: 'Interpolation', expression: 3
     o 'INTERPOLATION_START INTERPOLATION_END'                    , $ast: 'Interpolation'
     o 'String'                                                   , $use: 1
   ]
@@ -240,11 +125,11 @@ grammar =
     o 'AlphaNumeric'
     o 'JS'          , $ast: 'PassthroughLiteral', value: {$use: 1, method: 'toString'}, here: {$use: 1, prop: 'here'}, generated: {$use: 1, prop: 'generated'}
     o 'Regex'
-    o 'UNDEFINED'   , $ast: 'UndefinedLiteral', base: 1
-    o 'NULL'        , $ast: 'NullLiteral', base: 1
+    o 'UNDEFINED'   , $ast: 'UndefinedLiteral', value: 1
+    o 'NULL'        , $ast: 'NullLiteral', value: 1
     o 'BOOL'        , $ast: 'BooleanLiteral', value: {$use: 1, method: 'toString'}, originalValue: {$use: 1, prop: 'original'}
     o 'INFINITY'    , $ast: 'InfinityLiteral', value: {$use: 1, method: 'toString'}, originalValue: {$use: 1, prop: 'original'}
-    o 'NAN'         , $ast: 'NaNLiteral', base: 1
+    o 'NAN'         , $ast: 'NaNLiteral', value: 1
   ]
 
   # Assignment of a variable, property, or index to a value.
@@ -284,7 +169,7 @@ grammar =
   ObjRestValue: [
     o 'SimpleObjAssignable ...', $ast: 'Splat', value: {$ast: 'Value'}
     o '... SimpleObjAssignable', $ast: 'Splat', arg1: {$ast: 'Value'}, arg2: 'postfix: no'
-    o 'ObjSpreadExpr ...'      , $ast: 'Splat', base: 1
+    o 'ObjSpreadExpr ...'      , $ast: 'Splat', name: 1
     o '... ObjSpreadExpr'      , $ast: 'Splat', arg1: 2, arg2: 'postfix: no'
   ]
 
@@ -307,7 +192,7 @@ grammar =
 
   # A return statement from a function body.
   Return: [
-    o 'RETURN Expression'           , $ast: '@', base: 2
+    o 'RETURN Expression'           , $ast: '@', expression: 2
     o 'RETURN INDENT Object OUTDENT', $ast: '@', value: {$ast: 'Value'}
     o 'RETURN'                      , $ast: '@'
   ]
@@ -338,8 +223,8 @@ grammar =
   # CoffeeScript has two different symbols for functions. `->` is for ordinary
   # functions, and `=>` is for functions bound to the current value of *this*.
   FuncGlyph: [
-    o '->', $ast: '@', base: 1
-    o '=>', $ast: '@', base: 1
+    o '->', $ast: '@', glyph: 1
+    o '=>', $ast: '@', glyph: 1
   ]
 
   # An optional, trailing comma.
@@ -360,7 +245,7 @@ grammar =
   # A single parameter in a function definition can be ordinary, or a splat
   # that hoovers up the remaining arguments.
   Param: [
-    o 'ParamVar'             , $ast: '@', base: 1
+    o 'ParamVar'             , $ast: '@', name: 1
     o 'ParamVar ...'         , $ast: '@', arg1: 1, arg2: null, arg3: on
     o '... ParamVar'         , $ast: '@', arg1: 2, arg2: null, arg3: 'postfix: no'
     o 'ParamVar = Expression', $ast: '@', first: 1, second: 3
@@ -377,7 +262,7 @@ grammar =
 
   # A splat that occurs outside of a parameter list.
   Splat: [
-    o 'Expression ...', $ast: '@', base: 1
+    o 'Expression ...', $ast: '@', body: 1
     o '... Expression', $ast: '@', arg1: 2, arg2: '{postfix: no}'
   ]
 
@@ -400,14 +285,14 @@ grammar =
   # as functions, indexed into, named as a class, etc.
   Value: [
     o 'Assignable'
-    o 'Literal'      , $ast: '@', base: 1
-    o 'Parenthetical', $ast: '@', base: 1
-    o 'Range'        , $ast: '@', base: 1
-    o 'Invocation'   , $ast: '@', base: 1
-    o 'DoIife'       , $ast: '@', base: 1
+    o 'Literal'      , $ast: '@', val: 1
+    o 'Parenthetical', $ast: '@', val: 1
+    o 'Range'        , $ast: '@', val: 1
+    o 'Invocation'   , $ast: '@', val: 1
+    o 'DoIife'       , $ast: '@', val: 1
     o 'This'
-    o 'Super'        , $ast: '@', base: 1
-    o 'MetaProperty' , $ast: '@', base: 1
+    o 'Super'        , $ast: '@', val: 1
+    o 'MetaProperty' , $ast: '@', val: 1
   ]
 
   # A `super`-based expression that can be used as a value.
@@ -427,7 +312,7 @@ grammar =
   # The general group of accessors into an object, by property, by prototype
   # or by array index or slice.
   Accessor: [
-    o '.  Property' , $ast: 'Access', base: 2
+    o '.  Property' , $ast: 'Access', name: 2
     o '?. Property' , $ast: 'Access', arg1: 2, arg2: 'soak: yes'
     o ':: Property' , $ary: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
     o '?:: Property', $ary: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
@@ -982,11 +867,7 @@ for own name, alternatives of grammar
     alt[1] = "return #{alt[1]}" if name is 'Root'
     alt
 
-# Export the processed grammar and operators for the parser generator. Unlike
-# the original implementation, we no longer extract and pass tokens separately,
-# the parser generator can derive them automatically from the BNF grammar.
-# CS3: Export with 'grammar' key to signal data-oriented format
 module.exports =
-  grammar: grammar      # Changed from 'bnf' to 'grammar' for CS3
+  grammar: grammar # CS3 uses 'grammar' instead of 'bnf'
   operators: operators.reverse() if operators?
   start: 'Root'
