@@ -4863,7 +4863,7 @@ exports.StringWithInterpolations = class StringWithInterpolations extends Base
             comment.unshift = yes
             comment.newLine = yes
           attachCommentsToNode salvagedComments, node
-        if (unwrapped = node.expression?.unwrapAll()) instanceof PassthroughLiteral and unwrapped.generated and not o.compiling
+        if (unwrapped = node.expression?.unwrapAll()) instanceof PassthroughLiteral and unwrapped.generated
           if o.compiling
             commentPlaceholder = new StringLiteral('').withLocationDataFrom node
             commentPlaceholder.comments = unwrapped.comments
