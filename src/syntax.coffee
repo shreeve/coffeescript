@@ -124,8 +124,8 @@ grammar =
 
   # Any list of statements and expressions, separated by line breaks or semicolons.
   Body: [
-    o 'Line'                , $ops: 'Block.wrap', args: [1]
-    o 'Body TERMINATOR Line', $ops: 'push', target: 1, args: [3]
+    o 'Line'                , $ops: 'Block.wrap', [1]
+    o 'Body TERMINATOR Line', $ops: 'push', [1, 3]
     o 'Body TERMINATOR'
   ]
 
@@ -181,10 +181,10 @@ grammar =
   ]
 
   Yield: [
-    o 'YIELD'                      , $ast: 'Op', arg1: 1, arg2: {$ast: 'Value'}
-    o 'YIELD Expression'           , $ast: 'Op', first: 1, second: 2
-    o 'YIELD INDENT Object OUTDENT', $ast: 'Op', first: 1, second: 3
-    o 'YIELD FROM Expression'      , $ast: 'Op', op: {$rhs: 1, method: 'concat', args: [2]}, first: 3
+    o 'YIELD'                      , $ast: 'Op', args: [1, {$ast: 'Value'}]
+    o 'YIELD Expression'           , $ast: 'Op', args: [1, 2]
+    o 'YIELD INDENT Object OUTDENT', $ast: 'Op', args: [1, 3]
+    o 'YIELD FROM Expression'      , $ast: 'Op', args: [{$rhs: 1, method: 'concat', args: [2]}, 3]
   ]
 
   # An indented block of expressions. Note that the [Rewriter](rewriter.html)
@@ -212,12 +212,12 @@ grammar =
 
   String: [
     o 'STRING'                                , $ast: 'StringLiteral', value: {$rhs: 1, method: 'slice', args: [1, -1]}, quote: {$rhs: 1, prop: 'quote'}, initialChunk: {$rhs: 1, prop: 'initialChunk'}, finalChunk: {$rhs: 1, prop: 'finalChunk'}, indent: {$rhs: 1, prop: 'indent'}, double: {$rhs: 1, prop: 'double'}, heregex: {$rhs: 1, prop: 'heregex'}
-    o 'STRING_START Interpolations STRING_END', $ast: 'StringWithInterpolations', body: {$ops: 'Block.wrap', args: [2]}, quote: {$rhs: 1, prop: 'quote'}, startQuote: {$ast: 'Literal', value: {$rhs: 1, method: 'toString'}, $pos: 1}
+    o 'STRING_START Interpolations STRING_END', $ast: 'StringWithInterpolations', body: {$ops: 'Block.wrap', [2]}, quote: {$rhs: 1, prop: 'quote'}, startQuote: {$ast: 'Literal', value: {$rhs: 1, method: 'toString'}, $pos: 1}
   ]
 
   Interpolations: [
-    o 'InterpolationChunk'               , $ary: [$rhs: 1]
-    o 'Interpolations InterpolationChunk', $ops: 'concat', target: 1, args: [2]
+    o 'InterpolationChunk'               , $ary: [1]
+    o 'Interpolations InterpolationChunk', $ops: 'concat', [1, 2]
   ]
 
   InterpolationChunk: [
@@ -257,14 +257,14 @@ grammar =
   # Assignment when it happens within an object literal. The difference from
   # the ordinary **Assign** is that these allow numbers and strings as keys.
   AssignObj: [
-    o 'ObjAssignable'                   , $ast: 'Value', base: 1
+    o 'ObjAssignable'                   , $ast: 'Value', val: 1
     o 'ObjRestValue'
-    o 'ObjAssignable : Expression'      , $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'ObjAssignable : Expression'      , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
     o 'ObjAssignable :
-       INDENT Expression OUTDENT'        , $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'SimpleObjAssignable = Expression', $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 3, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+       INDENT Expression OUTDENT'        , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'SimpleObjAssignable = Expression', $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 3, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
     o 'SimpleObjAssignable =
-       INDENT Expression OUTDENT'        , $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 4, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+       INDENT Expression OUTDENT'        , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 4, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
   ]
 
   SimpleObjAssignable: [
@@ -276,7 +276,7 @@ grammar =
   ObjAssignable: [
     o 'SimpleObjAssignable'
     o '[ Expression ]'   , $ast: 'Value', value: {$ast: 'ComputedPropertyName'}
-    o '@ [ Expression ]' , $ast: 'Value', base: {$ast: 'ThisLiteral', value: 1, $pos: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3, $pos: 3}], context: 'this'
+    o '@ [ Expression ]' , $ast: 'Value', val: {$ast: 'ThisLiteral', value: 1, $pos: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3, $pos: 3}], context: 'this'
     o 'AlphaNumeric'
   ]
 
@@ -331,7 +331,7 @@ grammar =
 
   # The Codeline is the **Code** node with **Line** instead of indented **Block**.
   CodeLine: [
-    o 'PARAM_START ParamList PARAM_END FuncGlyph Line', $ast: 'Code', params: 2, body: {$ops: 'Block.wrap', args: [[5]], $pos: 5}, funcGlyph: 4, paramStart: {$ast: 'Literal', value: 1, $pos: 1}
+    o 'PARAM_START ParamList PARAM_END FuncGlyph Line', $ast: 'Code', params: 2, body: {$ops: 'Block.wrap', [[5]], $pos: 5}, funcGlyph: 4, paramStart: {$ast: 'Literal', value: 1, $pos: 1}
     o 'FuncGlyph Line'                                , $ast: 'Code', params: [], body: {$ops: 'Block.wrap', args: [[2]], $pos: 2}, funcGlyph: 1
   ]
 
@@ -351,10 +351,10 @@ grammar =
   # The list of parameters that a function accepts can be of any length.
   ParamList: [
     o '', $ary: []
-    o 'Param'                                               , $ary: [$rhs: 1]
-    o 'ParamList , Param'                                   , $ops: 'concat', target: 1, args: [3]
-    o 'ParamList OptComma TERMINATOR Param'                 , $ops: 'concat', target: 1, args: [4]
-    o 'ParamList OptComma INDENT ParamList OptComma OUTDENT', $ops: 'concat', target: 1, args: [4]
+    o 'Param'                                               , $ary: [1]
+    o 'ParamList , Param'                                   , $ops: 'concat', [1, 3]
+    o 'ParamList OptComma TERMINATOR Param'                 , $ops: 'concat', [1, 4]
+    o 'ParamList OptComma INDENT ParamList OptComma OUTDENT', $ops: 'concat', [1, 4]
   ]
 
   # A single parameter in a function definition can be ordinary, or a splat
@@ -383,8 +383,8 @@ grammar =
 
   # Variables and properties that can be assigned to.
   SimpleAssignable: [
-    o 'Identifier'    , $ast: 'Value', base: 1
-    o 'Value Accessor', $ops: 'add', target: 1, args: [2]
+    o 'Identifier'    , $ast: 'Value', val: 1
+    o 'Value Accessor', $ops: 'add', [1, 2]
     o 'Code Accessor' , $ast: 'Value', value: '$1).add $2'
     o 'ThisProperty'
   ]
@@ -392,8 +392,8 @@ grammar =
   # Everything that can be assigned to.
   Assignable: [
     o 'SimpleAssignable'
-    o 'Array'         , $ast: 'Value', base: 1
-    o 'Object'        , $ast: 'Value', base: 1
+    o 'Array'         , $ast: 'Value', val: 1
+    o 'Object'        , $ast: 'Value', val: 1
   ]
 
   # The types of things that can be treated as values -- assigned to, invoked
@@ -457,10 +457,10 @@ grammar =
   # comma, as in JavaScript, or simply by newline.
   AssignList: [
     o '',                                                       -> []
-    o 'AssignObj'                                             , $ary: [$rhs: 1]
-    o 'AssignList , AssignObj'                                , $ops: 'concat', target: 1, args: [3]
-    o 'AssignList OptComma TERMINATOR AssignObj'              , $ops: 'concat', target: 1, args: [4]
-    o 'AssignList OptComma INDENT AssignList OptComma OUTDENT', $ops: 'concat', target: 1, args: [4]
+    o 'AssignObj'                                             , $ary: [1]
+    o 'AssignList , AssignObj'                                , $ops: 'concat', [1, 3]
+    o 'AssignList OptComma TERMINATOR AssignObj'              , $ops: 'concat', [1, 4]
+    o 'AssignList OptComma INDENT AssignList OptComma OUTDENT', $ops: 'concat', [1, 4]
   ]
 
   # Class definitions have optional bodies of prototype property assignments,
@@ -494,11 +494,11 @@ grammar =
   ]
 
   ImportSpecifierList: [
-    o 'ImportSpecifier'                                                         , $ary: [$rhs: 1]
-    o 'ImportSpecifierList , ImportSpecifier'                                   , $ops: 'concat', target: 1, args: [3]
-    o 'ImportSpecifierList OptComma TERMINATOR ImportSpecifier'                 , $ops: 'concat', target: 1, args: [4]
+    o 'ImportSpecifier'                                                         , $ary: [1]
+    o 'ImportSpecifierList , ImportSpecifier'                                   , $ops: 'concat', [1, 3]
+    o 'ImportSpecifierList OptComma TERMINATOR ImportSpecifier'                 , $ops: 'concat', [1, 4]
     o 'INDENT ImportSpecifierList OptComma OUTDENT'                             , $rhs: 2
-    o 'ImportSpecifierList OptComma INDENT ImportSpecifierList OptComma OUTDENT', $ops: 'concat', target: 1, args: [4]
+    o 'ImportSpecifierList OptComma INDENT ImportSpecifierList OptComma OUTDENT', $ops: 'concat', [1, 4]
   ]
 
   ImportSpecifier: [
@@ -534,11 +534,11 @@ grammar =
   ]
 
   ExportSpecifierList: [
-    o 'ExportSpecifier'                                                         , $ary: [$rhs: 1]
-    o 'ExportSpecifierList , ExportSpecifier'                                   , $ops: 'concat', target: 1, args: [3]
-    o 'ExportSpecifierList OptComma TERMINATOR ExportSpecifier'                 , $ops: 'concat', target: 1, args: [4]
+    o 'ExportSpecifier'                                                         , $ary: [1]
+    o 'ExportSpecifierList , ExportSpecifier'                                   , $ops: 'concat', [1, 3]
+    o 'ExportSpecifierList OptComma TERMINATOR ExportSpecifier'                 , $ops: 'concat', [1, 4]
     o 'INDENT ExportSpecifierList OptComma OUTDENT'                             , $rhs: 2
-    o 'ExportSpecifierList OptComma INDENT ExportSpecifierList OptComma OUTDENT', $ops: 'concat', target: 1, args: [4]
+    o 'ExportSpecifierList OptComma INDENT ExportSpecifierList OptComma OUTDENT', $ops: 'concat', [1, 4]
   ]
 
   ExportSpecifier: [
@@ -612,11 +612,11 @@ grammar =
   # The **ArgList** is the list of objects passed into a function call
   # (i.e. comma-separated expressions). Newlines work as well.
   ArgList: [
-    o 'Arg'                                             , $ary: [$rhs: 1]
-    o 'ArgList , Arg'                                   , $ops: 'concat', target: 1, args: [3]
-    o 'ArgList OptComma TERMINATOR Arg'                 , $ops: 'concat', target: 1, args: [4]
+    o 'Arg'                                             , $ary: [1]
+    o 'ArgList , Arg'                                   , $ops: 'concat', [1, 3]
+    o 'ArgList OptComma TERMINATOR Arg'                 , $ops: 'concat', [1, 4]
     o 'INDENT ArgList OptComma OUTDENT'                 , $rhs: 2
-    o 'ArgList OptComma INDENT ArgList OptComma OUTDENT', $ops: 'concat', target: 1, args: [4]
+    o 'ArgList OptComma INDENT ArgList OptComma OUTDENT', $ops: 'concat', [1, 4]
   ]
 
   # Valid arguments are Blocks or Splats.
@@ -631,15 +631,15 @@ grammar =
   # (i.e. comma-separated expressions and elisions). Newlines work as well.
   ArgElisionList: [
     o 'ArgElision'
-    o 'ArgElisionList , ArgElision'                                         , $ops: 'concat', target: 1, args: [3]
-    o 'ArgElisionList OptComma TERMINATOR ArgElision'                       , $ops: 'concat', target: 1, args: [4]
-    o 'INDENT ArgElisionList OptElisions OUTDENT'                           , $ops: 'concat', target: 2, args: [3]
-    o 'ArgElisionList OptElisions INDENT ArgElisionList OptElisions OUTDENT', $ops: 'concat', target: 1, args: [2, 4, 5]
+    o 'ArgElisionList , ArgElision'                                         , $ops: 'concat', [1, 3]
+    o 'ArgElisionList OptComma TERMINATOR ArgElision'                       , $ops: 'concat', [1, 4]
+    o 'INDENT ArgElisionList OptElisions OUTDENT'                           , $ops: 'concat', [2, 3]
+    o 'ArgElisionList OptElisions INDENT ArgElisionList OptElisions OUTDENT', $ops: 'concat', [1, 2, 4, 5]
   ]
 
   ArgElision: [
-    o 'Arg'         , $ary: [$rhs: 1]
-    o 'Elisions Arg', $ops: 'concat', target: 1, args: [2]
+    o 'Arg'         , $ary: [1]
+    o 'Elisions Arg', $ops: 'concat', [1, 2]
   ]
 
   OptElisions: [
@@ -648,8 +648,8 @@ grammar =
   ]
 
   Elisions: [
-    o 'Elision'         , $ary: [$rhs: 1]
-    o 'Elisions Elision', $ops: 'concat', target: 1, args: [2]
+    o 'Elision'         , $ary: [1]
+    o 'Elisions Elision', $ops: 'concat', [1, 2]
   ]
 
   Elision: [
@@ -765,15 +765,15 @@ grammar =
   ForValue: [
     o 'Identifier'
     o 'ThisProperty'
-    o 'Array'     , $ast: 'Value', base: 1
-    o 'Object'    , $ast: 'Value', base: 1
+    o 'Array'     , $ast: 'Value', val: 1
+    o 'Object'    , $ast: 'Value', val: 1
   ]
 
   # An array or range comprehension has variables for the current element
   # and (optional) reference to the current index. Or, *key, value*, in the case
   # of object comprehensions.
   ForVariables: [
-    o 'ForValue'           , $ary: [$rhs: 1]
+    o 'ForValue'           , $ary: [1]
     o 'ForValue , ForValue', $ary: [$rhs: 1, $rhs: 3]
   ]
 
@@ -834,8 +834,8 @@ grammar =
   ]
 
   Whens: [
-    o 'When'      , $ary: [$rhs: 1]
-    o 'Whens When', $ops: 'concat', target: 1, args: [2]
+    o 'When'      , $ary: [1]
+    o 'Whens When', $ops: 'concat', [1, 2]
   ]
 
   # An individual **When** clause, with action.
@@ -849,28 +849,28 @@ grammar =
   # ambiguity.
   IfBlock: [
     o 'IF Expression Block'             , $ast: 'If', condition: 2, body: 3, type: 1
-    o 'IfBlock ELSE IF Expression Block', $ops: 'addElse', target: 1, args: [{$ast: 'If', condition: 4, body: 5, type: 3, $pos: [3, 5]}]
+    o 'IfBlock ELSE IF Expression Block', $ops: 'addElse', [1, {$ast: 'If', condition: 4, body: 5, type: 3, $pos: [3, 5]}]
   ]
 
   # The full complement of *if* expressions, including postfix one-liner
   # *if* and *unless*.
   If: [
     o 'IfBlock'
-    o 'IfBlock ELSE Block'           , $ops: 'addElse', target: 1, args: [3]
-    o 'Statement  POST_IF Expression', $ast: '@', condition: 3, body: {$ops: 'Block.wrap', args: [[1]], $pos: 1}, type: 2, postfix: true
-    o 'Expression POST_IF Expression', $ast: '@', condition: 3, body: {$ops: 'Block.wrap', args: [[1]], $pos: 1}, type: 2, postfix: true
+    o 'IfBlock ELSE Block'           , $ops: 'addElse', [1, 3]
+    o 'Statement  POST_IF Expression', $ast: '@', condition: 3, body: {$ops: 'Block.wrap', [[1]], $pos: 1}, type: 2, postfix: true
+    o 'Expression POST_IF Expression', $ast: '@', condition: 3, body: {$ops: 'Block.wrap', [[1]], $pos: 1}, type: 2, postfix: true
   ]
 
   IfBlockLine: [
     o 'IF ExpressionLine Block'                 , $ast: 'If', condition: 2, body: 3, type: 1
-    o 'IfBlockLine ELSE IF ExpressionLine Block', $ops: 'addElse', target: 1, args: [{$ast: 'If', condition: 4, body: 5, type: 3, $pos: [3, 5]}]
+    o 'IfBlockLine ELSE IF ExpressionLine Block', $ops: 'addElse', [1, {$ast: 'If', condition: 4, body: 5, type: 3, $pos: [3, 5]}]
   ]
 
   IfLine: [
     o 'IfBlockLine'
-    o 'IfBlockLine ELSE Block'           , $ops: 'addElse', target: 1, args: [3]
-    o 'Statement  POST_IF ExpressionLine', $ast: 'If', condition: 3, body: {$ops: 'Block.wrap', args: [[1]], $pos: 1}, type: 2, postfix: true
-    o 'Expression POST_IF ExpressionLine', $ast: 'If', condition: 3, body: {$ops: 'Block.wrap', args: [[1]], $pos: 1}, type: 2, postfix: true
+    o 'IfBlockLine ELSE Block'           , $ops: 'addElse', [1, 3]
+    o 'Statement  POST_IF ExpressionLine', $ast: 'If', condition: 3, body: {$ops: 'Block.wrap', [[1]], $pos: 1}, type: 2, postfix: true
+    o 'Expression POST_IF ExpressionLine', $ast: 'If', condition: 3, body: {$ops: 'Block.wrap', [[1]], $pos: 1}, type: 2, postfix: true
   ]
 
   # Arithmetic and logical operators, working on one or more operands.
@@ -880,43 +880,43 @@ grammar =
   # -type rule, but in order to make the precedence binding possible, separate
   # rules are necessary.
   OperationLine: [
-    o 'UNARY ExpressionLine', $ast: 'Op', first: 1, second: 2
-    o 'DO ExpressionLine'   , $ast: 'Op', first: 1, second: 2
-    o 'DO_IIFE CodeLine'    , $ast: 'Op', first: 1, second: 2
+    o 'UNARY ExpressionLine', $ast: 'Op', args: [1, 2]
+    o 'DO ExpressionLine'   , $ast: 'Op', args: [1, 2]
+    o 'DO_IIFE CodeLine'    , $ast: 'Op', args: [1, 2]
   ]
 
   Operation: [
-    o 'UNARY Expression'                     , $ast: 'Op', arg1: '$1.toString()', arg2: 2, arg3: undefined, arg4: undefined, arg5: 'originalOperator: $1.original'
-    o 'DO Expression'                        , $ast: 'Op', first: 1, second: 2
-    o 'UNARY_MATH Expression'                , $ast: 'Op', first: 1, second: 2
-    o '-     Expression', {$ast: 'Op', operator: '-', operand: 2}, prec: 'UNARY_MATH'
-    o '+     Expression', {$ast: 'Op', operator: '+', operand: 2}, prec: 'UNARY_MATH'
+    o 'UNARY Expression'                     , $ast: 'Op', args: [{$rhs: 1, method: 'toString'}, 2, undefined, undefined], originalOperator: {$rhs: 1, prop: 'original'}
+    o 'DO Expression'                        , $ast: 'Op', args: [1, 2]
+    o 'UNARY_MATH Expression'                , $ast: 'Op', args: [1, 2]
+    o '-     Expression', {$ast: 'Op', args: ['-', 2]}, prec: 'UNARY_MATH'
+    o '+     Expression', {$ast: 'Op', args: ['+', 2]}, prec: 'UNARY_MATH'
 
-    o 'AWAIT Expression'                     , $ast: 'Op', first: 1, second: 2
-    o 'AWAIT INDENT Object OUTDENT'          , $ast: 'Op', first: 1, second: 3
+    o 'AWAIT Expression'                     , $ast: 'Op', args: [1, 2]
+    o 'AWAIT INDENT Object OUTDENT'          , $ast: 'Op', args: [1, 3]
 
-    o '-- SimpleAssignable'                  , $ast: 'Op', operator: '--', operand: 2
-    o '++ SimpleAssignable'                  , $ast: 'Op', operator: '++', operand: 2
-    o 'SimpleAssignable --'                  , $ast: 'Op', operator: '--', operand: '$1, null, true'
-    o 'SimpleAssignable ++'                  , $ast: 'Op', operator: '++', operand: '$1, null, true'
+    o '-- SimpleAssignable'                  , $ast: 'Op', args: ['--', 2]
+    o '++ SimpleAssignable'                  , $ast: 'Op', args: ['++', 2]
+    o 'SimpleAssignable --'                  , $ast: 'Op', args: ['--', 1, null, true]
+    o 'SimpleAssignable ++'                  , $ast: 'Op', args: ['++', 1, null, true]
 
     # [The existential operator](https://coffeescript.org/#existential-operator).
     o 'Expression ?'                         , $ast: 'Existence', base: 1
 
-    o 'Expression +  Expression'             , $ast: 'Op', operator: '+', operand: '$1, $3'
-    o 'Expression -  Expression'             , $ast: 'Op', operator: '-', operand: '$1, $3'
+    o 'Expression +  Expression'             , $ast: 'Op', args: ['+', 1, 3]
+    o 'Expression -  Expression'             , $ast: 'Op', args: ['-', 1, 3]
 
-    o 'Expression MATH     Expression'       , $ast: 'Op', first: 2, second: 1, third: 3
-    o 'Expression **       Expression'       , $ast: 'Op', first: 2, second: 1, third: 3
-    o 'Expression SHIFT    Expression'       , $ast: 'Op', first: 2, second: 1, third: 3
-    o 'Expression COMPARE  Expression'       , $ast: 'Op', arg1: '$2.toString()', arg2: 1, arg3: 3, arg4: undefined, arg5: 'originalOperator: $2.original'
-    o 'Expression &        Expression'       , $ast: 'Op', first: 2, second: 1, third: 3
-    o 'Expression ^        Expression'       , $ast: 'Op', first: 2, second: 1, third: 3
-    o 'Expression |        Expression'       , $ast: 'Op', first: 2, second: 1, third: 3
-    o 'Expression &&       Expression'       , $ast: 'Op', arg1: '$2.toString()', arg2: 1, arg3: 3, arg4: undefined, arg5: 'originalOperator: $2.original'
-    o 'Expression ||       Expression'       , $ast: 'Op', arg1: '$2.toString()', arg2: 1, arg3: 3, arg4: undefined, arg5: 'originalOperator: $2.original'
-    o 'Expression BIN?     Expression'       , $ast: 'Op', first: 2, second: 1, third: 3
-    o 'Expression RELATION Expression'       , $ast: 'Op', arg1: '$2.toString()', arg2: 1, arg3: 3, arg4: undefined, arg5: 'invertOperator: $2.invert?.original ? $2.invert'
+    o 'Expression MATH     Expression'       , $ast: 'Op', args: [2, 1, 3]
+    o 'Expression **       Expression'       , $ast: 'Op', args: [2, 1, 3]
+    o 'Expression SHIFT    Expression'       , $ast: 'Op', args: [2, 1, 3]
+    o 'Expression COMPARE  Expression'       , $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
+    o 'Expression &        Expression'       , $ast: 'Op', args: [2, 1, 3]
+    o 'Expression ^        Expression'       , $ast: 'Op', args: [2, 1, 3]
+    o 'Expression |        Expression'       , $ast: 'Op', args: [2, 1, 3]
+    o 'Expression &&       Expression'       , $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
+    o 'Expression ||       Expression'       , $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
+    o 'Expression BIN?     Expression'       , $ast: 'Op', args: [2, 1, 3]
+    o 'Expression RELATION Expression'       , $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], invertOperator: {$ite: {test: {$rhs: 2, prop: 'invert', prop2: 'original'}, then: {$rhs: 2, prop: 'invert', prop2: 'original'}, else: {$rhs: 2, prop: 'invert'}}}
 
     o 'SimpleAssignable COMPOUND_ASSIGN
        Expression',                             -> new Assign $1, $3, $2.toString(), originalContext: $2.original
@@ -927,7 +927,7 @@ grammar =
   ]
 
   DoIife: [
-    o 'DO_IIFE Code', $ast: 'Op', arg1: 1, arg2: 2
+    o 'DO_IIFE Code', $ast: 'Op', args: [1, 2]
   ]
 
 # Precedence
