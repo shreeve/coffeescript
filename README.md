@@ -145,6 +145,13 @@ cat src/syntax.coffee
 open CS3_SYNTAX.md
 ```
 
+### Quick Start for New Contributors
+
+1. **Understand the transformation**: Read `CS3_SYNTAX.md` for the complete directive system
+2. **Compare the grammars**: Open `src/grammar.coffee` (old) and `src/syntax.coffee` (new) side by side
+3. **See it in action**: Look at the `Class` rule transformation as a representative example
+4. **Key insight**: We're not changing WHAT the grammar does, just HOW it's expressed (functions → data)
+
 ## Contributing
 
 CS3 is an ambitious project that needs community involvement:
