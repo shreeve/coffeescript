@@ -1,0 +1,123 @@
+#!/usr/bin/env coffee
+
+# ==============================================================================
+# Test CS3 Implementation with square.coffee
+# ==============================================================================
+
+fs = require 'fs'
+path = require 'path'
+CS3PatternMatcher = require './cs3-pattern-matcher-v2'
+CS3Processor = require './cs3-processor'
+
+# Load our test file
+testFile = path.join(__dirname, '..', 'work', 'test-square.coffee')
+testCode = fs.readFileSync(testFile, 'utf8')
+
+console.log "=" .repeat 80
+console.log "CS3 TEST: square.coffee"
+console.log "=" .repeat 80
+console.log()
+console.log "Test Program:"
+console.log "-" .repeat 40
+console.log testCode
+console.log "-" .repeat 40
+console.log()
+
+# First, let's parse with the existing CoffeeScript parser to see the AST
+CoffeeScript = require '../lib/coffeescript/coffeescript'
+
+try
+  # Parse with existing parser
+  ast = CoffeeScript.nodes(testCode)
+
+  console.log "Original AST (simplified):"
+  console.log "-" .repeat 40
+
+  # Helper to show AST structure
+  showAst = (node, indent = '') ->
+    return unless node
+
+    # Get node type
+    nodeType = node.constructor?.name or 'Unknown'
+
+    # Show node
+    console.log "#{indent}#{nodeType}"
+
+    # Show relevant properties
+    if node.body
+      showAst(node.body, indent + '  ')
+    if node.statements
+      for stmt in node.statements
+        showAst(stmt, indent + '  ')
+    if node.variable
+      console.log "#{indent}  variable:"
+      showAst(node.variable, indent + '    ')
+    if node.value
+      console.log "#{indent}  value:"
+      showAst(node.value, indent + '    ')
+    if node.base
+      console.log "#{indent}  base:"
+      showAst(node.base, indent + '    ')
+    if node.params and node.params.length > 0
+      console.log "#{indent}  params:"
+      for param in node.params
+        showAst(param, indent + '    ')
+
+  showAst(ast)
+
+catch error
+  console.error "Error parsing with CoffeeScript:", error.message
+
+console.log()
+console.log "=" .repeat 80
+console.log "CS3 TRANSFORMATION TEST"
+console.log "=" .repeat 80
+console.log()
+
+# Now let's test our pattern matcher and processor
+matcher = new CS3PatternMatcher()
+processor = new CS3Processor()
+
+# Test transforming various actions
+testActions = [
+  'new Root new Block'
+  'new Code [$1], $2'
+  'new Param $1'
+  'new IdentifierLiteral $1'
+  'new Value $1'
+  'new Assign $1, $2'
+  'new Op "*", $1, $2'
+  'new Call $1, [$2]'
+  'new NumberLiteral "5"'
+]
+
+console.log "Pattern Matcher Tests:"
+console.log "-" .repeat 40
+
+for action in testActions
+  transformed = matcher.transformAction(action)
+  console.log "Action:      #{action}"
+  console.log "Transformed: #{JSON.stringify(transformed)}"
+
+  # Test processing with sample params
+  params = ['square', 'x', '5', {type: 'Block', statements: []}]
+  processed = processor.process(transformed, params)
+  console.log "Processed:   #{JSON.stringify(processed)}"
+  console.log()
+
+console.log "=" .repeat 80
+console.log "NEXT STEPS:"
+console.log "=" .repeat 80
+console.log()
+console.log "To complete the CS3 implementation for square.coffee:"
+console.log()
+console.log "1. ✓ Pattern Matcher - Transforms grammar actions to data nodes"
+console.log "2. ✓ Grammar Extraction - Found 96 rules for our minimal nodes"
+console.log "3. ✓ Grammar Transformation - Created data-oriented grammar"
+console.log "4. → Testing Infrastructure - Current step"
+console.log "5. □ Integrate with Parser - Use Solar to parse with data grammar"
+console.log "6. □ Complete Processor - Handle all node types correctly"
+console.log "7. □ Generate JavaScript - Emit valid JS from processed nodes"
+console.log "8. □ Validate Output - Compare with original CoffeeScript output"
+console.log()
+console.log "=" .repeat 80
