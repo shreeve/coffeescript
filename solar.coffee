@@ -111,21 +111,20 @@ class Generator
   # ============================================================================
 
   processGrammar: (grammar) ->
-    @operators = @_processOperators grammar.operators
+    @cs3Mode = not grammar.bnf?
 
-    @_buildRules grammar.bnf, @operators
+    @_processOperators grammar.operators
+    @_buildRules (grammar.grammar or grammar.bnf)
     @_augmentGrammar grammar
 
   _processOperators: (ops) ->
-    return {} unless ops
+    if ops
+      for precedence, i in ops
+        for k in [1...precedence.length]
+          @operators[precedence[k]] = {precedence: i + 1, assoc: precedence[0]}
+    null # prevent comprehension building above
 
-    operators = {}
-    for precedence, i in ops
-      for k in [1...precedence.length]
-        operators[precedence[k]] = {precedence: i + 1, assoc: precedence[0]}
-    operators
-
-  _buildRules: (bnf, operators) ->
+  _buildRules: (bnf) ->
     actionGroups = {}
     ruleTable    = [0]
     @symbolIds   = {"$accept": 0, "$end": 1, "error": 2}  # Add reserved symbols
@@ -165,7 +164,7 @@ class Generator
         rule = new Rule type, symbols, @rules.length + 1
 
         # Set precedence
-        @_assignPrecedence rule, precedence, operators
+        @_assignPrecedence rule, precedence
 
         @rules.push rule
         ruleTable.push [@symbolIds[type], if symbols[0] is '' then 0 else symbols.length]
@@ -226,14 +225,14 @@ class Generator
       .replace(/\$(-?\d+)/g, (_, n) -> "$$[$0" + (parseInt(n, 10) - symbols.length || '') + "]") # Like $1
       .replace( /@(-?\d+)/g, (_, n) -> "_$[$0" +               (n - symbols.length || '') + "]") # Like @1
 
-  _assignPrecedence: (rule, precedence, operators) ->
-    if precedence?.prec and operators[precedence.prec]
-      rule.precedence = operators[precedence.prec].precedence
+  _assignPrecedence: (rule, precedence) ->
+    if precedence?.prec and @operators[precedence.prec]
+      rule.precedence = @operators[precedence.prec].precedence
     else if rule.precedence is 0
       # Use rightmost token's precedence
       for token in rule.symbols by -1
-        if operators[token] and not @types[token]
-          rule.precedence = operators[token].precedence
+        if @operators[token] and not @types[token]
+          rule.precedence = @operators[token].precedence
           break
 
   _generateActionCode: (actionGroups) ->
@@ -259,11 +258,11 @@ class Generator
         @tokenNames[id] = name
 
   _augmentGrammar: (grammar) ->
-    throw new Error "Grammar error: must have at least one rule." if @rules.length is 0
+    throw new Error "Grammar error: no rules defined." if @rules.length is 0
 
     @start = grammar.start or @rules[0].type
     unless @types[@start]
-      throw new Error "Grammar error: start symbol '#{@start}' must be a type defined in the grammar."
+      throw new Error "Grammar error: no start symbol '#{@start}' defined."
 
     acceptRule = new Rule "$accept", [@start, "$end"], 0
     @rules.push acceptRule
