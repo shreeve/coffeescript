@@ -82,7 +82,7 @@ grammar =
   ]
 
   Property: [
-    o 'PROPERTY', $ast: 'PropertyName', value: '$1.toString('
+    o 'PROPERTY', $ast: 'PropertyName', value: {$use: 1, method: 'toString'}
   ]
 
   # Alphanumerics are separated from the other **Literal** matchers because
@@ -112,8 +112,8 @@ grammar =
   # The .toString() calls here and elsewhere are to convert `String` objects
   # back to primitive strings now that we've retrieved stowaway extra properties
   Regex: [
-    o 'REGEX'                           , $ast: 'RegexLiteral', value: '1.toString()', delimiter: '1.delimiter', heregexCommentTokens: '1.heregexCommentTokens'
-    o 'REGEX_START Invocation REGEX_END', $ast: 'RegexWithInterpolations', invocation: 2, heregexCommentTokens: '3.heregexCommentTokens'
+    o 'REGEX'                           , $ast: 'RegexLiteral', value: {$use: 1, method: 'toString'}, delimiter: {$use: 1, prop: 'delimiter'}, heregexCommentTokens: {$use: 1, prop: 'heregexCommentTokens'}
+    o 'REGEX_START Invocation REGEX_END', $ast: 'RegexWithInterpolations', invocation: 2, heregexCommentTokens: {$use: 3, prop: 'heregexCommentTokens'}
   ]
 
   # All of our immediate values. Generally these can be passed straight
@@ -260,7 +260,7 @@ grammar =
   SimpleAssignable: [
     o 'Identifier'    , $ast: 'Value', val: 1
     o 'Value Accessor', $ops: 'value', add: [1, 2]
-    o 'Code Accessor' , $ast: 'Value', value: '$1).add $2'
+    o 'Code Accessor' , $seq: [{$ast: 'Value', val: 1, $var: 'v'}, {$ops: 'value', add: [{$use: 'v'}, 2]}, {$use: 'v'}]
     o 'ThisProperty'
   ]
 

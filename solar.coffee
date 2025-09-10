@@ -202,7 +202,8 @@ class Generator
       # Wrap in parentheses if it's an object literal at statement level
       if result.startsWith '{'
         result = "(#{result})"
-      return result
+      # CS3 actions need to assign to this.$ in the parser runtime
+      return "this.$ = #{result}"
 
     # Process named semantic values
     if action.match(/[$@][a-zA-Z][a-zA-Z0-9_]*/)
@@ -325,7 +326,8 @@ class Generator
             [target, item] = directive.add
             targetRef = @_convertCS3Value target, symbols
             itemRef = @_convertCS3Value item, symbols
-            return "(function(){ #{targetRef}.add(#{itemRef}); return #{targetRef}; })()"
+            # In CS3, Value nodes have a properties array for accessors
+            return "(function(){ if(!#{targetRef}.properties) #{targetRef}.properties = []; #{targetRef}.properties.push(#{itemRef}); return #{targetRef}; })()"
         when 'if'
           if directive.addElse
             [target, elseBody] = directive.addElse
@@ -1008,7 +1010,7 @@ class Generator
           stk.push newState
 
         when 3 # accept
-          return true
+          return val[val.length - 1]
 
   trace: (msg) -> # Debug output (no-op by default)
     console.log msg if @options?.debug
