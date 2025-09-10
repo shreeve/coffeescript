@@ -787,35 +787,35 @@ grammar =
     o 'DO_IIFE Code', $ast: 'Op', args: [1, 2]
   ]
 
-# Precedence here is high to low
-operators = [
-  ['right',     'DO_IIFE']
-  ['left',      '.', '?.', '::', '?::']
-  ['left',      'CALL_START', 'CALL_END']
-  ['nonassoc',  '++', '--']
-  ['left',      '?']
-  ['right',     'UNARY', 'DO']
-  ['right',     'AWAIT']
-  ['right',     '**']
-  ['right',     'UNARY_MATH']
-  ['left',      'MATH']
-  ['left',      '+', '-']
-  ['left',      'SHIFT']
-  ['left',      'RELATION']
-  ['left',      'COMPARE']
-  ['left',      '&']
-  ['left',      '^']
-  ['left',      '|']
-  ['left',      '&&']
-  ['left',      '||']
-  ['left',      'BIN?']
-  ['nonassoc',  'INDENT', 'OUTDENT']
-  ['right',     'YIELD']
-  ['right',     '=', ':', 'COMPOUND_ASSIGN', 'RETURN', 'THROW', 'EXTENDS']
-  ['right',     'FORIN', 'FOROF', 'FORFROM', 'BY', 'WHEN']
-  ['right',     'IF', 'ELSE', 'FOR', 'WHILE', 'UNTIL', 'LOOP', 'SUPER', 'CLASS', 'IMPORT', 'EXPORT', 'DYNAMIC_IMPORT']
-  ['left',      'POST_IF']
-]
+# Precedence here is high to low, but reversed at the end
+operators = """
+  right       DO_IIFE
+  left        . ?. :: ?::
+  left        CALL_START CALL_END
+  nonassoc    ++ --
+  left        ?
+  right       UNARY DO
+  right       AWAIT
+  right       **
+  right       UNARY_MATH
+  left        MATH
+  left        + -
+  left        SHIFT
+  left        RELATION
+  left        COMPARE
+  left        &
+  left        ^
+  left        |
+  left        &&
+  left        ||
+  left        BIN?
+  nonassoc    INDENT OUTDENT
+  right       YIELD
+  right       = : COMPOUND_ASSIGN RETURN THROW EXTENDS
+  right       FORIN FOROF FORFROM BY WHEN
+  right       IF ELSE FOR WHILE UNTIL LOOP SUPER CLASS IMPORT EXPORT DYNAMIC_IMPORT
+  left        POST_IF
+""".trim().split('\n').reverse().map (line) -> line.trim().split /\s+/
 
 # Wrapping Up
 # -----------
@@ -831,4 +831,4 @@ for own name, alternatives of grammar
 
 module.exports =
   grammar: grammar # CS3 uses 'grammar' instead of 'bnf'
-  operators: operators.reverse() # parser is low to high
+  operators: operators
