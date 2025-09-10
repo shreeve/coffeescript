@@ -9,7 +9,6 @@ o = (pattern, action, options) ->
   [pattern, action ? {$use: 1}, options]
 
 grammar =
-
   Root: [
     o ''    , $ast: '@', body: []
     o 'Body', $ast: '@', body: 1
@@ -132,9 +131,9 @@ grammar =
 
   # Assignment of a variable, property, or index to a value.
   Assign: [
-    o 'Assignable = Expression'               , $ast: '@', first: 1, second: 3
-    o 'Assignable = TERMINATOR Expression'    , $ast: '@', first: 1, second: 4
-    o 'Assignable = INDENT Expression OUTDENT', $ast: '@', first: 1, second: 4
+    o 'Assignable = Expression'               , $ast: '@', variable: 1, value: 3
+    o 'Assignable = TERMINATOR Expression'    , $ast: '@', variable: 1, value: 4
+    o 'Assignable = INDENT Expression OUTDENT', $ast: '@', variable: 1, value: 4
   ]
 
   # Assignment when it happens within an object literal. The difference from
@@ -166,9 +165,9 @@ grammar =
   # Object literal spread properties.
   ObjRestValue: [
     o 'SimpleObjAssignable ...', $ast: 'Splat', value: {$ast: 'Value'}
-    o '... SimpleObjAssignable', $ast: 'Splat', arg1: {$ast: 'Value'}, arg2: 'postfix: no'
+    o '... SimpleObjAssignable', $ast: 'Splat', name: {$ast: 'Value', val: 2}, postfix: false
     o 'ObjSpreadExpr ...'      , $ast: 'Splat', name: 1
-    o '... ObjSpreadExpr'      , $ast: 'Splat', arg1: 2, arg2: 'postfix: no'
+    o '... ObjSpreadExpr'      , $ast: 'Splat', name: 2, postfix: false
   ]
 
   ObjSpreadExpr: [
@@ -177,10 +176,10 @@ grammar =
     o 'Parenthetical'
     o 'Super'
     o 'This'
-    o 'SUPER OptFuncExist Arguments'              , $ast: 'SuperCall', arg1: {$ast: 'Super'}, arg2: 3, arg3: {$use: 2, prop: 'soak'}, arg4: 1
-    o 'DYNAMIC_IMPORT Arguments'                  , $ast: 'DynamicImportCall', arg1: {$ast: 'DynamicImport'}, arg2: 2
-    o 'SimpleObjAssignable OptFuncExist Arguments', $ast: 'Call', arg1: {$ast: 'Value'}, arg2: 3, arg3: {$use: 2, prop: 'soak'}
-    o 'ObjSpreadExpr OptFuncExist Arguments'      , $ast: 'Call', arg1: 1, arg2: 3, arg3: {$use: 2, prop: 'soak'}
+    o 'SUPER OptFuncExist Arguments'              , $ast: 'SuperCall', variable: {$ast: 'Super'}, args: 3, soak: {$use: 2, prop: 'soak'}, token: 1
+    o 'DYNAMIC_IMPORT Arguments'                  , $ast: 'DynamicImportCall', variable: {$ast: 'DynamicImport'}, args: 2
+    o 'SimpleObjAssignable OptFuncExist Arguments', $ast: 'Call', variable: {$ast: 'Value', val: 1}, args: 3, soak: {$use: 2, prop: 'soak'}
+    o 'ObjSpreadExpr OptFuncExist Arguments'      , $ast: 'Call', variable: 1, args: 3, soak: {$use: 2, prop: 'soak'}
   ]
 
   ObjSpreadIdentifier: [
@@ -240,9 +239,9 @@ grammar =
 
   Param: [
     o 'ParamVar'             , $ast: '@', name: 1
-    o 'ParamVar ...'         , $ast: '@', arg1: 1, arg2: null, arg3: on
-    o '... ParamVar'         , $ast: '@', arg1: 2, arg2: null, arg3: 'postfix: no'
-    o 'ParamVar = Expression', $ast: '@', first: 1, second: 3
+    o 'ParamVar ...'         , $ast: '@', name: 1, value: null, splat: true
+    o '... ParamVar'         , $ast: '@', name: 2, value: null, splat: true, postfix: false
+    o 'ParamVar = Expression', $ast: '@', name: 1, value: 3
     o '...'                  , $ast: 'Expansion'
   ]
 
@@ -255,7 +254,7 @@ grammar =
 
   Splat: [
     o 'Expression ...', $ast: '@', body: 1
-    o '... Expression', $ast: '@', arg1: 2, arg2: '{postfix: no}'
+    o '... Expression', $ast: '@', name: 2, postfix: false
   ]
 
   SimpleAssignable: [
@@ -300,11 +299,11 @@ grammar =
 
   Accessor: [
     o '.  Property' , $ast: 'Access', name: 2
-    o '?. Property' , $ast: 'Access', arg1: 2, arg2: 'soak: yes'
+    o '?. Property' , $ast: 'Access', name: 2, soak: true
     o ':: Property' , $ary: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
     o '?:: Property', $ary: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
-    o '::'          , $ast: 'Access', arg1: {$ast: 'PropertyName'}, arg2: 'shorthand: yes'
-    o '?::'         , $ast: 'Access', arg1: {$ast: 'PropertyName'}, arg2: 'shorthand: yes', arg3: 'soak: yes'
+    o '::'          , $ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true
+    o '?::'         , $ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true
     o 'Index'
   ]
 
@@ -315,13 +314,13 @@ grammar =
   ]
 
   IndexValue: [
-    o 'Expression', $ast: 'Index', base: 1
-    o 'Slice'     , $ast: 'Slice', base: 1
+    o 'Expression', $ast: 'Index', object: 1
+    o 'Slice'     , $ast: 'Slice', range: 1
   ]
 
   # Object literals are simply lists of assignments.
   Object: [
-    o '{ AssignList OptComma }', $ast: 'Obj', arg1: 2, arg2: {$use: 1, prop: 'generated'}
+    o 'AssignList OptComma', $ast: 'Obj', properties: 2, generated: {$use: 1, prop: 'generated'}
   ]
 
   # Assignment of properties within an object literal can be separated by
@@ -338,30 +337,30 @@ grammar =
   # and optional references to the superclass.
   Class: [
     o 'CLASS'                                          , $ast: '@'
-    o 'CLASS Block'                                    , $ast: '@', arg1: null, arg2: null, arg3: 2
-    o 'CLASS EXTENDS Expression'                       , $ast: '@', arg1: null, arg2: 3
-    o 'CLASS EXTENDS Expression Block'                 , $ast: '@', arg1: null, arg2: 3, arg3: 4
-    o 'CLASS SimpleAssignable'                         , $ast: '@', base: 2
-    o 'CLASS SimpleAssignable Block'                   , $ast: '@', arg1: 2, arg2: null, arg3: 3
-    o 'CLASS SimpleAssignable EXTENDS Expression'      , $ast: '@', first: 2, second: 4
-    o 'CLASS SimpleAssignable EXTENDS Expression Block', $ast: '@', first: 2, second: 4, third: 5
+    o 'CLASS Block'                                    , $ast: '@', variable: null, parent: null, body: 2
+    o 'CLASS EXTENDS Expression'                       , $ast: '@', variable: null, parent: 3
+    o 'CLASS EXTENDS Expression Block'                 , $ast: '@', variable: null, parent: 3, body: 4
+    o 'CLASS SimpleAssignable'                         , $ast: '@', variable: 2
+    o 'CLASS SimpleAssignable Block'                   , $ast: '@', variable: 2, parent: null, body: 3
+    o 'CLASS SimpleAssignable EXTENDS Expression'      , $ast: '@', variable: 2, parent: 4
+    o 'CLASS SimpleAssignable EXTENDS Expression Block', $ast: '@', variable: 2, parent: 4, body: 5
   ]
 
   Import: [
-    o 'IMPORT String'                                                                             , $ast: 'ImportDeclaration', arg1: null, arg2: 2
-    o 'IMPORT String ASSERT Object'                                                               , $ast: 'ImportDeclaration', arg1: null, arg2: 2, arg3: 4
-    o 'IMPORT ImportDefaultSpecifier FROM String'                                                 , $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: 'null)', arg3: 4
-    o 'IMPORT ImportDefaultSpecifier FROM String ASSERT Object'                                   , $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: 'null)', arg3: 4, arg4: 6
-    o 'IMPORT ImportNamespaceSpecifier FROM String'                                               , $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: '$2)', arg3: 4
-    o 'IMPORT ImportNamespaceSpecifier FROM String ASSERT Object'                                 , $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: '$2)', arg3: 4, arg4: 6
-    o 'IMPORT { } FROM String'                                                                    , $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: {$ast: 'ImportSpecifierList'}, arg3: 5
-    o 'IMPORT { } FROM String ASSERT Object'                                                      , $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: {$ast: 'ImportSpecifierList'}, arg3: 5, arg4: 7
-    o 'IMPORT { ImportSpecifierList OptComma } FROM String'                                       , $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: {$ast: 'ImportSpecifierList'}, arg3: 7
-    o 'IMPORT { ImportSpecifierList OptComma } FROM String ASSERT Object'                         , $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: {$ast: 'ImportSpecifierList'}, arg3: 7, arg4: 9
-    o 'IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String'                      , $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: '$4)', arg3: 6
-    o 'IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String ASSERT Object'        , $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: '$4)', arg3: 6, arg4: 8
-    o 'IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String'              , $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: {$ast: 'ImportSpecifierList'}, arg3: 9
-    o 'IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String ASSERT Object', $ast: 'ImportDeclaration', arg1: {$ast: 'ImportClause'}, arg2: {$ast: 'ImportSpecifierList'}, arg3: 9, arg4: 11
+    o 'IMPORT String'                                                                             , $ast: 'ImportDeclaration', clause: null, source: 2
+    o 'IMPORT String ASSERT Object'                                                               , $ast: 'ImportDeclaration', clause: null, source: 2, assertions: 4
+    o 'IMPORT ImportDefaultSpecifier FROM String'                                                 , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: null}, source: 4
+    o 'IMPORT ImportDefaultSpecifier FROM String ASSERT Object'                                   , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: null}, source: 4, assertions: 6
+    o 'IMPORT ImportNamespaceSpecifier FROM String'                                               , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: 2}, source: 4
+    o 'IMPORT ImportNamespaceSpecifier FROM String ASSERT Object'                                 , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: 2}, source: 4, assertions: 6
+    o 'IMPORT { } FROM String'                                                                    , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: {$ast: 'ImportSpecifierList'}}, source: 5
+    o 'IMPORT { } FROM String ASSERT Object'                                                      , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: {$ast: 'ImportSpecifierList'}}, source: 5, assertions: 7
+    o 'IMPORT { ImportSpecifierList OptComma } FROM String'                                       , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: {$ast: 'ImportSpecifierList', specifiers: 3}}, source: 7
+    o 'IMPORT { ImportSpecifierList OptComma } FROM String ASSERT Object'                         , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: {$ast: 'ImportSpecifierList', specifiers: 3}}, source: 7, assertions: 9
+    o 'IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String'                      , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: 4}, source: 6
+    o 'IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String ASSERT Object'        , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: 4}, source: 6, assertions: 8
+    o 'IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String'              , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: {$ast: 'ImportSpecifierList', specifiers: 5}}, source: 9
+    o 'IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String ASSERT Object', $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: {$ast: 'ImportSpecifierList', specifiers: 5}}, source: 9, assertions: 11
   ]
 
   ImportSpecifierList: [
@@ -373,35 +372,35 @@ grammar =
   ]
 
   ImportSpecifier: [
-    o 'Identifier'              , $ast: '@', base: 1
-    o 'Identifier AS Identifier', $ast: '@', first: 1, second: 3
+    o 'Identifier'              , $ast: '@', imported: 1
+    o 'Identifier AS Identifier', $ast: '@', imported: 1, local: 3
     o 'DEFAULT'                 , $ast: '@', value: {$ast: 'DefaultLiteral'}
-    o 'DEFAULT AS Identifier'   , $ast: '@', arg1: {$ast: 'DefaultLiteral'}, arg2: 3
+    o 'DEFAULT AS Identifier'   , $ast: '@', imported: {$ast: 'DefaultLiteral'}, local: 3
   ]
 
   ImportDefaultSpecifier: [
-    o 'Identifier', $ast: '@', base: 1
+    o 'Identifier', $ast: '@', value: 1
   ]
 
   ImportNamespaceSpecifier: [
-    o 'IMPORT_ALL AS Identifier', $ast: '@', arg1: {$ast: 'Literal'}, arg2: 3
+    o 'IMPORT_ALL AS Identifier', $ast: '@', star: {$ast: 'Literal', value: 1}, local: 3
   ]
 
   Export: [
-    o 'EXPORT { }'                                                       , $ast: 'ExportNamedDeclaration', value: {$ast: 'ExportSpecifierList'}
-    o 'EXPORT { ExportSpecifierList OptComma }'                          , $ast: 'ExportNamedDeclaration', value: {$ast: 'ExportSpecifierList'}
-    o 'EXPORT Class'                                                     , $ast: 'ExportNamedDeclaration', base: 2
-    o 'EXPORT Identifier = Expression'                                   , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'Assign'}, arg2: 4, arg3: null, arg4: {moduleDeclaration: 'export'}
-    o 'EXPORT Identifier = TERMINATOR Expression'                        , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'Assign'}, arg2: 5, arg3: null, arg4: {moduleDeclaration: 'export'}
-    o 'EXPORT Identifier = INDENT Expression OUTDENT'                    , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'Assign'}, arg2: 5, arg3: null, arg4: {moduleDeclaration: 'export'}
-    o 'EXPORT DEFAULT Expression'                                        , $ast: 'ExportDefaultDeclaration', base: 3
+    o 'EXPORT { }'                                                       , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList'}
+    o 'EXPORT { ExportSpecifierList OptComma }'                          , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList', specifiers: 3}
+    o 'EXPORT Class'                                                     , $ast: 'ExportNamedDeclaration', clause: 2
+    o 'EXPORT Identifier = Expression'                                   , $ast: 'ExportNamedDeclaration', clause: {$ast: 'Assign', variable: 2, value: 4, moduleDeclaration: 'export'}
+    o 'EXPORT Identifier = TERMINATOR Expression'                        , $ast: 'ExportNamedDeclaration', clause: {$ast: 'Assign', variable: 2, value: 5, moduleDeclaration: 'export'}
+    o 'EXPORT Identifier = INDENT Expression OUTDENT'                    , $ast: 'ExportNamedDeclaration', clause: {$ast: 'Assign', variable: 2, value: 5, moduleDeclaration: 'export'}
+    o 'EXPORT DEFAULT Expression'                                        , $ast: 'ExportDefaultDeclaration', declaration: 3
     o 'EXPORT DEFAULT INDENT Object OUTDENT'                             , $ast: 'ExportDefaultDeclaration', value: {$ast: 'Value'}
-    o 'EXPORT EXPORT_ALL FROM String'                                    , $ast: 'ExportAllDeclaration', arg1: {$ast: 'Literal'}, arg2: 4
-    o 'EXPORT EXPORT_ALL FROM String ASSERT Object'                      , $ast: 'ExportAllDeclaration', arg1: {$ast: 'Literal'}, arg2: 4, arg3: 6
-    o 'EXPORT { } FROM String'                                           , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'ExportSpecifierList'}, arg2: 5
-    o 'EXPORT { } FROM String ASSERT Object'                             , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'ExportSpecifierList'}, arg2: 5, arg3: 7
-    o 'EXPORT { ExportSpecifierList OptComma } FROM String'              , $ast: 'ExportNamedDeclaration', arg1: {$ast: 'ExportSpecifierList'}, arg2: 7
-    o 'EXPORT { ExportSpecifierList OptComma } FROM String ASSERT Object', $ast: 'ExportNamedDeclaration', arg1: {$ast: 'ExportSpecifierList'}, arg2: 7, arg3: 9
+    o 'EXPORT EXPORT_ALL FROM String'                                    , $ast: 'ExportAllDeclaration', exported: {$ast: 'Literal', value: 2}, source: 4
+    o 'EXPORT EXPORT_ALL FROM String ASSERT Object'                      , $ast: 'ExportAllDeclaration', exported: {$ast: 'Literal', value: 2}, source: 4, assertions: 6
+    o 'EXPORT { } FROM String'                                           , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList'}, source: 5
+    o 'EXPORT { } FROM String ASSERT Object'                             , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList'}, source: 5, assertions: 7
+    o 'EXPORT { ExportSpecifierList OptComma } FROM String'              , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList', specifiers: 3}, source: 7
+    o 'EXPORT { ExportSpecifierList OptComma } FROM String ASSERT Object', $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList', specifiers: 3}, source: 7, assertions: 9
   ]
 
   ExportSpecifierList: [
@@ -413,19 +412,19 @@ grammar =
   ]
 
   ExportSpecifier: [
-    o 'Identifier'              , $ast: '@', base: 1
-    o 'Identifier AS Identifier', $ast: '@', first: 1, second: 3
+    o 'Identifier'              , $ast: '@', local: 1
+    o 'Identifier AS Identifier', $ast: '@', local: 1, exported: 3
     o 'Identifier AS DEFAULT'   , $ast: '@', local: 1, exported: {$ast: 'DefaultLiteral', value: 3, $pos: 3}
     o 'DEFAULT'                 , $ast: '@', value: {$ast: 'DefaultLiteral'}
-    o 'DEFAULT AS Identifier'   , $ast: '@', arg1: {$ast: 'DefaultLiteral'}, arg2: 3
+    o 'DEFAULT AS Identifier'   , $ast: '@', local: {$ast: 'DefaultLiteral'}, exported: 3
   ]
 
   # Ordinary function invocation, or a chained series of calls.
   Invocation: [
-    o 'Value OptFuncExist String'   , $ast: 'TaggedTemplateCall', arg1: 1, arg2: 3, arg3: {$use: 2, prop: 'soak'}
-    o 'Value OptFuncExist Arguments', $ast: 'Call', arg1: 1, arg2: 3, arg3: {$use: 2, prop: 'soak'}
-    o 'SUPER OptFuncExist Arguments', $ast: 'SuperCall', arg1: {$ast: 'Super'}, arg2: 3, arg3: {$use: 2, prop: 'soak'}, arg4: 1
-    o 'DYNAMIC_IMPORT Arguments'    , $ast: 'DynamicImportCall', arg1: {$ast: 'DynamicImport'}, arg2: 2
+    o 'Value OptFuncExist String'   , $ast: 'TaggedTemplateCall', variable: 1, template: 3, soak: {$use: 2, prop: 'soak'}
+    o 'Value OptFuncExist Arguments', $ast: 'Call', variable: 1, args: 3, soak: {$use: 2, prop: 'soak'}
+    o 'SUPER OptFuncExist Arguments', $ast: 'SuperCall', variable: {$ast: 'Super'}, args: 3, soak: {$use: 2, prop: 'soak'}, token: 1
+    o 'DYNAMIC_IMPORT Arguments'    , $ast: 'DynamicImportCall', variable: {$ast: 'DynamicImport'}, args: 2
   ]
 
   # An optional existence check on a function.
@@ -454,8 +453,8 @@ grammar =
   # The array literal.
   Array: [
     o '[ ]'                           , $ast: 'Arr', value: {$ary: [{}]}
-    o '[ Elisions ]'                  , $ast: 'Arr', base: 2
-    o '[ ArgElisionList OptElisions ]', $ast: 'Arr', arg1: '[].concat $2', arg2: 3
+    o '[ Elisions ]'                  , $ast: 'Arr', objects: 2
+    o '[ ArgElisionList OptElisions ]', $ast: 'Arr', objects: {$ops: 'array', gather: [[], 2]}, elisions: 3
   ]
 
   # Inclusive and exclusive range dots.
@@ -466,18 +465,18 @@ grammar =
 
   # The CoffeeScript range literal.
   Range: [
-    o '[ Expression RangeDots Expression ]'    , $ast: '@', arg1: 2, arg2: 4, arg3: 'if $3.exclusive then \'exclusive\' else \'inclusive\''
-    o '[ ExpressionLine RangeDots Expression ]', $ast: '@', arg1: 2, arg2: 4, arg3: 'if $3.exclusive then \'exclusive\' else \'inclusive\''
+    o '[ Expression RangeDots Expression ]'    , $ast: '@', from: 2, to: 4, exclusive: {$use: 3, prop: 'exclusive'}
+    o '[ ExpressionLine RangeDots Expression ]', $ast: '@', from: 2, to: 4, exclusive: {$use: 3, prop: 'exclusive'}
   ]
 
   # Array slice literals.
   Slice: [
-    o 'Expression RangeDots Expression'    , $ast: 'Range', arg1: 1, arg2: 3, arg3: 'if $2.exclusive then \'exclusive\' else \'inclusive\''
-    o 'Expression RangeDots'               , $ast: 'Range', arg1: 1, arg2: null, arg3: 'if $2.exclusive then \'exclusive\' else \'inclusive\''
-    o 'ExpressionLine RangeDots Expression', $ast: 'Range', arg1: 1, arg2: 3, arg3: 'if $2.exclusive then \'exclusive\' else \'inclusive\''
-    o 'ExpressionLine RangeDots'           , $ast: 'Range', arg1: 1, arg2: null, arg3: 'if $2.exclusive then \'exclusive\' else \'inclusive\''
-    o 'RangeDots Expression'               , $ast: 'Range', arg1: null, arg2: 2, arg3: 'if $1.exclusive then \'exclusive\' else \'inclusive\''
-    o 'RangeDots'                          , $ast: 'Range', arg1: null, arg2: null, arg3: 'if $1.exclusive then \'exclusive\' else \'inclusive\''
+    o 'Expression RangeDots Expression'    , $ast: 'Range', from: 1, to: 3, exclusive: {$use: 2, prop: 'exclusive'}
+    o 'Expression RangeDots'               , $ast: 'Range', from: 1, to: null, exclusive: {$use: 2, prop: 'exclusive'}
+    o 'ExpressionLine RangeDots Expression', $ast: 'Range', from: 1, to: 3, exclusive: {$use: 2, prop: 'exclusive'}
+    o 'ExpressionLine RangeDots'           , $ast: 'Range', from: 1, to: null, exclusive: {$use: 2, prop: 'exclusive'}
+    o 'RangeDots Expression'               , $ast: 'Range', from: null, to: 2, exclusive: {$use: 1, prop: 'exclusive'}
+    o 'RangeDots'                          , $ast: 'Range', from: null, to: null, exclusive: {$use: 1, prop: 'exclusive'}
   ]
 
   # The **ArgList** is the list of objects passed into a function call
@@ -540,22 +539,22 @@ grammar =
 
   # The variants of *try/catch/finally* exception handling blocks.
   Try: [
-    o 'TRY Block'                    , $ast: '@', base: 2
-    o 'TRY Block Catch'              , $ast: '@', first: 2, second: 3
+    o 'TRY Block'                    , $ast: '@', attempt: 2
+    o 'TRY Block Catch'              , $ast: '@', attempt: 2, catch: 3
     o 'TRY Block FINALLY Block'      , $ast: '@', attempt: 2, catch: null, ensure: 4, finallyTag: {$ast: 'Literal', value: 3}
     o 'TRY Block Catch FINALLY Block', $ast: '@', attempt: 2, catch: 3, ensure: 5, finallyTag: {$ast: 'Literal', value: 4}
   ]
 
   # A catch clause names its error and runs a block of code.
   Catch: [
-    o 'CATCH Identifier Block', $ast: '@', first: 3, second: 2
+    o 'CATCH Identifier Block', $ast: '@', recovery: 3, variable: 2
     o 'CATCH Object Block'    , $ast: '@', body: 3, errorVariable: {$ast: 'Value', val: 2}
-    o 'CATCH Block'           , $ast: '@', base: 2
+    o 'CATCH Block'           , $ast: '@', recovery: 2
   ]
 
   # Throw an exception object.
   Throw: [
-    o 'THROW Expression'           , $ast: '@', base: 2
+    o 'THROW Expression'           , $ast: '@', expression: 2
     o 'THROW INDENT Object OUTDENT', $ast: '@', value: {$ast: 'Value'}
   ]
 
@@ -564,8 +563,8 @@ grammar =
   # where only values are accepted, wrapping it in parentheses will always do
   # the trick.
   Parenthetical: [
-    o '( Body )'               , $ast: 'Parens', base: 2
-    o '( INDENT Body OUTDENT )', $ast: 'Parens', base: 3
+    o '( Body )'               , $ast: 'Parens', body: 2
+    o '( INDENT Body OUTDENT )', $ast: 'Parens', body: 3
   ]
 
   # The condition portion of a while loop.
@@ -622,7 +621,7 @@ grammar =
   ]
 
   ForStart: [
-    o 'FOR ForVariables'      , $ast: 'For', arg1: {$ary: [{}]}, arg2: 'name: $2[0]', arg3: 'index: $2[1]'
+    o 'FOR ForVariables'      , $ast: 'For', body: {$ary: [{}]}, name: {$use: 2, index: 0}, index: {$use: 2, index: 1}
     o 'FOR AWAIT ForVariables', $seq: [{$var: 'name', value: {$use: 3, index: 0}}, {$var: 'index', value: {$use: 3, index: 1}}, {$ast: 'For', body: {$ary: []}, name: {$use: 'name'}, index: {$use: 'index'}, await: true, awaitTag: {$ast: 'Literal', value: 2, $pos: 2}}]
     o 'FOR OWN ForVariables'  , $seq: [{$var: 'name', value: {$use: 3, index: 0}}, {$var: 'index', value: {$use: 3, index: 1}}, {$ast: 'For', body: {$ary: []}, name: {$use: 'name'}, index: {$use: 'index'}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}}]
   ]
@@ -692,11 +691,11 @@ grammar =
   ]
 
   Switch: [
-    o 'SWITCH Expression INDENT Whens OUTDENT'               , $ast: '@', first: 2, second: 4
-    o 'SWITCH ExpressionLine INDENT Whens OUTDENT'           , $ast: '@', first: 2, second: 4
+    o 'SWITCH Expression INDENT Whens OUTDENT'               , $ast: '@', subject: 2, cases: 4
+    o 'SWITCH ExpressionLine INDENT Whens OUTDENT'           , $ast: '@', subject: 2, cases: 4
     o 'SWITCH Expression INDENT Whens ELSE Block OUTDENT'    , $ast: '@', subject: 2, cases: 4, otherwise: 6, $pos: [5, 6]
     o 'SWITCH ExpressionLine INDENT Whens ELSE Block OUTDENT', $ast: '@', subject: 2, cases: 4, otherwise: 6, $pos: [5, 6]
-    o 'SWITCH INDENT Whens OUTDENT'                          , $ast: '@', arg1: null, arg2: 3
+    o 'SWITCH INDENT Whens OUTDENT'                          , $ast: '@', subject: null, cases: 3
     o 'SWITCH INDENT Whens ELSE Block OUTDENT'               , $ast: '@', subject: null, cases: 3, otherwise: 5, $pos: [4, 5]
   ]
 
@@ -707,7 +706,7 @@ grammar =
 
   # An individual **When** clause, with action.
   When: [
-    o 'LEADING_WHEN SimpleArgs Block'           , $ast: 'SwitchWhen', first: 2, second: 3
+    o 'LEADING_WHEN SimpleArgs Block'           , $ast: 'SwitchWhen', conditions: 2, body: 3
     o 'LEADING_WHEN SimpleArgs Block TERMINATOR', $ast: 'SwitchWhen', conditions: 2, body: 3, $pos: [1, 3]
   ]
 
@@ -744,8 +743,8 @@ grammar =
   # Here they are grouped by order of precedence. The actual precedence rules
   # are defined at the bottom of the page. It would be shorter if we could
   # combine most of these rules into a single generic *Operand OpSymbol Operand*
-  # -type rule, but in order to make the precedence binding possible, separate
-  # rules are necessary.
+  # type of rule, but in order to make the precedence binding possible,
+  # separate rules are necessary.
   OperationLine: [
     o 'UNARY ExpressionLine', $ast: 'Op', args: [1, 2]
     o 'DO ExpressionLine'   , $ast: 'Op', args: [1, 2]
@@ -756,8 +755,8 @@ grammar =
     o 'UNARY Expression'              , $ast: 'Op', args: [{$use: 1, method: 'toString'}, 2, undefined, undefined], originalOperator: {$use: 1, prop: 'original'}
     o 'DO Expression'                 , $ast: 'Op', args: [1, 2]
     o 'UNARY_MATH Expression'         , $ast: 'Op', args: [1, 2]
-    o '-     Expression'              , {$ast: 'Op', args: ['-', 2]}, prec: 'UNARY_MATH'
-    o '+     Expression'              , {$ast: 'Op', args: ['+', 2]}, prec: 'UNARY_MATH'
+    o '- Expression'                  ,{$ast: 'Op', args: ['-', 2]}, prec: 'UNARY_MATH'
+    o '+ Expression'                  ,{$ast: 'Op', args: ['+', 2]}, prec: 'UNARY_MATH'
 
     o 'AWAIT Expression'              , $ast: 'Op', args: [1, 2]
     o 'AWAIT INDENT Object OUTDENT'   , $ast: 'Op', args: [1, 3]
@@ -768,7 +767,7 @@ grammar =
     o 'SimpleAssignable ++'           , $ast: 'Op', args: ['++', 1, null, true]
 
     # [The existential operator](https://coffeescript.org/#existential-operator).
-    o 'Expression ?'                  , $ast: 'Existence', base: 1
+    o 'Expression ?'                  , $ast: 'Existence', expression: 1
 
     o 'Expression +  Expression'      , $ast: 'Op', args: ['+', 1, 3]
     o 'Expression -  Expression'      , $ast: 'Op', args: ['-', 1, 3]
@@ -785,29 +784,16 @@ grammar =
     o 'Expression BIN?     Expression', $ast: 'Op', args: [2, 1, 3]
     o 'Expression RELATION Expression', $ast: 'Op', args: [{$use: 2, method: 'toString'}, 1, 3, undefined], invertOperator: {$ite: {test: {$use: 2, prop: 'invert', prop2: 'original'}, then: {$use: 2, prop: 'invert', prop2: 'original'}, else: {$use: 2, prop: 'invert'}}}
 
-    o 'SimpleAssignable COMPOUND_ASSIGN
-       Expression'                             , $ast: 'Assign', variable: 1, value: 3, operator: {$use: 2, method: 'toString'}, originalContext: {$use: 2, prop: 'original'}
-    o 'SimpleAssignable COMPOUND_ASSIGN
-       INDENT Expression OUTDENT'              , $ast: 'Assign', variable: 1, value: 4, operator: {$use: 2, method: 'toString'}, originalContext: {$use: 2, prop: 'original'}
-    o 'SimpleAssignable COMPOUND_ASSIGN TERMINATOR
-       Expression'                             , $ast: 'Assign', variable: 1, value: 4, operator: {$use: 2, method: 'toString'}, originalContext: {$use: 2, prop: 'original'}
+    o 'SimpleAssignable COMPOUND_ASSIGN Expression'               , $ast: 'Assign', variable: 1, value: 3, operator: {$use: 2, method: 'toString'}, originalContext: {$use: 2, prop: 'original'}
+    o 'SimpleAssignable COMPOUND_ASSIGN INDENT Expression OUTDENT', $ast: 'Assign', variable: 1, value: 4, operator: {$use: 2, method: 'toString'}, originalContext: {$use: 2, prop: 'original'}
+    o 'SimpleAssignable COMPOUND_ASSIGN TERMINATOR Expression'    , $ast: 'Assign', variable: 1, value: 4, operator: {$use: 2, method: 'toString'}, originalContext: {$use: 2, prop: 'original'}
   ]
 
   DoIife: [
     o 'DO_IIFE Code', $ast: 'Op', args: [1, 2]
   ]
 
-# Precedence
-# ----------
-
-# Operators at the top of this list have higher precedence than the ones lower
-# down. Following these rules is what makes `2 + 3 * 4` parse as:
-#
-#     2 + (3 * 4)
-#
-# And not:
-#
-#     (2 + 3) * 4
+# Precedence here is high to low
 operators = [
   ['right',     'DO_IIFE']
   ['left',      '.', '?.', '::', '?::']
