@@ -28,7 +28,7 @@ unwrap = /^function\s*\(\)\s*\{\s*return\s*([\s\S]*);\s*\}/
 # previous nonterminal.
 o = (patternString, action, options) ->
   patternString = patternString.replace /\s{2,}/g, ' '
-  patternCount = patternString.split(' ').length
+  patternCount  = patternString.split(' ').length
   if action
     # This code block does string replacements in the generated `parser.js`
     # file, replacing the calls to the `LOC` function and other strings as
@@ -98,14 +98,14 @@ grammar =
   # The **Root** is the top-level node in the syntax tree. Since we parse bottom-up,
   # all parsing must end here.
   Root: [
-    o '',                                       -> new Root new Block
-    o 'Body',                                   -> new Root $1
+    o '',     -> new Root new Block
+    o 'Body', -> new Root $1
   ]
 
   # Any list of statements and expressions, separated by line breaks or semicolons.
   Body: [
-    o 'Line',                                   -> Block.wrap [$1]
-    o 'Body TERMINATOR Line',                   -> $1.push $3
+    o 'Line',                 -> Block.wrap [$1]
+    o 'Body TERMINATOR Line', -> $1.push $3
     o 'Body TERMINATOR'
   ]
 
@@ -127,7 +127,7 @@ grammar =
   # Pure statements which cannot be expressions.
   Statement: [
     o 'Return'
-    o 'STATEMENT',                              -> new StatementLiteral $1
+    o 'STATEMENT', -> new StatementLiteral $1
     o 'Import'
     o 'Export'
   ]
@@ -161,32 +161,32 @@ grammar =
   ]
 
   Yield: [
-    o 'YIELD',                                  -> new Op $1, new Value new Literal ''
-    o 'YIELD Expression',                       -> new Op $1, $2
-    o 'YIELD INDENT Object OUTDENT',            -> new Op $1, $3
-    o 'YIELD FROM Expression',                  -> new Op $1.concat($2), $3
+    o 'YIELD'                      , -> new Op $1, new Value new Literal ''
+    o 'YIELD Expression'           , -> new Op $1, $2
+    o 'YIELD INDENT Object OUTDENT', -> new Op $1, $3
+    o 'YIELD FROM Expression'      , -> new Op $1.concat($2), $3
   ]
 
   # An indented block of expressions. Note that the [Rewriter](rewriter.html)
   # will convert some postfix forms into blocks for us, by adjusting the
   # token stream.
   Block: [
-    o 'INDENT OUTDENT',                         -> new Block
-    o 'INDENT Body OUTDENT',                    -> $2
+    o 'INDENT OUTDENT'     , -> new Block
+    o 'INDENT Body OUTDENT', -> $2
   ]
 
   Identifier: [
-    o 'IDENTIFIER',                             -> new IdentifierLiteral $1
+    o 'IDENTIFIER', -> new IdentifierLiteral $1
   ]
 
   Property: [
-    o 'PROPERTY',                               -> new PropertyName $1.toString()
+    o 'PROPERTY', -> new PropertyName $1.toString()
   ]
 
   # Alphanumerics are separated from the other **Literal** matchers because
   # they can also serve as keys in object literals.
   AlphaNumeric: [
-    o 'NUMBER',                                 -> new NumberLiteral $1.toString(), parsedValue: $1.parsedValue
+    o 'NUMBER', -> new NumberLiteral $1.toString(), parsedValue: $1.parsedValue
     o 'String'
   ]
 
@@ -205,15 +205,15 @@ grammar =
   ]
 
   Interpolations: [
-    o 'InterpolationChunk',                     -> [$1]
-    o 'Interpolations InterpolationChunk',      -> $1.concat $2
+    o 'InterpolationChunk'               , -> [$1]
+    o 'Interpolations InterpolationChunk', -> $1.concat $2
   ]
 
   InterpolationChunk: [
-    o 'INTERPOLATION_START Body INTERPOLATION_END',                -> new Interpolation $2
+    o 'INTERPOLATION_START Body INTERPOLATION_END'               , -> new Interpolation $2
     o 'INTERPOLATION_START INDENT Body OUTDENT INTERPOLATION_END', -> new Interpolation $3
-    o 'INTERPOLATION_START INTERPOLATION_END',                     -> new Interpolation
-    o 'String',                                                    -> $1
+    o 'INTERPOLATION_START INTERPOLATION_END'                    , -> new Interpolation
+    o 'String'                                                   , -> $1
   ]
 
   # The .toString() calls here and elsewhere are to convert `String` objects
@@ -324,8 +324,7 @@ grammar =
 
   # The Codeline is the **Code** node with **Line** instead of indented **Block**.
   CodeLine: [
-    o 'PARAM_START ParamList PARAM_END FuncGlyph Line', -> new Code $2, LOC(5)(Block.wrap [$5]), $4,
-                                                              LOC(1)(new Literal $1)
+    o 'PARAM_START ParamList PARAM_END FuncGlyph Line', -> new Code $2, LOC(5)(Block.wrap [$5]), $4, LOC(1)(new Literal $1)
     o 'FuncGlyph Line',                                 -> new Code [], LOC(2)(Block.wrap [$2]), $1
   ]
 
@@ -514,12 +513,9 @@ grammar =
     o 'EXPORT { }',                                                        -> new ExportNamedDeclaration new ExportSpecifierList []
     o 'EXPORT { ExportSpecifierList OptComma }',                           -> new ExportNamedDeclaration new ExportSpecifierList $3
     o 'EXPORT Class',                                                      -> new ExportNamedDeclaration $2
-    o 'EXPORT Identifier = Expression',                                    -> new ExportNamedDeclaration LOC(2,4)(new Assign $2, $4, null,
-                                                                                                      moduleDeclaration: 'export')
-    o 'EXPORT Identifier = TERMINATOR Expression',                         -> new ExportNamedDeclaration LOC(2,5)(new Assign $2, $5, null,
-                                                                                                      moduleDeclaration: 'export')
-    o 'EXPORT Identifier = INDENT Expression OUTDENT',                     -> new ExportNamedDeclaration LOC(2,6)(new Assign $2, $5, null,
-                                                                                                      moduleDeclaration: 'export')
+    o 'EXPORT Identifier = Expression',                                    -> new ExportNamedDeclaration LOC(2,4)(new Assign $2, $4, null, moduleDeclaration: 'export')
+    o 'EXPORT Identifier = TERMINATOR Expression',                         -> new ExportNamedDeclaration LOC(2,5)(new Assign $2, $5, null, moduleDeclaration: 'export')
+    o 'EXPORT Identifier = INDENT Expression OUTDENT',                     -> new ExportNamedDeclaration LOC(2,6)(new Assign $2, $5, null, moduleDeclaration: 'export')
     o 'EXPORT DEFAULT Expression',                                         -> new ExportDefaultDeclaration $3
     o 'EXPORT DEFAULT INDENT Object OUTDENT',                              -> new ExportDefaultDeclaration new Value $4
     o 'EXPORT EXPORT_ALL FROM String',                                     -> new ExportAllDeclaration new Literal($2), $4
@@ -897,7 +893,6 @@ grammar =
     o 'SimpleAssignable --',                    -> new Op '--', $1, null, true
     o 'SimpleAssignable ++',                    -> new Op '++', $1, null, true
 
-    # [The existential operator](https://coffeescript.org/#existential-operator).
     o 'Expression ?',                           -> new Existence $1
 
     o 'Expression +  Expression',               -> new Op '+' , $1, $3
@@ -915,16 +910,13 @@ grammar =
     o 'Expression BIN?     Expression',         -> new Op $2, $1, $3
     o 'Expression RELATION Expression',         -> new Op $2.toString(), $1, $3, undefined, invertOperator: $2.invert?.original ? $2.invert
 
-    o 'SimpleAssignable COMPOUND_ASSIGN
-       Expression',                             -> new Assign $1, $3, $2.toString(), originalContext: $2.original
-    o 'SimpleAssignable COMPOUND_ASSIGN
-       INDENT Expression OUTDENT',              -> new Assign $1, $4, $2.toString(), originalContext: $2.original
-    o 'SimpleAssignable COMPOUND_ASSIGN TERMINATOR
-       Expression',                             -> new Assign $1, $4, $2.toString(), originalContext: $2.original
+    o 'SimpleAssignable COMPOUND_ASSIGN Expression'               , -> new Assign $1, $3, $2.toString(), originalContext: $2.original
+    o 'SimpleAssignable COMPOUND_ASSIGN INDENT Expression OUTDENT', -> new Assign $1, $4, $2.toString(), originalContext: $2.original
+    o 'SimpleAssignable COMPOUND_ASSIGN TERMINATOR Expression'    , -> new Assign $1, $4, $2.toString(), originalContext: $2.original
   ]
 
   DoIife: [
-    o 'DO_IIFE Code',                           -> new Op $1 , $2
+    o 'DO_IIFE Code', -> new Op $1 , $2
   ]
 
 # Precedence
