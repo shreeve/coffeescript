@@ -70,31 +70,120 @@ Example: `$pos: [10, 2, 14, 5]` means the node spans from line 10 column 2 to li
 type Pos = [number, number, number, number]  // [startLine, startCol, endLine, endCol]
 ```
 
-## 1. Reference Node (`$ref`)
+## The CS3 Directive System
 
-**Purpose:** Parameter references with optional property access or method calls
+**Principle:** "Make the common case easy, and the rare case possible."
 
-**Signature:** `{$ref: number, prop?: string, call?: string, args?: any[], $pos?: Pos}`
+The CS3 directive system provides a clean, categorized approach to AST transformation with clear separation between **creation** and **operation**.
 
-### Examples
+### 1️⃣ AST Creation (`$ast`)
+
+Creates Abstract Syntax Tree nodes with a `type` field.
+
 ```coffee
-# Simple reference
-$1                              → {$ref: 1, $pos: [1, 1, 1, 2]}
-$2                              → {$ref: 2, $pos: [2, 5, 2, 6]}
-<passthrough>                   → {$ref: 1, $pos: [1, 1, 1, 12]}
+# Explicit type
+$ast: 'If', condition: 2, body: 3         # Creates If node
+$ast: 'Value', val: 1                     # Note: 'val' not 'base'!
+$ast: 'Op', args: [1, 2]                  # Positional args for Op nodes
 
-# Property access
-$1.original                     → {$ref: 1, prop: 'original', $pos: [3, 1, 3, 11]}
-$1.generated                    → {$ref: 1, prop: 'generated', $pos: [4, 1, 4, 12]}
-
-# Method calls
-$1.toString()                   → {$ref: 1, call: 'toString', args: [], $pos: [5, 1, 5, 13]}
-$1.slice(1, -1)                → {$ref: 1, call: 'slice', args: [1, -1], $pos: [6, 1, 6, 15]}
+# Implicit type (@ = use rule name)
+$ast: '@', condition: 2, body: 3          # Uses rule name as type
 ```
 
-## 2. Type Node (`$type`)
+### 2️⃣ Data Structure Creation
 
-**Purpose:** Creates Abstract Syntax Tree nodes with the specified type and properties
+Creates plain data structures without a `type` field.
+
+#### Array Creation (`$ary`)
+```coffee
+$ary: []                # Empty array
+$ary: [1]               # Single element from position 1
+$ary: [1, 3, 5]         # Multiple elements from positions
+```
+
+#### Object Creation (`$obj`)
+```coffee
+$obj: {}                           # Empty object
+$obj: {name: 1, value: 3}          # Properties from positions
+```
+
+### 3️⃣ Operations (`$ops`)
+
+Performs operations on existing objects, **categorized by type** for clarity.
+
+#### Array Operations
+```coffee
+$ops: 'array', append: [1, 3]     # $1.push($3) - mutates array
+$ops: 'array', gather: [1, 2, 4]  # Append + flatten multiple arrays
+```
+
+#### Value Node Operations
+```coffee
+$ops: 'value', add: [1, 2]        # $1.add($2) - add accessor
+```
+
+#### If Node Operations
+```coffee
+$ops: 'if', addElse: [1, 3]       # $1.addElse($3)
+```
+
+#### Loop Operations
+```coffee
+$ops: 'loop', addBody: [1, 2]     # $1.addBody($2)
+$ops: 'loop', addSource: [1, 2]   # $1.addSource($2)
+```
+
+### 4️⃣ References (`$rhs`)
+
+Access to Right-Hand Side elements.
+
+```coffee
+# Simple (common case - 80%)
+1                                  # Direct position reference
+3                                  # Element at position 3
+
+# Complex (rare case - 20%)
+{$rhs: 1, prop: 'value'}          # $1.value
+{$rhs: 1, method: 'toString'}     # $1.toString()
+```
+
+### 5️⃣ Control Flow
+
+```coffee
+# Sequence
+$seq: [{$var: 'temp', value: 1}, {$use: 'temp'}]
+
+# Conditional
+$ite: {test: 1, then: 2, else: 3}
+```
+
+### 6️⃣ Metadata
+
+```coffee
+$pos: 1                            # Copy position from element 1
+$pos: [1, 3]                       # Range from elements 1 to 3
+```
+
+## Key Design Decisions
+
+### CREATE vs OPERATE
+- **Create directives**: `$ast`, `$ary`, `$obj` - make new things
+- **Operation directive**: `$ops` - modify existing things
+
+### Categorized Operations
+Operations are grouped by what they operate on:
+- `$ops: 'array', append:` - clearly an array operation
+- `$ops: 'value', add:` - clearly a value operation
+
+### Semantic Naming
+- `val` not `base` for Value nodes
+- `args` for Op nodes (positional parameters)
+- `append` vs `gather` (mutate vs flatten)
+- `addElse` not just `add` (specific to If nodes)
+
+### Block Elimination
+- No more `Block.wrap` - just use arrays!
+- Simpler, cleaner, no wrapper classes needed
 
 **Signature:** `{$type: string | '@', ...properties: any, $pos?: Pos}`
 

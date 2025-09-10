@@ -1,0 +1,206 @@
+# CoffeeScript 3 Directive System
+
+**Principle:** "Make the common case easy, and the rare case possible."
+
+## Overview
+
+The CS3 directive system provides a clean, categorized approach to AST transformation with clear separation between **creation** and **operation**. Every directive starts with `$` for easy identification.
+
+## The Complete Directive System
+
+### 1️⃣ AST Creation (`$ast`)
+
+Creates Abstract Syntax Tree nodes with a `type` field.
+
+```coffee
+# Explicit type
+$ast: 'If', condition: 2, body: 3         # Creates If node
+$ast: 'Value', val: 1                     # Note: 'val' not 'base'!
+$ast: 'Op', args: [1, 2]                  # Positional args for Op nodes
+
+# Implicit type (@ = use rule name)
+$ast: '@', condition: 2, body: 3          # Uses rule name as type
+```
+
+### 2️⃣ Array Creation (`$ary`)
+
+Creates arrays without a type field.
+
+```coffee
+$ary: []                # Empty array
+$ary: [1]               # Single element from position 1
+$ary: [1, 3, 5]         # Multiple elements from positions
+$ary: [{$ast: 'Literal', value: 'foo'}]   # Can contain complex nodes
+```
+
+### 3️⃣ Object Creation (`$obj`)
+
+Creates plain objects without a type field.
+
+```coffee
+$obj: {}                           # Empty object
+$obj: {name: 1, value: 3}          # Properties from positions
+$obj: {foo: 'bar', baz: 2}         # Mixed literal and positional
+```
+
+### 4️⃣ Operations (`$ops`)
+
+Performs operations on existing objects, **categorized by type** for clarity.
+
+#### Array Operations
+```coffee
+$ops: 'array', append: [1, 3]     # $1.push($3) - mutates array
+$ops: 'array', gather: [1, 2, 4]  # Append + flatten multiple arrays
+```
+
+#### Value Node Operations
+```coffee
+$ops: 'value', add: [1, 2]        # $1.add($2) - add accessor
+```
+
+#### If Node Operations
+```coffee
+$ops: 'if', addElse: [1, 3]       # $1.addElse($3) - add else branch
+```
+
+#### Loop Operations
+```coffee
+$ops: 'loop', addBody: [1, 2]     # $1.addBody($2)
+$ops: 'loop', addSource: [1, 2]   # $1.addSource($2)
+```
+
+#### Property Operations
+```coffee
+$ops: 'prop', set: {target: 2, property: 'implicit', value: true}
+```
+
+### 5️⃣ References (`$rhs`)
+
+Access to Right-Hand Side (parser stack) elements.
+
+```coffee
+# Simple (common case - 80%)
+1                                  # Direct position reference
+3                                  # Another position
+
+# Complex (rare case - 20%)
+{$rhs: 1, prop: 'value'}          # $1.value
+{$rhs: 1, prop: 'original'}       # $1.original
+{$rhs: 1, method: 'toString'}     # $1.toString()
+{$rhs: 1, method: 'slice', args: [1, -1]}  # $1.slice(1, -1)
+```
+
+### 6️⃣ Control Flow
+
+#### Sequence (`$seq`)
+For multi-step operations:
+```coffee
+$seq: [
+  {$var: 'temp', value: 1}              # Create temp variable
+  {$ops: 'array', append: ['temp', 2]}  # Use temp
+  {$use: 'temp'}                         # Return temp
+]
+```
+
+#### If-Then-Else (`$ite`)
+For conditional logic:
+```coffee
+$ite: {test: 1, then: 2, else: 3}       # Ternary conditional
+```
+
+### 7️⃣ Metadata (`$pos`)
+
+Position tracking for source location:
+```coffee
+$pos: 1                            # Copy position from element 1
+$pos: [1, 3]                       # Range from element 1 to 3
+$pos: [startLine, startCol, endLine, endCol]  # Explicit position
+```
+
+## Key Design Decisions
+
+### CREATE vs OPERATE
+- **Create directives**: `$ast`, `$ary`, `$obj` - make new things
+- **Operation directive**: `$ops` - modify existing things
+- Clear separation prevents confusion
+
+### Categorized Operations
+Operations are grouped by what they operate on:
+- `$ops: 'array', append:` - clearly an array operation
+- `$ops: 'value', add:` - clearly a value operation
+- No ambiguity about target type
+
+### Semantic Naming
+- `val` not `base` for Value nodes (clearer)
+- `args` for Op nodes (positional parameters)
+- `append` vs `gather` (mutate vs flatten)
+- `addElse` not just `add` (specific to If nodes)
+
+### Block Elimination
+- No more `Block.wrap` - just use arrays!
+- `Root` body is an array, not a Block
+- Simpler, cleaner, no wrapper classes needed
+
+### Common vs Rare
+- **Common (80%)**: Simple numbers like `1`, `2`, `3`
+- **Rare (20%)**: Complex like `{$rhs: 1, method: 'slice', args: [1, -1]}`
+- Optimize for the common case!
+
+## Operations Reference
+
+### Array Operations
+| Operation | Behavior | Example |
+|-----------|----------|---------|
+| `append` | Push to end (mutates) | `[1,2] + 3 → [1,2,3]` |
+| `gather` | Append + flatten | `[1,2] + [3] + [4,5] → [1,2,3,4,5]` |
+
+### Value Operations
+| Operation | Behavior | Example |
+|-----------|----------|---------|
+| `add` | Add accessor/property | `value.add(accessor)` |
+
+### If Operations
+| Operation | Behavior | Example |
+|-----------|----------|---------|
+| `addElse` | Add else branch | `if.addElse(elseBlock)` |
+
+### Loop Operations
+| Operation | Behavior | Example |
+|-----------|----------|---------|
+| `addBody` | Add loop body | `for.addBody(block)` |
+| `addSource` | Add loop source | `for.addSource(array)` |
+
+### Property Operations
+| Operation | Behavior | Example |
+|-----------|----------|---------|
+| `set` | Set property value | `obj.prop = value` |
+
+## Migration from Old System
+
+### Old → New Mappings
+
+| Old | New | Reason |
+|-----|-----|--------|
+| `$ops: 'concat', target: 1, args: [3]` | `$ops: 'array', append: [1, 3]` | Categorized |
+| `$ops: 'addElse', target: 1, args: [3]` | `$ops: 'if', addElse: [1, 3]` | Type-specific |
+| `$ast: 'Value', base: 1` | `$ast: 'Value', val: 1` | Semantic |
+| `$ast: 'Op', first: 1, second: 2` | `$ast: 'Op', args: [1, 2]` | Positional |
+| `$ops: 'Block.wrap', args: [1]` | `$ary: [1]` | No wrapper needed |
+| `{$ref: 1}` | `1` | Simplified |
+
+## Benefits
+
+1. **Type Safety**: Categorized operations prevent misuse
+2. **Readability**: Intent is crystal clear
+3. **Simplicity**: Common cases are trivial
+4. **Extensibility**: Easy to add new operations
+5. **Consistency**: All directives follow same patterns
+6. **No Magic**: Everything is explicit and traceable
+
+## Future Enhancements
+
+Once we see usage patterns, we might add shortcuts for very common cases:
+- `@1` for `$ary: [1]`
+- `$1.prop` for `{$rhs: 1, prop: 'prop'}`
+
+But for now, explicit is better than implicit!
