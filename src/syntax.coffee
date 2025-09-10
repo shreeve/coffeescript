@@ -710,16 +710,13 @@ grammar =
     o 'LEADING_WHEN SimpleArgs Block TERMINATOR', $ast: 'SwitchWhen', conditions: 2, body: 3, $pos: [1, 3]
   ]
 
-  # The most basic form of *if* is a condition and an action. The following
-  # if-related rules are broken up along these lines in order to avoid
-  # ambiguity.
+  # The most basic form of *if* is a condition and an action. The followingare broken up like this to avoid ambiguity.
   IfBlock: [
     o 'IF Expression Block'             , $ast: 'If', condition: 2, body: 3, type: 1
     o 'IfBlock ELSE IF Expression Block', $ops: 'if', addElse: [1, {$ast: 'If', condition: 4, body: 5, type: 3, $pos: [3, 5]}]
   ]
 
-  # The full complement of *if* expressions, including postfix one-liner
-  # *if* and *unless*.
+  # The full complement of *if* expressions, including postfix one-liner *if* and *unless*.
   If: [
     o 'IfBlock'
     o 'IfBlock ELSE Block'           , $ops: 'if', addElse: [1, 3]
@@ -826,13 +823,6 @@ operators = [
 # Wrapping Up
 # -----------
 
-# Process the grammar rules and prepare them for the parser generator.
-# We perform language-specific preprocessing to add return statements
-# to Root rules, which is required for proper parser operation.
-# The operators are reversed because the parser generator orders
-# precedence from low to high, and we have it high to low
-# (as in [Yacc](http://dinosaur.compilertools.net/yacc/index.html)).
-
 # Add return statements to Root rule actions for proper parser behavior
 for own name, alternatives of grammar
   grammar[name] = for alt in alternatives
@@ -841,5 +831,5 @@ for own name, alternatives of grammar
 
 module.exports =
   grammar: grammar # CS3 uses 'grammar' instead of 'bnf'
-  operators: operators.reverse() if operators?
+  operators: operators.reverse() if operators? # parser is low to high
   start: 'Root'
