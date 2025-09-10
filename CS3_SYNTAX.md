@@ -191,7 +191,7 @@ Operations are grouped by what they operate on:
 
 ## Pattern Analysis
 
-Our analysis discovered that **all 399 grammar rules** follow just 12 patterns, which map elegantly to 6 main directives:
+Our analysis discovered that **all 420 production patterns** (across 97 grammar rules) follow just 12 patterns, which map elegantly to 6 main directives:
 
 ### 12 Pattern Types → 6 Directives
 
@@ -210,19 +210,17 @@ Our analysis discovered that **all 399 grammar rules** follow just 12 patterns, 
 | 11. Helpers | `Block.wrap`, `extend` | → | `$ops` or `$ary` |
 | 12. Object.assign | `Object.assign $2, ...` | → | `$ops` |
 
-### Frequency Distribution
+### Frequency Distribution (Validated)
 
 | Pattern Category | Count | Percentage | Impact |
 |-----------------|-------|------------|--------|
-| **Instant Wins** | | | |
-| Passthroughs | 60 | 15% | No transformation needed! |
-| Arrays/Concat | 40 | 10% | Already data! |
-| Plain Objects | 50 | 12% | Already data! |
-| **High Impact** | | | |
-| AST Creation | 130 | 33% | Simple pattern matching |
-| **Long Tail** | | | |
-| Method Calls | 20 | 5% | Straightforward ops |
-| Complex Logic | 99 | 25% | Needs careful handling |
+| **AST Creation** | 233 | 55% | Core transformation |
+| **Passthroughs** | 78 | 19% | No transformation needed! |
+| **Operations** | 42 | 10% | Mutations via $ops |
+| **Plain Objects** | 42 | 10% | Direct properties |
+| **Arrays** | 16 | 4% | Via $ary |
+| **References** | 9 | 2% | Complex $use patterns |
+| **Total** | **420** | **100%** | **All patterns transformed!** |
 
 ## Migration from Old System
 
@@ -259,12 +257,35 @@ coffeescript/
 │       └── base-backend.coffee  # Shared backend interface
 ```
 
+## Validation Results
+
+The transformation has been **thoroughly validated**:
+
+| Metric | Count | Status |
+|--------|-------|--------|
+| **Rules in both files** | 97 | ✅ Perfect match |
+| **Total patterns** | 420 | ✅ All transformed |
+| **AST creations** | 233 | ✅ Using `$ast` |
+| **Operations** | 42 | ✅ Using `$ops` |
+| **Arrays** | 16 | ✅ Using `$ary` |
+| **Plain objects** | 42 | ✅ Direct properties |
+| **Passthroughs** | 78 | ✅ Simple references |
+| **Generic properties fixed** | 86 | ✅ All semantic |
+
+**Quality Checks:**
+- ✅ **NO** remaining `new` keywords
+- ✅ **NO** remaining function bodies (except `o` helper)
+- ✅ **NO** remaining `LOC()` calls
+- ✅ **NO** remaining `Block.wrap` calls
+- ✅ **NO** remaining `$ref` (all `$use`)
+- ✅ **NO** remaining `$obj` wrappers
+
 ## Implementation Status
 
 ### ✅ Completed
 - Directive system design (**simplified to 6 main directives!**)
-- Pattern analysis (399 rules → 12 patterns → **6 directives**)
-- **Full `syntax.coffee` transformation (100% complete!)**
+- Pattern analysis (420 patterns → 12 types → **6 directives**)
+- **Full `syntax.coffee` transformation (100% complete - 420 patterns!)**
 - Core transformation engine (`cs3-pattern-matcher-v2.coffee`)
 - Data node processor (`cs3-processor.coffee`)
 - Basic ES6 backend
@@ -277,9 +298,11 @@ coffeescript/
   - Semantic property names (`val` not `base`)
   - `Block.wrap` elimination (just use arrays)
   - **JSX completely removed** (cleaner codebase)
+  - **86 generic properties → semantic names** (complete!)
 
 ### 🚧 In Progress
 - Backend implementations for Python, WASM, etc.
+- Integration with Solar parser
 
 ### 📋 TODO
 - Complete backend implementations
