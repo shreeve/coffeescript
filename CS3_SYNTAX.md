@@ -82,9 +82,9 @@ $ops: 'loop', addSource: [1, 2]   # $1.addSource($2)
 $ops: 'prop', set: {target: 2, property: 'implicit', value: true}
 ```
 
-### 5️⃣ References (`$rhs`)
+### 5️⃣ References (`$use`)
 
-Access to Right-Hand Side (parser stack) elements.
+Access to parser stack elements, properties, methods, and variables.
 
 ```coffee
 # Simple (common case - 80%)
@@ -92,10 +92,10 @@ Access to Right-Hand Side (parser stack) elements.
 3                                  # Element at position 3
 
 # Complex (rare case - 20%)
-{$rhs: 1, prop: 'value'}          # $1.value
-{$rhs: 1, prop: 'original'}       # $1.original
-{$rhs: 1, method: 'toString'}     # $1.toString()
-{$rhs: 1, method: 'slice', args: [1, -1]}  # $1.slice(1, -1)
+{$use: 1, prop: 'value'}          # $1.value
+{$use: 1, prop: 'original'}       # $1.original
+{$use: 1, method: 'toString'}     # $1.toString()
+{$use: 1, method: 'slice', args: [1, -1]}  # $1.slice(1, -1)
 ```
 
 ### 6️⃣ Control Flow
@@ -151,7 +151,7 @@ Operations are grouped by what they operate on:
 
 ### Common vs Rare
 - **Common (80%)**: Simple numbers like `1`, `2`, `3`
-- **Rare (20%)**: Complex like `{$rhs: 1, method: 'slice', args: [1, -1]}`
+- **Rare (20%)**: Complex like `{$use: 1, method: 'slice', args: [1, -1]}`
 - Optimize for the common case!
 
 ## Operations Reference
@@ -191,9 +191,9 @@ Our analysis discovered that **all 399 grammar rules** follow just 12 patterns, 
 
 | Pattern Type | Example | Maps To | Directive |
 |-------------|---------|---------|----------|
-| 1. Passthroughs | `$1` | → | Direct number or `$rhs` |
-| 2. Property access | `$1.original` | → | `$rhs` with prop |
-| 3. Method calls | `$1.toString()` | → | `$rhs` with method |
+| 1. Passthroughs | `$1` | → | Direct number or `$use` |
+| 2. Property access | `$1.original` | → | `$use` with prop |
+| 3. Method calls | `$1.toString()` | → | `$use` with method |
 | 4. Simple AST | `new Value $1` | → | `$ast` |
 | 5. Arrays | `[]`, `[$1]` | → | `$ary` |
 | 6. Plain objects | `soak: yes` | → | `$obj` |
@@ -230,7 +230,7 @@ Our analysis discovered that **all 399 grammar rules** follow just 12 patterns, 
 | `$ast: 'Op', first: 1, second: 2` | `$ast: 'Op', args: [1, 2]` | Positional |
 | `$ops: 'Block.wrap', args: [1]` | `$ary: [1]` | No wrapper needed |
 | `{$ref: 1}` | `1` | Simplified |
-| `$ref` | `$rhs` | Better name (Right-Hand Side) |
+| `$ref` → `$rhs` → `$use` | `$use` | Unified all references |
 
 ## Backend Architecture
 
@@ -263,8 +263,8 @@ coffeescript/
 - Basic ES6 backend
 - Integration testing framework
 - Major optimizations:
-  - `$ref` → `$rhs` (better naming)
-  - `{$rhs: 1}` → `1` (simplified references)
+  - `$ref` → `$use` (better naming)
+  - `{$use: 1}` → `1` (simplified references)
   - Categorized operations (`$ops: 'array', append:`)
   - Semantic property names (`val` not `base`)
   - `Block.wrap` elimination (just use arrays)
