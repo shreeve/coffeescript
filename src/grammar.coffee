@@ -435,7 +435,7 @@ grammar =
     o 'Slice'     , -> new Slice $1
   ]
 
-  # In CoffeeScript, an object literal is simply a list of assignments.
+  # Object literals are simply lists of assignments.
   Object: [
     o '{ AssignList OptComma }', -> new Obj $2, $1.generated
   ]
@@ -833,7 +833,7 @@ grammar =
     o 'IfBlock ELSE IF Expression Block', -> $1.addElse LOC(3,5) new If $4, $5, type: $3
   ]
 
-  # The complete *if* expressions, including postfix one-liner *if* and *unless*.
+  # The full complement of *if* expressions, including postfix one-liner *if* and *unless*.
   If: [
     o 'IfBlock'
     o 'IfBlock ELSE Block'           , -> $1.addElse $3
@@ -857,8 +857,8 @@ grammar =
   # Here they are grouped by order of precedence. The actual precedence rules
   # are defined at the bottom of the page. It would be shorter if we could
   # combine most of these rules into a single generic *Operand OpSymbol Operand*
-  # -type rule, but in order to make the precedence binding possible, separate
-  # rules are necessary.
+  # type of rule, but in order to make the precedence binding possible,
+  # separate rules are necessary.
   OperationLine: [
     o 'UNARY ExpressionLine', -> new Op $1, $2
     o 'DO ExpressionLine'   , -> new Op $1, $2

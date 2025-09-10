@@ -55,7 +55,7 @@ grammar =
     o 'Yield'
   ]
 
-  # Expressions written on a single line and would otherwise need braces
+  # Expressions written on a single line and would otherwise need braces.
   ExpressionLine: [
     o 'CodeLine'
     o 'IfLine'
@@ -492,7 +492,7 @@ grammar =
     o 'Expression'
     o 'ExpressionLine'
     o 'Splat'
-    o '...'           , $ast: 'Expansion'
+    o '...', $ast: 'Expansion'
   ]
 
   # The **ArgElisionList** is the list of objects, contents of an array literal
@@ -629,8 +629,8 @@ grammar =
   ForValue: [
     o 'Identifier'
     o 'ThisProperty'
-    o 'Array'       , $ast: 'Value', val: 1
-    o 'Object'      , $ast: 'Value', val: 1
+    o 'Array' , $ast: 'Value', val: 1
+    o 'Object', $ast: 'Value', val: 1
   ]
 
   # An array or range comprehension has variables for the current element
@@ -761,7 +761,6 @@ grammar =
     o 'SimpleAssignable --'           , $ast: 'Op', args: ['--', 1, null, true]
     o 'SimpleAssignable ++'           , $ast: 'Op', args: ['++', 1, null, true]
 
-    # [The existential operator](https://coffeescript.org/#existential-operator).
     o 'Expression ?'                  , $ast: 'Existence', expression: 1
 
     o 'Expression +  Expression'      , $ast: 'Op', args: ['+', 1, 3]
@@ -832,5 +831,4 @@ for own name, alternatives of grammar
 
 module.exports =
   grammar: grammar # CS3 uses 'grammar' instead of 'bnf'
-  operators: operators.reverse() if operators? # parser is low to high
-  start: 'Root'
+  operators: operators.reverse() # parser is low to high
