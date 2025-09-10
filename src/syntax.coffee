@@ -139,14 +139,12 @@ grammar =
   # Assignment when it happens within an object literal. The difference from
   # the ordinary **Assign** is that these allow numbers and strings as keys.
   AssignObj: [
-    o 'ObjAssignable'                   , $ast: 'Value', val: 1
+    o 'ObjAssignable'                                  , $ast: 'Value', val: 1
     o 'ObjRestValue'
-    o 'ObjAssignable : Expression'      , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'ObjAssignable :
-       INDENT Expression OUTDENT'        , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'SimpleObjAssignable = Expression', $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 3, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'SimpleObjAssignable =
-       INDENT Expression OUTDENT'        , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 4, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'ObjAssignable : Expression'                     , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'ObjAssignable : INDENT Expression OUTDENT'      , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'SimpleObjAssignable = Expression'               , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 3, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'SimpleObjAssignable = INDENT Expression OUTDENT', $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 4, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
   ]
 
   SimpleObjAssignable: [
@@ -157,8 +155,8 @@ grammar =
 
   ObjAssignable: [
     o 'SimpleObjAssignable'
-    o '[ Expression ]'     , $ast: 'Value', value: {$ast: 'ComputedPropertyName'}
-    o '@ [ Expression ]'   , $ast: 'Value', val: {$ast: 'ThisLiteral', value: 1, $pos: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3, $pos: 3}], context: 'this'
+    o '[ Expression ]'  , $ast: 'Value', value: {$ast: 'ComputedPropertyName'}
+    o '@ [ Expression ]', $ast: 'Value', val: {$ast: 'ThisLiteral', value: 1, $pos: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3, $pos: 3}], context: 'this'
     o 'AlphaNumeric'
   ]
 
