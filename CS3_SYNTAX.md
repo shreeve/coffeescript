@@ -2,6 +2,12 @@
 
 **Principle:** "Make the common case easy, and the rare case possible."
 
+## 🎯 Key Achievement: Simplified to 6 Directives!
+
+Through smart consolidation, we've reduced from the original 7 directives to just **6 main directives**:
+- **Eliminated `$rhs`** → Unified into `$use` (one directive for ALL references)
+- **Eliminated `$obj`** → Plain properties work directly (no wrapper needed)
+
 ## Overview
 
 CoffeeScript 3 (CS3) represents a paradigm shift from class-based AST nodes to data-oriented structures. This transformation enables:
@@ -14,7 +20,7 @@ CoffeeScript 3 (CS3) represents a paradigm shift from class-based AST nodes to d
 
 ## The CS3 Directive System
 
-The CS3 directive system provides a clean, categorized approach to AST transformation with clear separation between **creation** and **operation**. Every directive starts with `$` for easy identification.
+The CS3 directive system provides a clean, categorized approach to AST transformation with clear separation between **creation** and **operation**. We've simplified from 7 to **6 main directives** through smart consolidation.
 
 ### 1️⃣ AST Creation (`$ast`)
 
@@ -41,14 +47,14 @@ $ary: [1, 3, 5]         # Multiple elements from positions
 $ary: [{$ast: 'Literal', value: 'foo'}]   # Can contain complex nodes
 ```
 
-### 3️⃣ Object Creation (`$obj`)
+### 3️⃣ Plain Objects (No Directive Needed!)
 
-Creates plain objects without a type field.
+Plain objects are created without any directive - just use properties directly:
 
 ```coffee
-$obj: {}                           # Empty object
-$obj: {name: 1, value: 3}          # Properties from positions
-$obj: {foo: 'bar', baz: 2}         # Mixed literal and positional
+source: 2, guard: 4               # Plain object with properties
+soak: true                        # Single property object  
+exclusive: false                  # Boolean property
 ```
 
 ### 4️⃣ Operations (`$ops`)
@@ -185,18 +191,18 @@ Operations are grouped by what they operate on:
 
 ## Pattern Analysis
 
-Our analysis discovered that **all 399 grammar rules** follow just 12 patterns, which map elegantly to 7 directive types:
+Our analysis discovered that **all 399 grammar rules** follow just 12 patterns, which map elegantly to 6 main directives:
 
-### 12 Pattern Types → 7 Directives
+### 12 Pattern Types → 6 Directives
 
 | Pattern Type | Example | Maps To | Directive |
 |-------------|---------|---------|----------|
-| 1. Passthroughs | `$1` | → | Direct number or `$use` |
+| 1. Passthroughs | `$1` | → | `$use` |
 | 2. Property access | `$1.original` | → | `$use` with prop |
 | 3. Method calls | `$1.toString()` | → | `$use` with method |
 | 4. Simple AST | `new Value $1` | → | `$ast` |
 | 5. Arrays | `[]`, `[$1]` | → | `$ary` |
-| 6. Plain objects | `soak: yes` | → | `$obj` |
+| 6. Plain objects | `soak: yes` | → | Plain properties (no directive) |
 | 7. Mutations | `$1.add $2` | → | `$ops` |
 | 8. Conditionals | `if...then...else` | → | `$ite` |
 | 9. Chained ops | `(new X).add` | → | `$seq` |
@@ -220,7 +226,7 @@ Our analysis discovered that **all 399 grammar rules** follow just 12 patterns, 
 
 ## Migration from Old System
 
-### Old → New Mappings
+### Old → New Mappings (Evolution)
 
 | Old | New | Reason |
 |-----|-----|--------|
@@ -229,7 +235,8 @@ Our analysis discovered that **all 399 grammar rules** follow just 12 patterns, 
 | `$ast: 'Value', base: 1` | `$ast: 'Value', val: 1` | Semantic |
 | `$ast: 'Op', first: 1, second: 2` | `$ast: 'Op', args: [1, 2]` | Positional |
 | `$ops: 'Block.wrap', args: [1]` | `$ary: [1]` | No wrapper needed |
-| `{$ref: 1}` | `1` | Simplified |
+| `$obj: {source: 2, guard: 4}` | `source: 2, guard: 4` | Simplified - no wrapper |
+| `{$rhs: 1}` | `$use: 1` | Simplified references |
 | `$ref` → `$rhs` → `$use` | `$use` | Unified all references |
 
 ## Backend Architecture
@@ -255,23 +262,24 @@ coffeescript/
 ## Implementation Status
 
 ### ✅ Completed
-- Directive system design
-- Pattern analysis (399 rules → 12 patterns → 7 directives)
-- Minimal viable implementation for `square.coffee`
+- Directive system design (**simplified to 6 main directives!**)
+- Pattern analysis (399 rules → 12 patterns → **6 directives**)
+- **Full `syntax.coffee` transformation (100% complete!)**
 - Core transformation engine (`cs3-pattern-matcher-v2.coffee`)
 - Data node processor (`cs3-processor.coffee`)
 - Basic ES6 backend
 - Integration testing framework
-- Major optimizations:
-  - `$ref` → `$use` (better naming)
-  - `{$use: 1}` → `1` (simplified references)
+- Major simplifications achieved:
+  - `$ref` → `$rhs` → **`$use`** (unified ALL references)
+  - **`$obj:` eliminated** (plain properties work directly)
+  - `{$use: 1}` → `$use: 1` (simplified syntax)
   - Categorized operations (`$ops: 'array', append:`)
   - Semantic property names (`val` not `base`)
   - `Block.wrap` elimination (just use arrays)
+  - **JSX completely removed** (cleaner codebase)
 
 ### 🚧 In Progress
-- Full `syntax.coffee` transformation (350/399 rules done)
-- Remaining TODOs: Complex For loops, value operations
+- Backend implementations for Python, WASM, etc.
 
 ### 📋 TODO
 - Complete backend implementations

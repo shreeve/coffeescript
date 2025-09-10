@@ -12,17 +12,18 @@ CoffeeScript 3 (CS3) represents a **paradigm shift** in parser architecture: tra
 
 ## The CS3 Directive System
 
-CS3 uses 7 data node types to represent all grammar actions as pure data:
+CS3 uses 6 main directives to represent all grammar actions as pure data:
 
 1. **`$ast`** - Creates AST nodes
-2. **`$ary`** - Creates arrays
-3. **`$obj`** - Creates plain objects
-4. **`$ops`** - Performs operations (categorized by type)
-5. **`$rhs`** - References to Right-Hand Side elements
-6. **`$seq`** - Sequences of operations
-7. **`$ite`** - If-Then-Else conditionals
+2. **`$ary`** - Creates arrays  
+3. **`$ops`** - Performs operations (categorized by type)
+4. **`$use`** - Universal references (stack elements, properties, methods, variables)
+5. **`$seq`** - Sequences of operations
+6. **`$ite`** - If-Then-Else conditionals
 
-Plus **`$pos`** for position tracking on all nodes.
+Plus **`$pos`** for position tracking and **`$var`** for temporary variables.
+
+**Note:** Plain objects need no directive - just use properties directly!
 
 ### 📖 Full Specification
 
