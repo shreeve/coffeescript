@@ -56,9 +56,7 @@ grammar =
     o 'Yield'
   ]
 
-  # Expressions which are written in single line and would otherwise require being
-  # wrapped in braces: E.g `a = b if do -> f a is 1`, `if f (a) -> a*2 then ...`,
-  # `for x in do (obj) -> f obj when x > 8 then f x`
+  # Expressions written on a single line and would otherwise need braces
   ExpressionLine: [
     o 'CodeLine'
     o 'IfLine'
@@ -227,13 +225,11 @@ grammar =
     o '=>', $ast: '@', glyph: 1
   ]
 
-  # An optional, trailing comma.
   OptComma: [
     o ''
     o ','
   ]
 
-  # The list of parameters that a function accepts can be of any length.
   ParamList: [
     o ''                                                    , $ary: []
     o 'Param'                                               , $ary: [1]
@@ -242,8 +238,6 @@ grammar =
     o 'ParamList OptComma INDENT ParamList OptComma OUTDENT', $ops: 'array', append: [1, 4]
   ]
 
-  # A single parameter in a function definition can be ordinary, or a splat
-  # that hoovers up the remaining arguments.
   Param: [
     o 'ParamVar'             , $ast: '@', name: 1
     o 'ParamVar ...'         , $ast: '@', arg1: 1, arg2: null, arg3: on
@@ -252,7 +246,6 @@ grammar =
     o '...'                  , $ast: 'Expansion'
   ]
 
-  # Function Parameters
   ParamVar: [
     o 'Identifier'
     o 'ThisProperty'
@@ -260,13 +253,11 @@ grammar =
     o 'Object'
   ]
 
-  # A splat that occurs outside of a parameter list.
   Splat: [
     o 'Expression ...', $ast: '@', body: 1
     o '... Expression', $ast: '@', arg1: 2, arg2: '{postfix: no}'
   ]
 
-  # Variables and properties that can be assigned to.
   SimpleAssignable: [
     o 'Identifier'    , $ast: 'Value', val: 1
     o 'Value Accessor', $ops: 'value', add: [1, 2]
@@ -274,15 +265,13 @@ grammar =
     o 'ThisProperty'
   ]
 
-  # Everything that can be assigned to.
   Assignable: [
     o 'SimpleAssignable'
     o 'Array'           , $ast: 'Value', val: 1
     o 'Object'          , $ast: 'Value', val: 1
   ]
 
-  # The types of things that can be treated as values -- assigned to, invoked
-  # as functions, indexed into, named as a class, etc.
+  # The types of things that can be treated as values
   Value: [
     o 'Assignable'
     o 'Literal'      , $ast: '@', val: 1
@@ -309,8 +298,6 @@ grammar =
     o 'IMPORT_META . Property', $ast: '@', identifier: {$ast: 'IdentifierLiteral', value: 1, $pos: 1}, accessor: {$ast: 'Access', name: 3, $pos: 3}
   ]
 
-  # The general group of accessors into an object, by property, by prototype
-  # or by array index or slice.
   Accessor: [
     o '.  Property' , $ast: 'Access', name: 2
     o '?. Property' , $ast: 'Access', arg1: 2, arg2: 'soak: yes'
@@ -321,7 +308,6 @@ grammar =
     o 'Index'
   ]
 
-  # Indexing into an object or array using bracket notation.
   Index: [
     o 'INDEX_START IndexValue INDEX_END'               , $use: 2
     o 'INDEX_START INDENT IndexValue OUTDENT INDEX_END', $use: 3
@@ -333,7 +319,7 @@ grammar =
     o 'Slice'     , $ast: 'Slice', base: 1
   ]
 
-  # In CoffeeScript, an object literal is simply a list of assignments.
+  # Object literals are simply lists of assignments.
   Object: [
     o '{ AssignList OptComma }', $ast: 'Obj', arg1: 2, arg2: {$use: 1, prop: 'generated'}
   ]
