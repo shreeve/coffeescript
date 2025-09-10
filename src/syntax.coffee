@@ -192,7 +192,7 @@ grammar =
   # token stream.
   Block: [
     o 'INDENT OUTDENT'     , $ast: '@'
-    o 'INDENT Body OUTDENT', $rhs: 2
+    o 'INDENT Body OUTDENT', $use: 2
   ]
 
   Identifier: [
@@ -224,7 +224,7 @@ grammar =
     o 'INTERPOLATION_START Body INTERPOLATION_END'               , $ast: 'Interpolation', base: 2
     o 'INTERPOLATION_START INDENT Body OUTDENT INTERPOLATION_END', $ast: 'Interpolation', base: 3
     o 'INTERPOLATION_START INTERPOLATION_END'                    , $ast: 'Interpolation'
-    o 'String'                                                   , $rhs: 1
+    o 'String'                                                   , $use: 1
   ]
 
   # The .toString() calls here and elsewhere are to convert `String` objects
@@ -438,8 +438,8 @@ grammar =
 
   # Indexing into an object or array using bracket notation.
   Index: [
-    o 'INDEX_START IndexValue INDEX_END'               , $rhs: 2
-    o 'INDEX_START INDENT IndexValue OUTDENT INDEX_END', $rhs: 3
+    o 'INDEX_START IndexValue INDEX_END'               , $use: 2
+    o 'INDEX_START INDENT IndexValue OUTDENT INDEX_END', $use: 3
     o 'INDEX_SOAK  Index'                              , $ops: 'prop', set: {target: 2, property: 'soak', value: true}
   ]
 
@@ -497,7 +497,7 @@ grammar =
     o 'ImportSpecifier'                                                         , $ary: [1]
     o 'ImportSpecifierList , ImportSpecifier'                                   , $ops: 'array', append: [1, 3]
     o 'ImportSpecifierList OptComma TERMINATOR ImportSpecifier'                 , $ops: 'array', append: [1, 4]
-    o 'INDENT ImportSpecifierList OptComma OUTDENT'                             , $rhs: 2
+    o 'INDENT ImportSpecifierList OptComma OUTDENT'                             , $use: 2
     o 'ImportSpecifierList OptComma INDENT ImportSpecifierList OptComma OUTDENT', $ops: 'array', append: [1, 4]
   ]
 
@@ -537,7 +537,7 @@ grammar =
     o 'ExportSpecifier'                                                         , $ary: [1]
     o 'ExportSpecifierList , ExportSpecifier'                                   , $ops: 'array', append: [1, 3]
     o 'ExportSpecifierList OptComma TERMINATOR ExportSpecifier'                 , $ops: 'array', append: [1, 4]
-    o 'INDENT ExportSpecifierList OptComma OUTDENT'                             , $rhs: 2
+    o 'INDENT ExportSpecifierList OptComma OUTDENT'                             , $use: 2
     o 'ExportSpecifierList OptComma INDENT ExportSpecifierList OptComma OUTDENT', $ops: 'array', append: [1, 4]
   ]
 
@@ -615,7 +615,7 @@ grammar =
     o 'Arg'                                             , $ary: [1]
     o 'ArgList , Arg'                                   , $ops: 'array', append: [1, 3]
     o 'ArgList OptComma TERMINATOR Arg'                 , $ops: 'array', append: [1, 4]
-    o 'INDENT ArgList OptComma OUTDENT'                 , $rhs: 2
+    o 'INDENT ArgList OptComma OUTDENT'                 , $use: 2
     o 'ArgList OptComma INDENT ArgList OptComma OUTDENT', $ops: 'array', append: [1, 4]
   ]
 
@@ -654,7 +654,7 @@ grammar =
 
   Elision: [
     o ','                 , $ast: '@'
-    o 'Elision TERMINATOR', $rhs: 1
+    o 'Elision TERMINATOR', $use: 1
   ]
 
   # Just simple, comma-separated, required arguments (no fancy syntax). We need
@@ -721,7 +721,7 @@ grammar =
     o 'WhileLineSource Block' , $ops: 'loop', addBody: [1, 'Body $2']
     o 'Statement  WhileSource', $seq: [{$ops: 'prop', set: {target: 2, property: 'postfix', value: true}}, {$ops: 'loop', addBody: [2, [1]]}, 2]
     o 'Expression WhileSource', $seq: [{$ops: 'prop', set: {target: 2, property: 'postfix', value: true}}, {$ops: 'loop', addBody: [2, [1]]}, 2]
-    o 'Loop'                  , $rhs: 1
+    o 'Loop'                  , $use: 1
   ]
 
   Loop: [
