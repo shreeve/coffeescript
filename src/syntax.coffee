@@ -824,9 +824,12 @@ operators = [
 # -----------
 
 # Add return statements to Root rule actions for proper parser behavior
+# (Only for string actions, not CS3 directives)
 for own name, alternatives of grammar
   grammar[name] = for alt in alternatives
-    alt[1] = "return #{alt[1]}" if name is 'Root'
+    # Only add 'return' if it's a string action (not a CS3 directive object)
+    if name is 'Root' and typeof alt[1] is 'string'
+      alt[1] = "return #{alt[1]}"
     alt
 
 module.exports =

@@ -156,7 +156,7 @@ class Generator
 
         # Process semantic actions
         if action
-          action = @_processSemanticAction action, symbols
+          action = @_processSemanticAction action, symbols, type
           label = 'case ' + (@rules.length + 1) + ':'
           actionGroups[action]?.push(label) or actionGroups[action] = [label]
 
@@ -194,7 +194,16 @@ class Generator
       symbols = handle.trim().split ' '
       [symbols, null, null]
 
-  _processSemanticAction: (action, symbols) ->
+  _processSemanticAction: (action, symbols, ruleName) ->
+    # Check if CS3 mode and action is an object
+    if @cs3Mode and typeof action is 'object'
+      # Convert CS3 directive to JavaScript, wrapping in parens for top-level
+      result = @_convertCS3ToJS action, ruleName, symbols
+      # Wrap in parentheses if it's an object literal at statement level
+      if result.startsWith '{'
+        result = "(#{result})"
+      return result
+
     # Process named semantic values
     if action.match(/[$@][a-zA-Z][a-zA-Z0-9_]*/)
       count = {}
@@ -224,6 +233,189 @@ class Generator
       .replace(/@[0$]/g, "this._$") # Like @var
       .replace(/\$(-?\d+)/g, (_, n) -> "$$[$0" + (parseInt(n, 10) - symbols.length || '') + "]") # Like $1
       .replace( /@(-?\d+)/g, (_, n) -> "_$[$0" +               (n - symbols.length || '') + "]") # Like @1
+
+  _convertCS3ToJS: (directive, ruleName, symbols) ->
+    # Convert CS3 directive objects to JavaScript strings for the parser
+
+    # Handle $ast directive - creates AST node
+    if directive.$ast
+      type = if directive.$ast is '@' then ruleName else directive.$ast
+      props = []
+      varName = null
+
+      for key, value of directive when key isnt '$ast' and key isnt '$pos' and key isnt '$var'
+        jsValue = @_convertCS3Value value, symbols
+        props.push "#{key}: #{jsValue}"
+
+      # Check if this should be assigned to a variable
+      if directive.$var
+        varName = directive.$var
+
+      # Add location data if $pos is specified
+      if directive.$pos
+        props.push "locationData: yy.locInfo(_$[#{directive.$pos}])"
+
+      result = "{type: '#{type}'#{if props.length then ', ' + props.join(', ') else ''}}"
+
+      # If there's a variable assignment, wrap it
+      if varName
+        return "this.#{varName} = #{result}"
+      else
+        return result
+
+    # Handle $use directive - reference stack value
+    if directive.$use?
+      ref = directive.$use
+
+      # Handle named variables
+      if typeof ref is 'string'
+        return "this.#{ref}"
+
+      # Handle positional references
+      offset = symbols.length - ref
+      result = "$$[$0-#{offset}]"
+
+      # Handle property access
+      if directive.prop
+        result += ".#{directive.prop}"
+
+      # Handle property chain
+      if directive.prop2
+        result += ".#{directive.prop2}"
+
+      # Handle method calls
+      if directive.method
+        args = if directive.args
+          directive.args.map((arg) => @_convertCS3Value(arg, symbols)).join(', ')
+        else
+          ''
+        result += ".#{directive.method}(#{args})"
+
+      # Handle indexing
+      if directive.index?
+        result = "#{result}[#{directive.index}]"
+
+      return result
+
+    # Handle $ary directive - create array
+    if directive.$ary
+      elements = directive.$ary.map (el) => @_convertCS3Value el, symbols
+      return "[#{elements.join(', ')}]"
+
+    # Handle $ops directive - operations
+    if directive.$ops
+      switch directive.$ops
+        when 'array'
+          if directive.append
+            [target, item] = directive.append
+            targetRef = @_convertCS3Value target, symbols
+            itemRef = @_convertCS3Value item, symbols
+            return "(function(){ #{targetRef}.push(#{itemRef}); return #{targetRef}; })()"
+          if directive.gather
+            refs = directive.gather.map (item) => @_convertCS3Value item, symbols
+            return "[].concat(#{refs.join(', ')})"
+        when 'prop'
+          if directive.set
+            {target, property, value} = directive.set
+            targetRef = @_convertCS3Value target, symbols
+            valueRef = @_convertCS3Value value, symbols
+            return "(function(){ #{targetRef}.#{property} = #{valueRef}; return #{targetRef}; })()"
+        when 'value'
+          if directive.add
+            [target, item] = directive.add
+            targetRef = @_convertCS3Value target, symbols
+            itemRef = @_convertCS3Value item, symbols
+            return "(function(){ #{targetRef}.add(#{itemRef}); return #{targetRef}; })()"
+        when 'if'
+          if directive.addElse
+            [target, elseBody] = directive.addElse
+            targetRef = @_convertCS3Value target, symbols
+            elseRef = @_convertCS3Value elseBody, symbols
+            return "(function(){ #{targetRef}.addElse(#{elseRef}); return #{targetRef}; })()"
+        when 'loop'
+          if directive.addBody
+            [target, body] = directive.addBody
+            targetRef = @_convertCS3Value target, symbols
+            bodyRef = @_convertCS3Value body, symbols
+            return "(function(){ #{targetRef}.addBody(#{bodyRef}); return #{targetRef}; })()"
+          if directive.addSource
+            [target, source] = directive.addSource
+            targetRef = @_convertCS3Value target, symbols
+            sourceRef = @_convertCS3Value source, symbols
+            return "(function(){ #{targetRef}.addSource(#{sourceRef}); return #{targetRef}; })()"
+
+    # Handle $seq directive - sequential operations
+    if directive.$seq
+      steps = directive.$seq.map (step) => @_convertCS3Value step, symbols
+      lastStep = steps[steps.length - 1]
+      if steps.length > 1
+        setup = steps.slice(0, -1).join('; ')
+        return "(function(){ #{setup}; return #{lastStep}; })()"
+      else
+        return lastStep
+
+    # Handle $var directive - variable storage
+    if directive.$var
+      varName = directive.$var
+      if directive.value?
+        value = @_convertCS3Value directive.value, symbols
+        return "this.#{varName} = #{value}"
+      else
+        return "this.#{varName}"
+
+    # Handle $ite directive - conditional (if-then-else)
+    if directive.$ite
+      test = @_convertCS3Value directive.$ite.test, symbols
+      then_ = @_convertCS3Value directive.$ite.then, symbols
+      else_ = @_convertCS3Value directive.$ite.else, symbols
+      return "(#{test} ? #{then_} : #{else_})"
+
+    # Default: return as literal
+    return JSON.stringify(directive)
+
+  _convertCS3Value: (value, symbols) ->
+    # Helper to convert CS3 values to JavaScript
+    if value is null or value is undefined
+      return 'null'
+    else if typeof value is 'number'
+      # Position reference: 1 → $$[$0-n+1]
+      offset = symbols.length - value
+      return "$$[$0-#{offset}]"
+    else if typeof value is 'string'
+      # Check if it's a special string like 'Body $2' - likely a constructor call
+      if value.match /^[A-Z]\w+\s+\$\d+$/
+        parts = value.split(/\s+/)
+        className = parts[0]
+        argRef = parts[1].replace /\$(\d+)/, (_, n) ->
+          offset = symbols.length - parseInt(n, 10)
+          "$$[$0-#{offset}]"
+        # Return as a constructor/function call
+        return "#{className}(#{argRef})"
+      # Check if it's a source reference like 'Source $2'
+      else if value.match /^Source\s+\$\d+$/
+        parts = value.split(/\s+/)
+        className = parts[0]
+        argRef = parts[1].replace /\$(\d+)/, (_, n) ->
+          offset = symbols.length - parseInt(n, 10)
+          "$$[$0-#{offset}]"
+        # Return as a constructor/function call
+        return "#{className}(#{argRef})"
+      else
+        return JSON.stringify(value)
+    else if typeof value is 'boolean'
+      return value.toString()
+    else if typeof value is 'object'
+      if Array.isArray(value)
+        # Handle arrays, including empty arrays
+        if value.length is 0
+          return '[]'
+        elements = value.map (el) => @_convertCS3Value el, symbols
+        return "[#{elements.join(', ')}]"
+      else
+        # Nested directive
+        return @_convertCS3ToJS value, null, symbols
+    else
+      return JSON.stringify(value)
 
   _assignPrecedence: (rule, precedence) ->
     if precedence?.prec and @operators[precedence.prec]
