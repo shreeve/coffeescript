@@ -559,8 +559,8 @@ grammar =
 
   # An optional existence check on a function.
   OptFuncExist: [
-    o '', $obj: yes, soak: no
-    o 'FUNC_EXIST', $obj: {soak: true}
+    o '', soak: false
+    o 'FUNC_EXIST', soak: true
   ]
 
   # The list of arguments to a function call.
@@ -589,8 +589,8 @@ grammar =
 
   # Inclusive and exclusive range dots.
   RangeDots: [
-    o '..' , $obj: {exclusive: false}
-    o '...', $obj: {exclusive: true}
+    o '..' , exclusive: false
+    o '...', exclusive: true
   ]
 
   # The CoffeeScript range literal.
@@ -777,47 +777,47 @@ grammar =
   # clause. If it’s an array comprehension, you can also choose to step through
   # in fixed-size increments.
   ForSource: [
-    o 'FORIN Expression'                                      , $obj: {source: 2}
-    o 'FOROF Expression'                                      , $obj: {source: 2, object: true}
-    o 'FORIN Expression WHEN Expression'                      , $obj: {source: 2, guard: 4}
-    o 'FORIN ExpressionLine WHEN Expression'                  , $obj: {source: 2, guard: 4}
-    o 'FOROF Expression WHEN Expression'                      , $obj: {source: 2, guard: 4, object: true}
-    o 'FOROF ExpressionLine WHEN Expression'                  , $obj: {source: 2, guard: 4, object: true}
-    o 'FORIN Expression BY Expression'                        , $obj: {source: 2, step: 4}
-    o 'FORIN ExpressionLine BY Expression'                    , $obj: {source: 2, step: 4}
-    o 'FORIN Expression WHEN Expression BY Expression'        , $obj: {source: 2, guard: 4, step: 6}
-    o 'FORIN ExpressionLine WHEN Expression BY Expression'    , $obj: {source: 2, guard: 4, step: 6}
-    o 'FORIN Expression WHEN ExpressionLine BY Expression'    , $obj: {source: 2, guard: 4, step: 6}
-    o 'FORIN ExpressionLine WHEN ExpressionLine BY Expression', $obj: {source: 2, guard: 4, step: 6}
-    o 'FORIN Expression BY Expression WHEN Expression'        , $obj: {source: 2, step: 4, guard: 6}
-    o 'FORIN ExpressionLine BY Expression WHEN Expression'    , $obj: {source: 2, step: 4, guard: 6}
-    o 'FORIN Expression BY ExpressionLine WHEN Expression'    , $obj: {source: 2, step: 4, guard: 6}
-    o 'FORIN ExpressionLine BY ExpressionLine WHEN Expression', $obj: {source: 2, step: 4, guard: 6}
-    o 'FORFROM Expression'                                    , $obj: {source: 2, from: true}
-    o 'FORFROM Expression WHEN Expression'                    , $obj: {source: 2, guard: 4, from: true}
-    o 'FORFROM ExpressionLine WHEN Expression'                , $obj: {source: 2, guard: 4, from: true}
+    o 'FORIN Expression'                                      , source: 2
+    o 'FOROF Expression'                                      , source: 2, object: true
+    o 'FORIN Expression WHEN Expression'                      , source: 2, guard: 4
+    o 'FORIN ExpressionLine WHEN Expression'                  , source: 2, guard: 4
+    o 'FOROF Expression WHEN Expression'                      , source: 2, guard: 4, object: true
+    o 'FOROF ExpressionLine WHEN Expression'                  , source: 2, guard: 4, object: true
+    o 'FORIN Expression BY Expression'                        , source: 2, step: 4
+    o 'FORIN ExpressionLine BY Expression'                    , source: 2, step: 4
+    o 'FORIN Expression WHEN Expression BY Expression'        , source: 2, guard: 4, step: 6
+    o 'FORIN ExpressionLine WHEN Expression BY Expression'    , source: 2, guard: 4, step: 6
+    o 'FORIN Expression WHEN ExpressionLine BY Expression'    , source: 2, guard: 4, step: 6
+    o 'FORIN ExpressionLine WHEN ExpressionLine BY Expression', source: 2, guard: 4, step: 6
+    o 'FORIN Expression BY Expression WHEN Expression'        , source: 2, step: 4, guard: 6
+    o 'FORIN ExpressionLine BY Expression WHEN Expression'    , source: 2, step: 4, guard: 6
+    o 'FORIN Expression BY ExpressionLine WHEN Expression'    , source: 2, step: 4, guard: 6
+    o 'FORIN ExpressionLine BY ExpressionLine WHEN Expression', source: 2, step: 4, guard: 6
+    o 'FORFROM Expression'                                    , source: 2, from: true
+    o 'FORFROM Expression WHEN Expression'                    , source: 2, guard: 4, from: true
+    o 'FORFROM ExpressionLine WHEN Expression'                , source: 2, guard: 4, from: true
   ]
 
   ForLineSource: [
-    o 'FORIN ExpressionLine'                                      , $obj: {source: 2}
-    o 'FOROF ExpressionLine'                                      , $obj: {source: 2, object: true}
-    o 'FORIN Expression WHEN ExpressionLine'                      , $obj: {source: 2, guard: 4}
-    o 'FORIN ExpressionLine WHEN ExpressionLine'                  , $obj: {source: 2, guard: 4}
-    o 'FOROF Expression WHEN ExpressionLine'                      , $obj: {source: 2, guard: 4, object: true}
-    o 'FOROF ExpressionLine WHEN ExpressionLine'                  , $obj: {source: 2, guard: 4, object: true}
-    o 'FORIN Expression BY ExpressionLine'                        , $obj: {source: 2, step: 4}
-    o 'FORIN ExpressionLine BY ExpressionLine'                    , $obj: {source: 2, step: 4}
-    o 'FORIN Expression WHEN Expression BY ExpressionLine'        , $obj: {source: 2, guard: 4, step: 6}
-    o 'FORIN ExpressionLine WHEN Expression BY ExpressionLine'    , $obj: {source: 2, guard: 4, step: 6}
-    o 'FORIN Expression WHEN ExpressionLine BY ExpressionLine'    , $obj: {source: 2, guard: 4, step: 6}
-    o 'FORIN ExpressionLine WHEN ExpressionLine BY ExpressionLine', $obj: {source: 2, guard: 4, step: 6}
-    o 'FORIN Expression BY Expression WHEN ExpressionLine'        , $obj: {source: 2, step: 4, guard: 6}
-    o 'FORIN ExpressionLine BY Expression WHEN ExpressionLine'    , $obj: {source: 2, step: 4, guard: 6}
-    o 'FORIN Expression BY ExpressionLine WHEN ExpressionLine'    , $obj: {source: 2, step: 4, guard: 6}
-    o 'FORIN ExpressionLine BY ExpressionLine WHEN ExpressionLine', $obj: {source: 2, step: 4, guard: 6}
-    o 'FORFROM ExpressionLine'                                    , $obj: {source: 2, from: true}
-    o 'FORFROM Expression WHEN ExpressionLine'                    , $obj: {source: 2, guard: 4, from: true}
-    o 'FORFROM ExpressionLine WHEN ExpressionLine'                , $obj: {source: 2, guard: 4, from: true}
+    o 'FORIN ExpressionLine'                                      , source: 2
+    o 'FOROF ExpressionLine'                                      , source: 2, object: true
+    o 'FORIN Expression WHEN ExpressionLine'                      , source: 2, guard: 4
+    o 'FORIN ExpressionLine WHEN ExpressionLine'                  , source: 2, guard: 4
+    o 'FOROF Expression WHEN ExpressionLine'                      , source: 2, guard: 4, object: true
+    o 'FOROF ExpressionLine WHEN ExpressionLine'                  , source: 2, guard: 4, object: true
+    o 'FORIN Expression BY ExpressionLine'                        , source: 2, step: 4
+    o 'FORIN ExpressionLine BY ExpressionLine'                    , source: 2, step: 4
+    o 'FORIN Expression WHEN Expression BY ExpressionLine'        , source: 2, guard: 4, step: 6
+    o 'FORIN ExpressionLine WHEN Expression BY ExpressionLine'    , source: 2, guard: 4, step: 6
+    o 'FORIN Expression WHEN ExpressionLine BY ExpressionLine'    , source: 2, guard: 4, step: 6
+    o 'FORIN ExpressionLine WHEN ExpressionLine BY ExpressionLine', source: 2, guard: 4, step: 6
+    o 'FORIN Expression BY Expression WHEN ExpressionLine'        , source: 2, step: 4, guard: 6
+    o 'FORIN ExpressionLine BY Expression WHEN ExpressionLine'    , source: 2, step: 4, guard: 6
+    o 'FORIN Expression BY ExpressionLine WHEN ExpressionLine'    , source: 2, step: 4, guard: 6
+    o 'FORIN ExpressionLine BY ExpressionLine WHEN ExpressionLine', source: 2, step: 4, guard: 6
+    o 'FORFROM ExpressionLine'                                    , source: 2, from: true
+    o 'FORFROM Expression WHEN ExpressionLine'                    , source: 2, guard: 4, from: true
+    o 'FORFROM ExpressionLine WHEN ExpressionLine'                , source: 2, guard: 4, from: true
   ]
 
   Switch: [
