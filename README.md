@@ -49,8 +49,8 @@ Example: `$pos: [10, 2, 14, 5]` means the node spans from line 10 column 2 to li
 // 1. Reference Node
 {$ref: number, prop?: string, call?: string, args?: any[], $pos?: Pos}
 
-// 2. Type Node
-{$type: string, ...properties: any, $pos?: Pos}
+// 2. AST Node
+{$ast: string | '@', ...properties: any, $pos?: Pos}
 
 // 3. Array Node
 {$array: any[], $pos?: Pos} | {$array: {$concat: any[][]}, $pos?: Pos}
@@ -96,14 +96,25 @@ $1.slice(1, -1)                → {$ref: 1, call: 'slice', args: [1, -1], $pos:
 
 **Purpose:** Creates Abstract Syntax Tree nodes with the specified type and properties
 
-**Signature:** `{$type: string, ...properties: any, $pos?: Pos}`
+**Signature:** `{$type: string | '@', ...properties: any, $pos?: Pos}`
+
+**Special Value:** `'@'` means use the production rule name as the type
 
 ### Examples
 ```coffee
-# Simple AST nodes
-new Value $1                    → {$type: 'Value', base: {$ref: 1}, properties: [], $pos: [1, 1, 1, 12]}
-new IdentifierLiteral $1        → {$type: 'IdentifierLiteral', name: {$ref: 1}, $pos: [2, 1, 2, 24]}
-new Block                       → {$type: 'Block', statements: [], $pos: [3, 1, 3, 9]}
+# Implicit type (using '@' for rule name)
+# In Root rule:
+o 'Body', $type: '@', body: $ref: 1
+→ {$type: 'Root', body: {$ref: 1}, $pos: [1, 1, 1, 12]}
+
+# In Block rule:
+o 'INDENT Body OUTDENT', $type: '@', statements: $ref: 2
+→ {$type: 'Block', statements: {$ref: 2}, $pos: [2, 1, 2, 24]}
+
+# Explicit type (when different from rule name)
+# In Identifier rule:
+o 'IDENTIFIER', $type: 'IdentifierLiteral', name: $ref: 1
+→ {$type: 'IdentifierLiteral', name: {$ref: 1}, $pos: [3, 1, 3, 9]}
 
 # Complex AST nodes
 new If $2, $3, type: $1         → {
@@ -214,22 +225,28 @@ $2.implicit = $1.generated; $2  → {
 }
 ```
 
-## 7. Plain Object Node
+## 7. Plain Object Node (`$obj`)
 
-**Purpose:** Simple property objects without any special directives
+**Purpose:** Simple property objects that should NOT have an AST type
 
-**Signature:** `{[key: string]: any, $pos?: Pos}` (no other `$` prefixed keys)
+**Signature:** `{$obj: true, ...properties: any, $pos?: Pos}`
 
 ### Examples
 ```coffee
-# Option objects
-soak: yes                       → {soak: true, $pos: [1, 1, 1, 8]}
-exclusive: no                   → {exclusive: false, $pos: [2, 1, 2, 12]}
+# Option objects for FOR loops
+# In ForSource rule:
+o 'FORIN Expression', $obj: yes, source: $ref: 2
+→ {source: {$ref: 2}, $pos: [1, 1, 1, 8]}  # No 'type' field!
 
-# FOR loop options
-source: $2                      → {source: {$ref: 2}, $pos: [3, 1, 3, 10]}
-source: $2, guard: $4           → {source: {$ref: 2}, guard: {$ref: 4}, $pos: [4, 1, 4, 21]}
-source: $2, object: yes         → {source: {$ref: 2}, object: true, $pos: [5, 1, 5, 23]}
+o 'FOROF Expression', $obj: yes, source: $ref: 2, object: yes
+→ {source: {$ref: 2}, object: true, $pos: [2, 1, 2, 12]}
+
+o 'FORIN Expression WHEN Expression', $obj: yes, source: $ref: 2, guard: $ref: 4
+→ {source: {$ref: 2}, guard: {$ref: 4}, $pos: [3, 1, 3, 21]}
+
+# Other option objects
+soak: yes                       → {soak: true, $pos: [4, 1, 4, 8]}
+exclusive: no                   → {exclusive: false, $pos: [5, 1, 5, 12]}
 ```
 
 ## Terminology
