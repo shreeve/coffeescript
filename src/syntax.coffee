@@ -184,7 +184,7 @@ grammar =
     o 'YIELD'                      , $ast: 'Op', args: [1, {$ast: 'Value'}]
     o 'YIELD Expression'           , $ast: 'Op', args: [1, 2]
     o 'YIELD INDENT Object OUTDENT', $ast: 'Op', args: [1, 3]
-    o 'YIELD FROM Expression'      , $ast: 'Op', args: [{$rhs: 1, method: 'concat', args: [2]}, 3]
+    o 'YIELD FROM Expression'      , $ast: 'Op', args: [{$use: 1, method: 'concat', args: [2]}, 3]
   ]
 
   # An indented block of expressions. Note that the [Rewriter](rewriter.html)
@@ -206,13 +206,13 @@ grammar =
   # Alphanumerics are separated from the other **Literal** matchers because
   # they can also serve as keys in object literals.
   AlphaNumeric: [
-    o 'NUMBER', $ast: 'NumberLiteral', value: {$rhs: 1, method: 'toString'}, parsedValue: {$rhs: 1, prop: 'parsedValue'}
+    o 'NUMBER', $ast: 'NumberLiteral', value: {$use: 1, method: 'toString'}, parsedValue: {$use: 1, prop: 'parsedValue'}
     o 'String'
   ]
 
   String: [
-    o 'STRING'                                , $ast: 'StringLiteral', value: {$rhs: 1, method: 'slice', args: [1, -1]}, quote: {$rhs: 1, prop: 'quote'}, initialChunk: {$rhs: 1, prop: 'initialChunk'}, finalChunk: {$rhs: 1, prop: 'finalChunk'}, indent: {$rhs: 1, prop: 'indent'}, double: {$rhs: 1, prop: 'double'}, heregex: {$rhs: 1, prop: 'heregex'}
-    o 'STRING_START Interpolations STRING_END', $ast: 'StringWithInterpolations', body: 2, quote: {$rhs: 1, prop: 'quote'}, startQuote: {$ast: 'Literal', value: {$rhs: 1, method: 'toString'}, $pos: 1}
+    o 'STRING'                                , $ast: 'StringLiteral', value: {$use: 1, method: 'slice', args: [1, -1]}, quote: {$use: 1, prop: 'quote'}, initialChunk: {$use: 1, prop: 'initialChunk'}, finalChunk: {$use: 1, prop: 'finalChunk'}, indent: {$use: 1, prop: 'indent'}, double: {$use: 1, prop: 'double'}, heregex: {$use: 1, prop: 'heregex'}
+    o 'STRING_START Interpolations STRING_END', $ast: 'StringWithInterpolations', body: 2, quote: {$use: 1, prop: 'quote'}, startQuote: {$ast: 'Literal', value: {$use: 1, method: 'toString'}, $pos: 1}
   ]
 
   Interpolations: [
@@ -238,12 +238,12 @@ grammar =
   # through and printed to JavaScript.
   Literal: [
     o 'AlphaNumeric'
-    o 'JS'          , $ast: 'PassthroughLiteral', value: {$rhs: 1, method: 'toString'}, here: {$rhs: 1, prop: 'here'}, generated: {$rhs: 1, prop: 'generated'}
+    o 'JS'          , $ast: 'PassthroughLiteral', value: {$use: 1, method: 'toString'}, here: {$use: 1, prop: 'here'}, generated: {$use: 1, prop: 'generated'}
     o 'Regex'
     o 'UNDEFINED'   , $ast: 'UndefinedLiteral', base: 1
     o 'NULL'        , $ast: 'NullLiteral', base: 1
-    o 'BOOL'        , $ast: 'BooleanLiteral', value: {$rhs: 1, method: 'toString'}, originalValue: {$rhs: 1, prop: 'original'}
-    o 'INFINITY'    , $ast: 'InfinityLiteral', value: {$rhs: 1, method: 'toString'}, originalValue: {$rhs: 1, prop: 'original'}
+    o 'BOOL'        , $ast: 'BooleanLiteral', value: {$use: 1, method: 'toString'}, originalValue: {$use: 1, prop: 'original'}
+    o 'INFINITY'    , $ast: 'InfinityLiteral', value: {$use: 1, method: 'toString'}, originalValue: {$use: 1, prop: 'original'}
     o 'NAN'         , $ast: 'NaNLiteral', base: 1
   ]
 
@@ -294,10 +294,10 @@ grammar =
     o 'Parenthetical'
     o 'Super'
     o 'This'
-    o 'SUPER OptFuncExist Arguments'              , $ast: 'SuperCall', arg1: {$ast: 'Super'}, arg2: 3, arg3: {$rhs: 2, prop: 'soak'}, arg4: 1
+    o 'SUPER OptFuncExist Arguments'              , $ast: 'SuperCall', arg1: {$ast: 'Super'}, arg2: 3, arg3: {$use: 2, prop: 'soak'}, arg4: 1
     o 'DYNAMIC_IMPORT Arguments'                  , $ast: 'DynamicImportCall', arg1: {$ast: 'DynamicImport'}, arg2: 2
-    o 'SimpleObjAssignable OptFuncExist Arguments', $ast: 'Call', arg1: {$ast: 'Value'}, arg2: 3, arg3: {$rhs: 2, prop: 'soak'}
-    o 'ObjSpreadExpr OptFuncExist Arguments'      , $ast: 'Call', arg1: 1, arg2: 3, arg3: {$rhs: 2, prop: 'soak'}
+    o 'SimpleObjAssignable OptFuncExist Arguments', $ast: 'Call', arg1: {$ast: 'Value'}, arg2: 3, arg3: {$use: 2, prop: 'soak'}
+    o 'ObjSpreadExpr OptFuncExist Arguments'      , $ast: 'Call', arg1: 1, arg2: 3, arg3: {$use: 2, prop: 'soak'}
   ]
 
   ObjSpreadIdentifier: [
@@ -450,7 +450,7 @@ grammar =
 
   # In CoffeeScript, an object literal is simply a list of assignments.
   Object: [
-    o '{ AssignList OptComma }', $ast: 'Obj', arg1: 2, arg2: {$rhs: 1, prop: 'generated'}
+    o '{ AssignList OptComma }', $ast: 'Obj', arg1: 2, arg2: {$use: 1, prop: 'generated'}
   ]
 
   # Assignment of properties within an object literal can be separated by
@@ -551,9 +551,9 @@ grammar =
 
   # Ordinary function invocation, or a chained series of calls.
   Invocation: [
-    o 'Value OptFuncExist String'   , $ast: 'TaggedTemplateCall', arg1: 1, arg2: 3, arg3: {$rhs: 2, prop: 'soak'}
-    o 'Value OptFuncExist Arguments', $ast: 'Call', arg1: 1, arg2: 3, arg3: {$rhs: 2, prop: 'soak'}
-    o 'SUPER OptFuncExist Arguments', $ast: 'SuperCall', arg1: {$ast: 'Super'}, arg2: 3, arg3: {$rhs: 2, prop: 'soak'}, arg4: 1
+    o 'Value OptFuncExist String'   , $ast: 'TaggedTemplateCall', arg1: 1, arg2: 3, arg3: {$use: 2, prop: 'soak'}
+    o 'Value OptFuncExist Arguments', $ast: 'Call', arg1: 1, arg2: 3, arg3: {$use: 2, prop: 'soak'}
+    o 'SUPER OptFuncExist Arguments', $ast: 'SuperCall', arg1: {$ast: 'Super'}, arg2: 3, arg3: {$use: 2, prop: 'soak'}, arg4: 1
     o 'DYNAMIC_IMPORT Arguments'    , $ast: 'DynamicImportCall', arg1: {$ast: 'DynamicImport'}, arg2: 2
   ]
 
@@ -566,7 +566,7 @@ grammar =
   # The list of arguments to a function call.
   Arguments: [
     o 'CALL_START CALL_END'                 , $ary: [{}]
-    o 'CALL_START ArgList OptComma CALL_END', $seq: [{$ops: 'prop', set: {target: 2, property: 'implicit', value: {$rhs: 1, prop: 'generated'}}}, 2]
+    o 'CALL_START ArgList OptComma CALL_END', $seq: [{$ops: 'prop', set: {target: 2, property: 'implicit', value: {$use: 1, prop: 'generated'}}}, 2]
   ]
 
   # A reference to the *this* current object.
@@ -752,8 +752,8 @@ grammar =
 
   ForStart: [
     o 'FOR ForVariables'      , $ast: 'For', arg1: {$ary: [{}]}, arg2: 'name: $2[0]', arg3: 'index: $2[1]'
-    o 'FOR AWAIT ForVariables', $seq: [{$var: 'name', value: {$rhs: 3, index: 0}}, {$var: 'index', value: {$rhs: 3, index: 1}}, {$ast: 'For', body: {$ary: []}, name: {$use: 'name'}, index: {$use: 'index'}, await: true, awaitTag: {$ast: 'Literal', value: 2, $pos: 2}}]
-    o 'FOR OWN ForVariables'  , $seq: [{$var: 'name', value: {$rhs: 3, index: 0}}, {$var: 'index', value: {$rhs: 3, index: 1}}, {$ast: 'For', body: {$ary: []}, name: {$use: 'name'}, index: {$use: 'index'}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}}]
+    o 'FOR AWAIT ForVariables', $seq: [{$var: 'name', value: {$use: 3, index: 0}}, {$var: 'index', value: {$use: 3, index: 1}}, {$ast: 'For', body: {$ary: []}, name: {$use: 'name'}, index: {$use: 'index'}, await: true, awaitTag: {$ast: 'Literal', value: 2, $pos: 2}}]
+    o 'FOR OWN ForVariables'  , $seq: [{$var: 'name', value: {$use: 3, index: 0}}, {$var: 'index', value: {$use: 3, index: 1}}, {$ast: 'For', body: {$ary: []}, name: {$use: 'name'}, index: {$use: 'index'}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}}]
   ]
 
   # An array of all accepted values for a variable inside the loop.
@@ -882,7 +882,7 @@ grammar =
   ]
 
   Operation: [
-    o 'UNARY Expression'              , $ast: 'Op', args: [{$rhs: 1, method: 'toString'}, 2, undefined, undefined], originalOperator: {$rhs: 1, prop: 'original'}
+    o 'UNARY Expression'              , $ast: 'Op', args: [{$use: 1, method: 'toString'}, 2, undefined, undefined], originalOperator: {$use: 1, prop: 'original'}
     o 'DO Expression'                 , $ast: 'Op', args: [1, 2]
     o 'UNARY_MATH Expression'         , $ast: 'Op', args: [1, 2]
     o '-     Expression'              , {$ast: 'Op', args: ['-', 2]}, prec: 'UNARY_MATH'
@@ -905,21 +905,21 @@ grammar =
     o 'Expression MATH     Expression', $ast: 'Op', args: [2, 1, 3]
     o 'Expression **       Expression', $ast: 'Op', args: [2, 1, 3]
     o 'Expression SHIFT    Expression', $ast: 'Op', args: [2, 1, 3]
-    o 'Expression COMPARE  Expression', $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
+    o 'Expression COMPARE  Expression', $ast: 'Op', args: [{$use: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$use: 2, prop: 'original'}
     o 'Expression &        Expression', $ast: 'Op', args: [2, 1, 3]
     o 'Expression ^        Expression', $ast: 'Op', args: [2, 1, 3]
     o 'Expression |        Expression', $ast: 'Op', args: [2, 1, 3]
-    o 'Expression &&       Expression', $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
-    o 'Expression ||       Expression', $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$rhs: 2, prop: 'original'}
+    o 'Expression &&       Expression', $ast: 'Op', args: [{$use: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$use: 2, prop: 'original'}
+    o 'Expression ||       Expression', $ast: 'Op', args: [{$use: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$use: 2, prop: 'original'}
     o 'Expression BIN?     Expression', $ast: 'Op', args: [2, 1, 3]
-    o 'Expression RELATION Expression', $ast: 'Op', args: [{$rhs: 2, method: 'toString'}, 1, 3, undefined], invertOperator: {$ite: {test: {$rhs: 2, prop: 'invert', prop2: 'original'}, then: {$rhs: 2, prop: 'invert', prop2: 'original'}, else: {$rhs: 2, prop: 'invert'}}}
+    o 'Expression RELATION Expression', $ast: 'Op', args: [{$use: 2, method: 'toString'}, 1, 3, undefined], invertOperator: {$ite: {test: {$use: 2, prop: 'invert', prop2: 'original'}, then: {$use: 2, prop: 'invert', prop2: 'original'}, else: {$use: 2, prop: 'invert'}}}
 
     o 'SimpleAssignable COMPOUND_ASSIGN
-       Expression'                             , $ast: 'Assign', variable: 1, value: 3, operator: {$rhs: 2, method: 'toString'}, originalContext: {$rhs: 2, prop: 'original'}
+       Expression'                             , $ast: 'Assign', variable: 1, value: 3, operator: {$use: 2, method: 'toString'}, originalContext: {$use: 2, prop: 'original'}
     o 'SimpleAssignable COMPOUND_ASSIGN
-       INDENT Expression OUTDENT'              , $ast: 'Assign', variable: 1, value: 4, operator: {$rhs: 2, method: 'toString'}, originalContext: {$rhs: 2, prop: 'original'}
+       INDENT Expression OUTDENT'              , $ast: 'Assign', variable: 1, value: 4, operator: {$use: 2, method: 'toString'}, originalContext: {$use: 2, prop: 'original'}
     o 'SimpleAssignable COMPOUND_ASSIGN TERMINATOR
-       Expression'                             , $ast: 'Assign', variable: 1, value: 4, operator: {$rhs: 2, method: 'toString'}, originalContext: {$rhs: 2, prop: 'original'}
+       Expression'                             , $ast: 'Assign', variable: 1, value: 4, operator: {$use: 2, method: 'toString'}, originalContext: {$use: 2, prop: 'original'}
   ]
 
   DoIife: [
