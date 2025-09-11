@@ -59,9 +59,11 @@ class ES5Backend
       when 'Root'
         # Root expects a Block, not an array
         bodyNodes = if Array.isArray node.body
-          node.body.map (item) => @dataToClass item
+          # Filter out null body nodes
+          node.body.map((item) => @dataToClass item).filter (item) -> item?
         else if node.body
-          [@dataToClass node.body]
+          converted = @dataToClass node.body
+          if converted? then [converted] else []
         else
           []
         body = new nodes.Block bodyNodes
@@ -69,9 +71,22 @@ class ES5Backend
 
       when 'Block'
         expressions = if node.expressions
-          @dataToClass node.expressions
+          converted = @dataToClass node.expressions
+          # Filter out null values and ensure we have an array
+          if Array.isArray converted
+            converted.filter (item) -> item?
+          else if converted?
+            [converted]
+          else
+            []
         else if node.body
-          @dataToClass node.body
+          converted = @dataToClass node.body
+          if Array.isArray converted
+            converted.filter (item) -> item?
+          else if converted?
+            [converted]
+          else
+            []
         else
           []
         new nodes.Block expressions
@@ -167,6 +182,10 @@ class ES5Backend
           # Regular assignment
           variable = @dataToClass node.variable
           value = @dataToClass node.value
+        
+        # Ensure we have valid nodes
+        if not variable? or not value?
+          return null
 
         context = node.context
         options = {}
@@ -209,14 +228,17 @@ class ES5Backend
       # Functions and calls
       when 'Code'
         params = if node.params
-          node.params.map (param) => @dataToClass param
+          # Filter out null params that might come from CS3 conversion
+          node.params.map((param) => @dataToClass param).filter (param) -> param?
         else
           []
         # Code expects a Block for body
         bodyNodes = if Array.isArray node.body
-          node.body.map (item) => @dataToClass item
+          # Filter out null body nodes
+          node.body.map((item) => @dataToClass item).filter (item) -> item?
         else if node.body
-          [@dataToClass node.body]
+          converted = @dataToClass node.body
+          if converted? then [converted] else []
         else
           []
         body = new nodes.Block bodyNodes
@@ -237,7 +259,17 @@ class ES5Backend
       when 'Call'
         variable = @dataToClass node.variable
         args = if node.args
-          node.args.map (arg) => @dataToClass arg
+          # Filter out null arguments and ensure all are proper nodes
+          convertedArgs = []
+          for arg in node.args
+            converted = @dataToClass arg
+            # Only add if it's a proper node (has compileToFragments method)
+            if converted? and (converted.compileToFragments or converted instanceof nodes.Base)
+              convertedArgs.push converted
+            else if converted? and typeof converted in ['string', 'number', 'boolean']
+              # Wrap primitives in Literal nodes
+              convertedArgs.push new nodes.Literal String(converted)
+          convertedArgs
         else
           []
         soak = node.soak
@@ -245,7 +277,8 @@ class ES5Backend
 
       when 'SuperCall'
         args = if node.args
-          node.args.map (arg) => @dataToClass arg
+          # Filter out null arguments that might come from CS3 conversion
+          node.args.map((arg) => @dataToClass arg).filter (arg) -> arg?
         else
           []
         new nodes.SuperCall args
@@ -289,10 +322,10 @@ class ES5Backend
               # Flatten nested array
               for item in prop
                 converted = @dataToClass item
-                result.push converted if converted
-            else if prop
+                result.push converted if converted? and converted instanceof nodes.Base
+            else if prop?
               converted = @dataToClass prop
-              result.push converted if converted
+              result.push converted if converted? and converted instanceof nodes.Base
           result
         else
           []
@@ -304,6 +337,10 @@ class ES5Backend
         to = @dataToClass node.to
         tag = if node.exclusive then 'exclusive' else 'inclusive'
         new nodes.Range from, to, tag
+      
+      when 'Slice'
+        # Slice wraps a Range in CS3
+        @dataToClass node.range
 
       # Control flow
       when 'If', 'if', 'unless'
@@ -407,22 +444,83 @@ class ES5Backend
           node.cases.map (c) => @dataToClass c
         else
           []
-        otherwise = @dataToClass node.otherwise if node.otherwise
+        # Otherwise clause expects a Block
+        otherwise = if node.otherwise
+          otherwiseNode = @dataToClass node.otherwise
+          # Wrap in Block if not already
+          if otherwiseNode instanceof nodes.Block
+            otherwiseNode
+          else if Array.isArray otherwiseNode
+            new nodes.Block otherwiseNode
+          else if otherwiseNode?
+            new nodes.Block [otherwiseNode]
+          else
+            null
+        else
+          null
         new nodes.Switch subject, cases, otherwise
 
       when 'SwitchWhen'
         conditions = @dataToClass node.conditions
-        body = @dataToClass node.body
+        # Body should be a Block
+        body = if node.body
+          bodyNode = @dataToClass node.body
+          if bodyNode instanceof nodes.Block
+            bodyNode
+          else if Array.isArray bodyNode
+            new nodes.Block bodyNode
+          else if bodyNode?
+            new nodes.Block [bodyNode]
+          else
+            new nodes.Block []
+        else
+          new nodes.Block []
         new nodes.SwitchWhen conditions, body
 
       when 'Try'
-        attempt = @dataToClass node.attempt
+        # Attempt should be a Block
+        attempt = if node.attempt
+          attemptNode = @dataToClass node.attempt
+          if attemptNode instanceof nodes.Block
+            attemptNode
+          else if Array.isArray attemptNode
+            new nodes.Block attemptNode
+          else if attemptNode?
+            new nodes.Block [attemptNode]
+          else
+            new nodes.Block []
+        else
+          new nodes.Block []
         catch_ = @dataToClass node.catch if node.catch
-        ensure = @dataToClass node.ensure if node.ensure
+        # Ensure should be a Block too
+        ensure = if node.ensure
+          ensureNode = @dataToClass node.ensure
+          if ensureNode instanceof nodes.Block
+            ensureNode
+          else if Array.isArray ensureNode
+            new nodes.Block ensureNode
+          else if ensureNode?
+            new nodes.Block [ensureNode]
+          else
+            null
+        else
+          null
         new nodes.Try attempt, catch_, ensure
 
       when 'Catch'
-        recovery = @dataToClass node.recovery or node.body
+        # Recovery should be a Block
+        recovery = if node.recovery or node.body
+          recoveryNode = @dataToClass(node.recovery or node.body)
+          if recoveryNode instanceof nodes.Block
+            recoveryNode
+          else if Array.isArray recoveryNode
+            new nodes.Block recoveryNode
+          else if recoveryNode?
+            new nodes.Block [recoveryNode]
+          else
+            new nodes.Block []
+        else
+          new nodes.Block []
         variable = @dataToClass node.variable if node.variable
         new nodes.Catch recovery, variable
 

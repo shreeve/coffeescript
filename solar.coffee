@@ -294,15 +294,9 @@ class Generator
       if directive.prop
         result += ".#{directive.prop}"
 
-      # Handle property chain (with safe access)
+      # Handle property chain
       if directive.prop2
-        # For CS3 mode, we need safe property access to avoid errors
-        if @cs3Mode
-          # Wrap in safe access pattern
-          tempVar = result
-          result = "(#{tempVar} && #{tempVar}.#{directive.prop2})"
-        else
-          result += ".#{directive.prop2}"
+        result += ".#{directive.prop2}"
 
       # Handle method calls
       if directive.method

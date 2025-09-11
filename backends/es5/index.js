@@ -49,7 +49,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var accessNode, accessor, args, assertions, attempt, base, body, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, defaultLocationData, elseBody, ensure, expr, expression, expressionNodes, expressions, first, flip, forNode, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, item, len, name, namedImports, obj, objNode, objects, op, options, otherwise, p, params, parent, parts, prop, properties, quote, recovery, ref, ref1, ref2, result, second, soak, source, sourceObj, splat, subject, tag, to, value, variable;
+      var accessNode, accessor, arg, args, assertions, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, convertedArgs, defaultBinding, defaultLocationData, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flip, forNode, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, item, len, name, namedImports, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, params, parent, parts, prop, properties, quote, recovery, recoveryNode, ref, ref1, ref2, result, second, soak, source, sourceObj, splat, subject, tag, to, value, variable;
       if (!node) {
         return null;
       }
@@ -72,13 +72,21 @@
         // Root and structural nodes
         case 'Root':
           // Root expects a Block, not an array
+          // Filter out null body nodes
           bodyNodes = Array.isArray(node.body) ? node.body.map((item) => {
             return this.dataToClass(item);
-          }) : node.body ? [this.dataToClass(node.body)] : [];
+          }).filter(function(item) {
+            return item != null;
+          }) : node.body ? (converted = this.dataToClass(node.body), converted != null ? [converted] : []) : [];
           body = new nodes.Block(bodyNodes);
           return new nodes.Root(body);
         case 'Block':
-          expressions = node.expressions ? this.dataToClass(node.expressions) : node.body ? this.dataToClass(node.body) : [];
+          // Filter out null values and ensure we have an array
+          expressions = node.expressions ? (converted = this.dataToClass(node.expressions), Array.isArray(converted) ? converted.filter(function(item) {
+            return item != null;
+          }) : converted != null ? [converted] : []) : node.body ? (converted = this.dataToClass(node.body), Array.isArray(converted) ? converted.filter(function(item) {
+            return item != null;
+          }) : converted != null ? [converted] : []) : [];
           return new nodes.Block(expressions);
         // Literals
         case 'NumberLiteral':
@@ -161,6 +169,11 @@
             variable = this.dataToClass(node.variable);
             value = this.dataToClass(node.value);
           }
+          
+          // Ensure we have valid nodes
+          if ((variable == null) || (value == null)) {
+            return null;
+          }
           context = node.context;
           options = {};
           if (node.param) {
@@ -213,13 +226,19 @@
           return new nodes.Existence(expression);
         // Functions and calls
         case 'Code':
+          // Filter out null params that might come from CS3 conversion
           params = node.params ? node.params.map((param) => {
             return this.dataToClass(param);
+          }).filter(function(param) {
+            return param != null;
           }) : [];
           // Code expects a Block for body
+          // Filter out null body nodes
           bodyNodes = Array.isArray(node.body) ? node.body.map((item) => {
             return this.dataToClass(item);
-          }) : node.body ? [this.dataToClass(node.body)] : [];
+          }).filter(function(item) {
+            return item != null;
+          }) : node.body ? (converted = this.dataToClass(node.body), converted != null ? [converted] : []) : [];
           body = new nodes.Block(bodyNodes);
           funcGlyph = ((ref1 = node.funcGlyph) != null ? ref1.glyph : void 0) || '->';
           tag = funcGlyph === '=>' && 'boundfunc' || null;
@@ -236,14 +255,36 @@
           return node;
         case 'Call':
           variable = this.dataToClass(node.variable);
-          args = node.args ? node.args.map((arg) => {
-            return this.dataToClass(arg);
-          }) : [];
+          args = (function() {
+            var i, len, ref2, ref3;
+            if (node.args) {
+              // Filter out null arguments and ensure all are proper nodes
+              convertedArgs = [];
+              ref2 = node.args;
+              for (i = 0, len = ref2.length; i < len; i++) {
+                arg = ref2[i];
+                converted = this.dataToClass(arg);
+                // Only add if it's a proper node (has compileToFragments method)
+                if ((converted != null) && (converted.compileToFragments || converted instanceof nodes.Base)) {
+                  convertedArgs.push(converted);
+                } else if ((converted != null) && ((ref3 = typeof converted) === 'string' || ref3 === 'number' || ref3 === 'boolean')) {
+                  // Wrap primitives in Literal nodes
+                  convertedArgs.push(new nodes.Literal(String(converted)));
+                }
+              }
+              return convertedArgs;
+            } else {
+              return [];
+            }
+          }).call(this);
           soak = node.soak;
           return new nodes.Call(variable, args, soak);
         case 'SuperCall':
+          // Filter out null arguments that might come from CS3 conversion
           args = node.args ? node.args.map((arg) => {
             return this.dataToClass(arg);
+          }).filter(function(arg) {
+            return arg != null;
           }) : [];
           return new nodes.SuperCall(args);
         // Arrays and objects
@@ -305,13 +346,13 @@
                   for (j = 0, len1 = prop.length; j < len1; j++) {
                     item = prop[j];
                     converted = this.dataToClass(item);
-                    if (converted) {
+                    if ((converted != null) && converted instanceof nodes.Base) {
                       result.push(converted);
                     }
                   }
-                } else if (prop) {
+                } else if (prop != null) {
                   converted = this.dataToClass(prop);
-                  if (converted) {
+                  if ((converted != null) && converted instanceof nodes.Base) {
                     result.push(converted);
                   }
                 }
@@ -328,6 +369,9 @@
           to = this.dataToClass(node.to);
           tag = node.exclusive ? 'exclusive' : 'inclusive';
           return new nodes.Range(from, to, tag);
+        case 'Slice':
+          // Slice wraps a Range in CS3
+          return this.dataToClass(node.range);
         // Control flow
         case 'If':
         case 'if':
@@ -391,7 +435,6 @@
           if (body.locationData == null) {
             body.locationData = defaultLocationData;
           }
-          
           // Ensure expressions have locationData too
           if (body.expressions) {
             ref2 = body.expressions;
@@ -437,7 +480,6 @@
           if (node.ownTag) {
             sourceObj.ownTag = this.dataToClass(node.ownTag);
           }
-          
           // Create For node with body and source object
           forNode = new nodes.For(body, sourceObj);
           return forNode;
@@ -449,25 +491,27 @@
           cases = node.cases ? node.cases.map((c) => {
             return this.dataToClass(c);
           }) : [];
-          if (node.otherwise) {
-            otherwise = this.dataToClass(node.otherwise);
-          }
+          // Otherwise clause expects a Block
+          // Wrap in Block if not already
+          otherwise = node.otherwise ? (otherwiseNode = this.dataToClass(node.otherwise), otherwiseNode instanceof nodes.Block ? otherwiseNode : Array.isArray(otherwiseNode) ? new nodes.Block(otherwiseNode) : otherwiseNode != null ? new nodes.Block([otherwiseNode]) : null) : null;
           return new nodes.Switch(subject, cases, otherwise);
         case 'SwitchWhen':
           conditions = this.dataToClass(node.conditions);
-          body = this.dataToClass(node.body);
+          // Body should be a Block
+          body = node.body ? (bodyNode = this.dataToClass(node.body), bodyNode instanceof nodes.Block ? bodyNode : Array.isArray(bodyNode) ? new nodes.Block(bodyNode) : bodyNode != null ? new nodes.Block([bodyNode]) : new nodes.Block([])) : new nodes.Block([]);
           return new nodes.SwitchWhen(conditions, body);
         case 'Try':
-          attempt = this.dataToClass(node.attempt);
+          // Attempt should be a Block
+          attempt = node.attempt ? (attemptNode = this.dataToClass(node.attempt), attemptNode instanceof nodes.Block ? attemptNode : Array.isArray(attemptNode) ? new nodes.Block(attemptNode) : attemptNode != null ? new nodes.Block([attemptNode]) : new nodes.Block([])) : new nodes.Block([]);
           if (node.catch) {
             catch_ = this.dataToClass(node.catch);
           }
-          if (node.ensure) {
-            ensure = this.dataToClass(node.ensure);
-          }
+          // Ensure should be a Block too
+          ensure = node.ensure ? (ensureNode = this.dataToClass(node.ensure), ensureNode instanceof nodes.Block ? ensureNode : Array.isArray(ensureNode) ? new nodes.Block(ensureNode) : ensureNode != null ? new nodes.Block([ensureNode]) : null) : null;
           return new nodes.Try(attempt, catch_, ensure);
         case 'Catch':
-          recovery = this.dataToClass(node.recovery || node.body);
+          // Recovery should be a Block
+          recovery = node.recovery || node.body ? (recoveryNode = this.dataToClass(node.recovery || node.body), recoveryNode instanceof nodes.Block ? recoveryNode : Array.isArray(recoveryNode) ? new nodes.Block(recoveryNode) : recoveryNode != null ? new nodes.Block([recoveryNode]) : new nodes.Block([])) : new nodes.Block([]);
           if (node.variable) {
             variable = this.dataToClass(node.variable);
           }
