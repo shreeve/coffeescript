@@ -253,8 +253,9 @@ class Generator
         varName = directive.$var
 
       # Add location data if $pos is specified
+      # For CS3, we don't use yy helpers - just store the location directly
       if directive.$pos
-        props.push "locationData: yy.locInfo(_$[#{directive.$pos}])"
+        props.push "locationData: _$[#{directive.$pos}]"
 
       result = "{type: '#{type}'#{if props.length then ', ' + props.join(', ') else ''}}"
 

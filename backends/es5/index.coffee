@@ -81,10 +81,17 @@ class ES5Backend
         new nodes.NumberLiteral node.value, node.parsedValue
 
       when 'StringLiteral'
-        # StringLiteral expects a quote character to be provided
+        # StringLiteral expects the raw string content (without quotes)
+        # and a quote character to be provided
         # Default to double quotes if not specified
         quote = node.quote or '"'
-        new nodes.StringLiteral node.value, {quote}
+        # Ensure we have the actual string value
+        value = node.value or ''
+        new nodes.StringLiteral value, {quote}
+
+      when 'Literal'
+        # Generic literal node (used for tokens, operators, etc.)
+        new nodes.Literal node.value
 
       when 'BooleanLiteral'
         new nodes.BooleanLiteral node.value
