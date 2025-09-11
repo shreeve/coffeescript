@@ -81,7 +81,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var access, accessNode, accessor, arg, args, assertions, assignment, atParam, atParams, attempt, attemptNode, base, body, bodyArray, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, hasSuperCall, i, ifNode, index, indexNode, isSuperCall, item, j, k, l, left, len, len1, len2, len3, len4, len5, len6, m, name, namedImports, newBodyNodes, o, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, q, quote, recovery, recoveryNode, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, second, soak, source, sourceObj, splat, stringNode, subject, tag, thisLit, to, value, variable;
+      var access, accessNode, accessor, arg, args, assertions, assignment, atParam, atParams, attempt, attemptNode, base, body, bodyArray, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, hasSuperCall, i, ifNode, index, indexNode, isSuperCall, item, j, k, l, left, len, len1, len2, len3, len4, len5, len6, m, meta, name, namedImports, newBodyNodes, o, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, property, q, quote, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref13, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, second, soak, source, sourceObj, splat, stringNode, subject, tag, thisLit, to, value, variable;
       if (node == null) {
         return null;
       }
@@ -759,6 +759,24 @@
         case 'Source':
           // Source is a wrapper node - unwrap it
           return this.dataToClass(node.value);
+        case 'ComputedPropertyName':
+          // ComputedPropertyName is just a marker - return a flag
+          // The actual computed property value should be in the parent context
+          return new nodes.Literal('computed');
+        case 'MetaProperty':
+          if (node.meta) {
+            // MetaProperty like new.target
+            meta = this.dataToClass(node.meta);
+          }
+          if (node.property) {
+            property = this.dataToClass(node.property);
+          }
+          // For now, pass through as literal
+          return new nodes.PassthroughLiteral(`${((ref12 = node.meta) != null ? ref12.value : void 0) || 'new'}.${((ref13 = node.property) != null ? ref13.value : void 0) || 'target'}`);
+        case 'RegexWithInterpolations':
+          // Regex with interpolations - convert to regular regex for now
+          // This would need more complex handling for full support
+          return new nodes.RegexLiteral(node.value || '//', node.flags || '');
         default:
           // ============================================================
           // Default fallback

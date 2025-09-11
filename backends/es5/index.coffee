@@ -720,6 +720,23 @@ class ES5Backend
         # Source is a wrapper node - unwrap it
         @dataToClass node.value
 
+      when 'ComputedPropertyName'
+        # ComputedPropertyName is just a marker - return a flag
+        # The actual computed property value should be in the parent context
+        new nodes.Literal 'computed'
+
+      when 'MetaProperty'
+        # MetaProperty like new.target
+        meta = @dataToClass node.meta if node.meta
+        property = @dataToClass node.property if node.property
+        # For now, pass through as literal
+        new nodes.PassthroughLiteral "#{node.meta?.value or 'new'}.#{node.property?.value or 'target'}"
+
+      when 'RegexWithInterpolations'
+        # Regex with interpolations - convert to regular regex for now
+        # This would need more complex handling for full support
+        new nodes.RegexLiteral node.value or '//', node.flags or ''
+
       # ============================================================
       # Default fallback
       # ============================================================
