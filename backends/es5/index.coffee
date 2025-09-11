@@ -235,9 +235,29 @@ class ES5Backend
       # Arrays and objects
       when 'Arr'
         objects = if node.objects
-          @dataToClass obj for obj in node.objects
+          # Flatten and process the objects array
+          result = []
+          for obj in node.objects
+            # Handle nested arrays (from the parser)
+            if Array.isArray(obj)
+              # Unwrap single-element arrays
+              if obj.length is 1
+                converted = @dataToClass obj[0]
+                result.push converted if converted
+            else if typeof obj is 'object' and Object.keys(obj).length > 0
+              # Non-empty objects
+              converted = @dataToClass obj
+              result.push converted if converted
+          result
         else if node.value
-          @dataToClass node.value
+          # Handle value array (e.g., empty array case)
+          if Array.isArray(node.value)
+            # Filter out empty objects
+            node.value
+              .filter (v) -> not (typeof v is 'object' and Object.keys(v).length is 0)
+              .map (v) => @dataToClass v
+          else
+            [@dataToClass node.value]
         else
           []
         new nodes.Arr objects

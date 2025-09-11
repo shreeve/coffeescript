@@ -288,7 +288,17 @@ class Generator
       # Handle method calls
       if directive.method
         args = if directive.args
-          directive.args.map((arg) => @_convertCS3Value(arg, symbols)).join(', ')
+          # For certain methods like 'slice', args should be treated as literals
+          if directive.method in ['slice', 'substring', 'substr']
+            directive.args.map((arg) => 
+              # For these methods, numbers are literal values, not position refs
+              if typeof arg is 'number'
+                arg.toString()
+              else
+                @_convertCS3Value(arg, symbols)
+            ).join(', ')
+          else
+            directive.args.map((arg) => @_convertCS3Value(arg, symbols)).join(', ')
         else
           ''
         result += ".#{directive.method}(#{args})"
