@@ -119,8 +119,8 @@ class Generator
 
   _processOperators: (ops) ->
     if ops
-      for precedence, i in ops
-        for k in [1...precedence.length]
+    for precedence, i in ops
+      for k in [1...precedence.length]
           @operators[precedence[k]] = {precedence: i + 1, assoc: precedence[0]}
     null # prevent comprehension building above
 

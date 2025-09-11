@@ -213,7 +213,14 @@ class ES5Backend
           op = op.toString() if typeof op is 'object'
           first = @dataToClass first
           second = @dataToClass second if second
-          new nodes.Op op, first, second, flip
+          
+          # Build options for Op constructor
+          options = {}
+          options.invertOperator = node.invertOperator if node.invertOperator
+          options.originalOperator = node.originalOperator if node.originalOperator
+          
+          # Op constructor signature: (op, first, second, flip, options)
+          new nodes.Op op, first, second, flip, options
         else
           # Fallback to named properties
           op = node.operator or node.op

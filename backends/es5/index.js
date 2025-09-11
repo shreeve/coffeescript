@@ -169,7 +169,6 @@
             variable = this.dataToClass(node.variable);
             value = this.dataToClass(node.value);
           }
-          
           // Ensure we have valid nodes
           if ((variable == null) || (value == null)) {
             return null;
@@ -210,7 +209,18 @@
             if (second) {
               second = this.dataToClass(second);
             }
-            return new nodes.Op(op, first, second, flip);
+            
+            // Build options for Op constructor
+            options = {};
+            if (node.invertOperator) {
+              options.invertOperator = node.invertOperator;
+            }
+            if (node.originalOperator) {
+              options.originalOperator = node.originalOperator;
+            }
+            
+            // Op constructor signature: (op, first, second, flip, options)
+            return new nodes.Op(op, first, second, flip, options);
           } else {
             // Fallback to named properties
             op = node.operator || node.op;
