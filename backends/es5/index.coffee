@@ -102,7 +102,24 @@ class ES5Backend
         quote = node.quote or '"'
         # Ensure we have the actual string value
         value = node.value or ''
-        new nodes.StringLiteral value, {quote}
+        # Create the StringLiteral with location data
+        stringNode = new nodes.StringLiteral value, {quote}
+        # Add location data if available
+        if node.locationData
+          stringNode.locationData = node.locationData
+        else
+          # Provide a default location data to prevent crashes
+          stringNode.locationData = 
+            first_line: 0
+            first_column: 0
+            last_line: 0
+            last_column: 0
+            last_line_exclusive: 0
+            last_column_exclusive: 0
+            range: [0, 0]
+        # Also set originalValue which is used by withoutQuotesInLocationData
+        stringNode.originalValue = value
+        stringNode
 
       when 'Literal'
         # Generic literal node (used for tokens, operators, etc.)
