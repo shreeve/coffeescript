@@ -508,6 +508,11 @@ runTests = (CoffeeScript) ->
 task 'test', 'run the CoffeeScript language test suite', ->
   runTests(CoffeeScript).catch -> process.exit 1
 
+task 'test:cs3', 'run the CoffeeScript test suite using CS3/ES5 backend', ->
+  console.log "Running tests with CS3/ES5 backend..."
+  process.env.COFFEESCRIPT_CS3 = 'true'
+  runTests(CoffeeScript).catch -> process.exit 1
+
 
 task 'test:browser', 'run the test suite against the modern browser compiler in a headless browser', ->
   # Create very simple web server to serve the two files we need.
