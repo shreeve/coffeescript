@@ -253,7 +253,15 @@ class ES5Backend
       # ============================================================
       when 'Code'
         params = if node.params
-          @filterNodes node.params
+          # Handle nested arrays (multi-line params)
+          flatParams = []
+          for param in node.params
+            if Array.isArray param
+              for p in param
+                flatParams.push p
+            else
+              flatParams.push param
+          @filterNodes flatParams
         else
           []
 

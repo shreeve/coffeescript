@@ -81,7 +81,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var accessNode, accessor, arg, args, assertions, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, item, len, name, namedImports, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, params, parent, parts, prop, properties, quote, recovery, recoveryNode, ref, ref1, ref2, result, second, soak, source, sourceObj, splat, stringNode, subject, tag, to, value, variable;
+      var accessNode, accessor, arg, args, assertions, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, item, len, name, namedImports, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, prop, properties, quote, recovery, recoveryNode, ref, ref1, ref2, result, second, soak, source, sourceObj, splat, stringNode, subject, tag, to, value, variable;
       if (node == null) {
         return null;
       }
@@ -282,7 +282,28 @@
         // Functions and Calls
         // ============================================================
         case 'Code':
-          params = node.params ? this.filterNodes(node.params) : [];
+          params = (function() {
+            var i, j, len, len1, ref1;
+            if (node.params) {
+              // Handle nested arrays (multi-line params)
+              flatParams = [];
+              ref1 = node.params;
+              for (i = 0, len = ref1.length; i < len; i++) {
+                param = ref1[i];
+                if (Array.isArray(param)) {
+                  for (j = 0, len1 = param.length; j < len1; j++) {
+                    p = param[j];
+                    flatParams.push(p);
+                  }
+                } else {
+                  flatParams.push(param);
+                }
+              }
+              return this.filterNodes(flatParams);
+            } else {
+              return [];
+            }
+          }).call(this);
           bodyNodes = Array.isArray(node.body) ? this.filterNodes(node.body) : node.body ? (converted = this.dataToClass(node.body), converted != null ? [converted] : []) : [];
           body = new nodes.Block(bodyNodes);
           funcGlyph = ((ref1 = node.funcGlyph) != null ? ref1.glyph : void 0) || '->';
@@ -309,7 +330,6 @@
           // SuperCall extends Call(variable, args, soak)
           // The variable should be a Super node
           variable = node.variable ? this.dataToClass(node.variable) : new nodes.Super();
-          
           // Process arguments, filtering out empty objects
           args = (function() {
             var i, len, ref2;
@@ -331,7 +351,6 @@
               return [];
             }
           }).call(this);
-          
           // Create SuperCall with Super as variable and filtered args
           return new nodes.SuperCall(variable, args, node.soak);
         // ============================================================
