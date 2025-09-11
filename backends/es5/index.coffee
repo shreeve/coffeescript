@@ -3,12 +3,12 @@
 # ==============================================================================
 # CS3 ES5 Backend - Clean Room Implementation
 # ==============================================================================
-# 
+#
 # Converts CS3 data-oriented AST nodes to CoffeeScript's class-based AST nodes
 # Then uses the existing CoffeeScript compiler to generate JavaScript
 #
 # Key fixes in this version:
-# 1. Loop variable conflict prevention 
+# 1. Loop variable conflict prevention
 # 2. Proper super call handling
 # 3. Array elision support
 # ==============================================================================
@@ -200,7 +200,7 @@ class ES5Backend
         options = {}
         options.param = node.param if node.param
         options.subpattern = node.subpattern if node.subpattern
-        
+
         if node.operatorToken
           if typeof node.operatorToken is 'object' and node.operatorToken.type
             options.operatorToken =
@@ -221,12 +221,12 @@ class ES5Backend
           op = op.toString() if typeof op is 'object'
           first = @dataToClass first
           second = @dataToClass second if second
-          
+
           # Critical: Pass invertOperator and originalOperator
           options = {}
           options.invertOperator = node.invertOperator if node.invertOperator
           options.originalOperator = node.originalOperator if node.originalOperator
-          
+
           new nodes.Op op, first, second, flip, options
         else
           op = node.operator or node.op
@@ -246,7 +246,7 @@ class ES5Backend
           @filterNodes node.params
         else
           []
-        
+
         bodyNodes = if Array.isArray node.body
           @filterNodes node.body
         else if node.body
@@ -254,7 +254,7 @@ class ES5Backend
           if converted? then [converted] else []
         else
           []
-        
+
         body = new nodes.Block bodyNodes
         funcGlyph = node.funcGlyph?.glyph or '->'
         tag = if funcGlyph is '=>' then 'boundfunc' else null
@@ -370,7 +370,7 @@ class ES5Backend
           new nodes.Block bodyNodes
         else
           @dataToClass node.body
-        
+
         options = {}
         options.type = node.type if node.type
         options.postfix = node.postfix if node.postfix
@@ -486,9 +486,9 @@ class ES5Backend
             new nodes.Block []
         else
           new nodes.Block []
-        
+
         catch_ = @dataToClass node.catch if node.catch
-        
+
         ensure = if node.ensure
           ensureNode = @dataToClass node.ensure
           if ensureNode instanceof nodes.Block
@@ -501,7 +501,7 @@ class ES5Backend
             null
         else
           null
-        
+
         new nodes.Try attempt, catch_, ensure
 
       when 'Catch'

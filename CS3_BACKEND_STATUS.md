@@ -31,7 +31,7 @@ The For node allocates 'i' for the loop counter before it knows that 'i' will be
 
 ---
 
-### 3. ❌ Array Elisions - CS3 PARSER ISSUE  
+### 3. ❌ Array Elisions - CS3 PARSER ISSUE
 **Problem**: `[1,,3]` fails to parse
 **Root Cause**: CS3 parser crashes with "Object prototype may only be an Object or null: undefined"
 **Impact**: Arrays with holes don't work
