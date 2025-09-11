@@ -280,18 +280,27 @@ class ES5Backend
         new nodes.Super accessor
 
       when 'SuperCall'
-        # FIX: Ensure proper super call handling
+        # SuperCall extends Call(variable, args, soak)
+        # The variable should be a Super node
+        variable = if node.variable
+          @dataToClass node.variable
+        else
+          new nodes.Super()
+        
+        # Process arguments, filtering out empty objects
         args = if node.args
-          @filterNodes node.args
+          result = []
+          for arg in node.args
+            # Skip empty objects
+            if arg? and (arg.type or Object.keys(arg).length > 0)
+              converted = @dataToClass arg
+              result.push converted if converted
+          result
         else
           []
-        # Create the super call with filtered arguments
-        superCall = new nodes.SuperCall args
-        # If there's a variable or token, handle it
-        if node.variable
-          variable = @dataToClass node.variable
-          superCall.variable = variable if variable
-        superCall
+        
+        # Create SuperCall with Super as variable and filtered args
+        new nodes.SuperCall variable, args, node.soak
 
       # ============================================================
       # Arrays and Objects
@@ -301,15 +310,28 @@ class ES5Backend
           result = []
           for obj in node.objects
             if Array.isArray obj
-              if obj.length is 1
-                converted = @dataToClass obj[0]
-                result.push converted if converted
+              # Process all elements in nested arrays (happens with elisions)
+              for item in obj
+                if item?.type is 'Elision'
+                  # Handle elisions - create actual hole/empty slot
+                  result.push new nodes.Elision()
+                else
+                  converted = @dataToClass item
+                  result.push converted if converted
             else if obj?.type is 'Elision'
-              # Handle elisions properly
-              result.push @dataToClass obj
+              # Handle elisions - create actual hole/empty slot
+              result.push new nodes.Elision()
             else if typeof obj is 'object' and Object.keys(obj).length > 0
               converted = @dataToClass obj
               result.push converted if converted
+
+          # Handle trailing elisions stored in separate elisions property
+          # Only process elisions that have type: 'Elision', not empty objects
+          if node.elisions
+            for elision in node.elisions
+              if elision?.type is 'Elision'
+                result.push new nodes.Elision()
+
           result
         else if node.value
           if Array.isArray node.value
@@ -357,8 +379,8 @@ class ES5Backend
         new nodes.Expansion()
 
       when 'Elision'
-        # FIX: Support array elisions - create undefined literal
-        new nodes.UndefinedLiteral()
+        # Support array elisions - create actual hole/empty slot
+        new nodes.Elision()
 
       # ============================================================
       # Control Flow

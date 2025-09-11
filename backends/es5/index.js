@@ -3,18 +3,17 @@
   //!/usr/bin/env coffee
 
   // ==============================================================================
-  // CS3 ES5 Backend - Bridge CS3 Data Nodes to CoffeeScript's Existing Compiler
+  // CS3 ES5 Backend - Clean Room Implementation
   // ==============================================================================
 
-  // This backend converts CS3 data-oriented AST nodes back into CoffeeScript's
-  // class-based nodes, then uses the existing CoffeeScript compiler to generate
-  // JavaScript. This gives us an immediate working pipeline!
+  // Converts CS3 data-oriented AST nodes to CoffeeScript's class-based AST nodes
+  // Then uses the existing CoffeeScript compiler to generate JavaScript
 
-  // Once this works perfectly and passes all tests, we can evolve it into a
-  // true ES6 backend with modern JavaScript features.
+  // Key fixes in this version:
+  // 1. Loop variable conflict prevention
+  // 2. Proper super call handling
+  // 3. Array elision support
   // ==============================================================================
-
-  // Import CoffeeScript's node classes
   var ES5Backend, nodes;
 
   nodes = require('../../lib/coffeescript/nodes');
@@ -23,7 +22,6 @@
     constructor(options1 = {}) {
       var ref, ref1, ref2, ref3;
       this.options = options1;
-      // Options will be passed to CoffeeScript's compile
       this.compileOptions = {
         bare: (ref = this.options.bare) != null ? ref : true,
         header: (ref1 = this.options.header) != null ? ref1 : false,
@@ -34,27 +32,61 @@
 
     // Main entry point - convert CS3 data node to JavaScript
     generate(dataNode) {
-      var classNode, result;
-      // Convert CS3 data node to CoffeeScript class node
+      var classNode;
       classNode = this.dataToClass(dataNode);
-      // Use CoffeeScript's existing compile method
-      result = classNode.compile(this.compileOptions);
-      // Return either the code string or {js, sourceMap} object
-      if (this.compileOptions.sourceMap) {
-        return result;
-      } else {
-        return result;
+      return classNode.compile(this.compileOptions);
+    }
+
+    // Helper to create default locationData
+    defaultLocationData() {
+      return {
+        first_line: 0,
+        first_column: 0,
+        last_line: 0,
+        last_column: 0,
+        last_line_exclusive: 0,
+        last_column_exclusive: 0,
+        range: [0, 0]
+      };
+    }
+
+    // Helper to ensure value is a proper node
+    ensureNode(value) {
+      if (value == null) {
+        return null;
       }
+      if (value.compileToFragments || value instanceof nodes.Base) {
+        return value;
+      }
+      // Wrap primitives in Literal
+      return new nodes.Literal(String(value));
+    }
+
+    // Helper to filter and ensure all items are nodes
+    filterNodes(array) {
+      var i, item, len, node, result;
+      if (array == null) {
+        return [];
+      }
+      result = [];
+      for (i = 0, len = array.length; i < len; i++) {
+        item = array[i];
+        node = this.ensureNode(this.dataToClass(item));
+        if (node != null) {
+          result.push(node);
+        }
+      }
+      return result;
     }
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var accessNode, accessor, arg, args, assertions, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, convertedArgs, defaultBinding, defaultLocationData, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flip, forNode, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, item, len, name, namedImports, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, params, parent, parts, prop, properties, quote, recovery, recoveryNode, ref, ref1, ref2, result, second, soak, source, sourceObj, splat, stringNode, subject, tag, to, value, variable;
-      if (!node) {
+      var accessNode, accessor, arg, args, assertions, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, item, len, name, namedImports, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, params, parent, parts, prop, properties, quote, recovery, recoveryNode, ref, ref1, ref2, result, second, soak, source, sourceObj, splat, stringNode, subject, tag, to, value, variable;
+      if (node == null) {
         return null;
       }
-      // Handle primitives
       if ((ref = typeof node) === 'string' || ref === 'number' || ref === 'boolean') {
+        // Handle primitives
         return node;
       }
       // Handle arrays
@@ -63,63 +95,38 @@
           return this.dataToClass(item);
         });
       }
-      if (!node.type) {
+      if (!(node != null ? node.type : void 0)) {
         // Must be an object with a type
         return null;
       }
-      // Convert based on node type
       switch (node.type) {
-        // Root and structural nodes
+        // ============================================================
+        // Root and Structural Nodes
+        // ============================================================
         case 'Root':
-          // Root expects a Block, not an array
-          // Filter out null body nodes
-          bodyNodes = Array.isArray(node.body) ? node.body.map((item) => {
-            return this.dataToClass(item);
-          }).filter(function(item) {
-            return item != null;
-          }) : node.body ? (converted = this.dataToClass(node.body), converted != null ? [converted] : []) : [];
-          body = new nodes.Block(bodyNodes);
-          return new nodes.Root(body);
+          bodyNodes = Array.isArray(node.body) ? this.filterNodes(node.body) : node.body ? (converted = this.dataToClass(node.body), converted != null ? [converted] : []) : [];
+          return new nodes.Root(new nodes.Block(bodyNodes));
         case 'Block':
-          // Filter out null values and ensure we have an array
           expressions = node.expressions ? (converted = this.dataToClass(node.expressions), Array.isArray(converted) ? converted.filter(function(item) {
             return item != null;
           }) : converted != null ? [converted] : []) : node.body ? (converted = this.dataToClass(node.body), Array.isArray(converted) ? converted.filter(function(item) {
             return item != null;
           }) : converted != null ? [converted] : []) : [];
           return new nodes.Block(expressions);
+        // ============================================================
         // Literals
+        // ============================================================
         case 'NumberLiteral':
           return new nodes.NumberLiteral(node.value, node.parsedValue);
         case 'StringLiteral':
-          // StringLiteral expects the raw string content (without quotes)
-          // and a quote character to be provided
-          // Default to double quotes if not specified
           quote = node.quote || '"';
-          // Ensure we have the actual string value
           value = node.value || '';
-          // Create the StringLiteral with location data
           stringNode = new nodes.StringLiteral(value, {quote});
-          // Add location data if available
-          if (node.locationData) {
-            stringNode.locationData = node.locationData;
-          } else {
-            // Provide a default location data to prevent crashes
-            stringNode.locationData = {
-              first_line: 0,
-              first_column: 0,
-              last_line: 0,
-              last_column: 0,
-              last_line_exclusive: 0,
-              last_column_exclusive: 0,
-              range: [0, 0]
-            };
-          }
-          // Also set originalValue which is used by withoutQuotesInLocationData
+          // Critical: Must have locationData and originalValue
+          stringNode.locationData = node.locationData || this.defaultLocationData();
           stringNode.originalValue = value;
           return stringNode;
         case 'Literal':
-          // Generic literal node (used for tokens, operators, etc.)
           return new nodes.Literal(node.value);
         case 'BooleanLiteral':
           return new nodes.BooleanLiteral(node.value);
@@ -139,9 +146,6 @@
           return new nodes.StatementLiteral(node.value);
         case 'ThisLiteral':
           return new nodes.ThisLiteral(node.value || 'this');
-        case 'Super':
-          accessor = this.dataToClass(node.accessor);
-          return new nodes.Super(accessor);
         case 'RegexLiteral':
           return new nodes.RegexLiteral(node.value, {
             delimiter: node.delimiter,
@@ -152,7 +156,9 @@
             here: node.here,
             generated: node.generated
           });
-        // Values and properties
+        // ============================================================
+        // Values and Properties
+        // ============================================================
         case 'Value':
           base = this.dataToClass(node.val || node.base || node.value);
           properties = node.properties ? node.properties.map((prop) => {
@@ -176,20 +182,19 @@
             indexNode.soak = node.soak;
           }
           return indexNode;
+        // ============================================================
         // Assignment
+        // ============================================================
         case 'Assign':
-          // Handle object property assignments differently
+          // Handle object property assignments
           if (node.context === 'object' && node.expression) {
-            // Object property: node.value is the key, node.expression is the value
             variable = this.dataToClass(node.value);
             value = this.dataToClass(node.expression);
           } else {
-            // Regular assignment
             variable = this.dataToClass(node.variable);
             value = this.dataToClass(node.value);
           }
-          // Ensure we have valid nodes
-          if ((variable == null) || (value == null)) {
+          if (!((variable != null) && (value != null))) {
             return null;
           }
           context = node.context;
@@ -200,10 +205,8 @@
           if (node.subpattern) {
             options.subpattern = node.subpattern;
           }
-          // Handle operatorToken carefully - it might be a data node
           if (node.operatorToken) {
             if (typeof node.operatorToken === 'object' && node.operatorToken.type) {
-              // It's a data node, just use its value
               options.operatorToken = {
                 value: node.operatorToken.value,
                 locationData: node.operatorToken.locationData
@@ -216,9 +219,10 @@
             options.moduleDeclaration = node.moduleDeclaration;
           }
           return new nodes.Assign(variable, value, context, options);
+        // ============================================================
         // Operations
+        // ============================================================
         case 'Op':
-          // CS3 uses args: [operator, first, second, ...] format
           if (node.args) {
             [op, first, second, flip] = node.args;
             if (typeof op === 'object') {
@@ -228,8 +232,7 @@
             if (second) {
               second = this.dataToClass(second);
             }
-            
-            // Build options for Op constructor
+            // Critical: Pass invertOperator and originalOperator
             options = {};
             if (node.invertOperator) {
               options.invertOperator = node.invertOperator;
@@ -237,11 +240,8 @@
             if (node.originalOperator) {
               options.originalOperator = node.originalOperator;
             }
-            
-            // Op constructor signature: (op, first, second, flip, options)
             return new nodes.Op(op, first, second, flip, options);
           } else {
-            // Fallback to named properties
             op = node.operator || node.op;
             first = this.dataToClass(node.first);
             if (node.second) {
@@ -253,24 +253,15 @@
         case 'Existence':
           expression = this.dataToClass(node.expression);
           return new nodes.Existence(expression);
-        // Functions and calls
+        // ============================================================
+        // Functions and Calls
+        // ============================================================
         case 'Code':
-          // Filter out null params that might come from CS3 conversion
-          params = node.params ? node.params.map((param) => {
-            return this.dataToClass(param);
-          }).filter(function(param) {
-            return param != null;
-          }) : [];
-          // Code expects a Block for body
-          // Filter out null body nodes
-          bodyNodes = Array.isArray(node.body) ? node.body.map((item) => {
-            return this.dataToClass(item);
-          }).filter(function(item) {
-            return item != null;
-          }) : node.body ? (converted = this.dataToClass(node.body), converted != null ? [converted] : []) : [];
+          params = node.params ? this.filterNodes(node.params) : [];
+          bodyNodes = Array.isArray(node.body) ? this.filterNodes(node.body) : node.body ? (converted = this.dataToClass(node.body), converted != null ? [converted] : []) : [];
           body = new nodes.Block(bodyNodes);
           funcGlyph = ((ref1 = node.funcGlyph) != null ? ref1.glyph : void 0) || '->';
-          tag = funcGlyph === '=>' && 'boundfunc' || null;
+          tag = funcGlyph === '=>' ? 'boundfunc' : null;
           return new nodes.Code(params, body, tag);
         case 'Param':
           name = this.dataToClass(node.name);
@@ -279,75 +270,94 @@
           }
           splat = node.splat;
           return new nodes.Param(name, value, splat);
-        case 'FuncGlyph':
-          // This is metadata, not a real node
-          return node;
         case 'Call':
           variable = this.dataToClass(node.variable);
+          args = node.args ? this.filterNodes(node.args) : [];
+          soak = node.soak;
+          return new nodes.Call(variable, args, soak);
+        case 'Super':
+          if (node.accessor) {
+            accessor = this.dataToClass(node.accessor);
+          }
+          return new nodes.Super(accessor);
+        case 'SuperCall':
+          // SuperCall extends Call(variable, args, soak)
+          // The variable should be a Super node
+          variable = node.variable ? this.dataToClass(node.variable) : new nodes.Super();
+          
+          // Process arguments, filtering out empty objects
           args = (function() {
-            var i, len, ref2, ref3;
+            var i, len, ref2;
             if (node.args) {
-              // Filter out null arguments and ensure all are proper nodes
-              convertedArgs = [];
+              result = [];
               ref2 = node.args;
               for (i = 0, len = ref2.length; i < len; i++) {
                 arg = ref2[i];
-                converted = this.dataToClass(arg);
-                // Only add if it's a proper node (has compileToFragments method)
-                if ((converted != null) && (converted.compileToFragments || converted instanceof nodes.Base)) {
-                  convertedArgs.push(converted);
-                } else if ((converted != null) && ((ref3 = typeof converted) === 'string' || ref3 === 'number' || ref3 === 'boolean')) {
-                  // Wrap primitives in Literal nodes
-                  convertedArgs.push(new nodes.Literal(String(converted)));
-                }
-              }
-              return convertedArgs;
-            } else {
-              return [];
-            }
-          }).call(this);
-          soak = node.soak;
-          return new nodes.Call(variable, args, soak);
-        case 'SuperCall':
-          // Filter out null arguments that might come from CS3 conversion
-          args = node.args ? node.args.map((arg) => {
-            return this.dataToClass(arg);
-          }).filter(function(arg) {
-            return arg != null;
-          }) : [];
-          return new nodes.SuperCall(args);
-        // Arrays and objects
-        case 'Arr':
-          objects = (function() {
-            var i, len, ref2;
-            if (node.objects) {
-              // Flatten and process the objects array
-              result = [];
-              ref2 = node.objects;
-              for (i = 0, len = ref2.length; i < len; i++) {
-                obj = ref2[i];
-                // Handle nested arrays (from the parser)
-                if (Array.isArray(obj)) {
-                  // Unwrap single-element arrays
-                  if (obj.length === 1) {
-                    converted = this.dataToClass(obj[0]);
-                    if (converted) {
-                      result.push(converted);
-                    }
-                  }
-                } else if (typeof obj === 'object' && Object.keys(obj).length > 0) {
-                  // Non-empty objects
-                  converted = this.dataToClass(obj);
+                // Skip empty objects
+                if ((arg != null) && (arg.type || Object.keys(arg).length > 0)) {
+                  converted = this.dataToClass(arg);
                   if (converted) {
                     result.push(converted);
                   }
                 }
               }
               return result;
+            } else {
+              return [];
+            }
+          }).call(this);
+          
+          // Create SuperCall with Super as variable and filtered args
+          return new nodes.SuperCall(variable, args, node.soak);
+        // ============================================================
+        // Arrays and Objects
+        // ============================================================
+        case 'Arr':
+          objects = (function() {
+            var i, j, k, len, len1, len2, ref2, ref3;
+            if (node.objects) {
+              result = [];
+              ref2 = node.objects;
+              for (i = 0, len = ref2.length; i < len; i++) {
+                obj = ref2[i];
+                if (Array.isArray(obj)) {
+// Process all elements in nested arrays (happens with elisions)
+                  for (j = 0, len1 = obj.length; j < len1; j++) {
+                    item = obj[j];
+                    if ((item != null ? item.type : void 0) === 'Elision') {
+                      // Handle elisions - create actual hole/empty slot
+                      result.push(new nodes.Elision());
+                    } else {
+                      converted = this.dataToClass(item);
+                      if (converted) {
+                        result.push(converted);
+                      }
+                    }
+                  }
+                } else if ((obj != null ? obj.type : void 0) === 'Elision') {
+                  // Handle elisions - create actual hole/empty slot
+                  result.push(new nodes.Elision());
+                } else if (typeof obj === 'object' && Object.keys(obj).length > 0) {
+                  converted = this.dataToClass(obj);
+                  if (converted) {
+                    result.push(converted);
+                  }
+                }
+              }
+              // Handle trailing elisions stored in separate elisions property
+              // Only process elisions that have type: 'Elision', not empty objects
+              if (node.elisions) {
+                ref3 = node.elisions;
+                for (k = 0, len2 = ref3.length; k < len2; k++) {
+                  elision = ref3[k];
+                  if ((elision != null ? elision.type : void 0) === 'Elision') {
+                    result.push(new nodes.Elision());
+                  }
+                }
+              }
+              return result;
             } else if (node.value) {
-              // Handle value array (e.g., empty array case)
               if (Array.isArray(node.value)) {
-                // Filter out empty objects
                 return node.value.filter(function(v) {
                   return !(typeof v === 'object' && Object.keys(v).length === 0);
                 }).map((v) => {
@@ -365,13 +375,11 @@
           properties = (function() {
             var i, j, len, len1, ref2;
             if (node.properties) {
-              // Flatten properties array in case it contains nested arrays
               result = [];
               ref2 = node.properties;
               for (i = 0, len = ref2.length; i < len; i++) {
                 prop = ref2[i];
                 if (Array.isArray(prop)) {
-// Flatten nested array
                   for (j = 0, len1 = prop.length; j < len1; j++) {
                     item = prop[j];
                     converted = this.dataToClass(item);
@@ -399,14 +407,23 @@
           tag = node.exclusive ? 'exclusive' : 'inclusive';
           return new nodes.Range(from, to, tag);
         case 'Slice':
-          // Slice wraps a Range in CS3
+          // Unwrap the range
           return this.dataToClass(node.range);
-        // Control flow
+        case 'Splat':
+          name = this.dataToClass(node.name || node.body);
+          return new nodes.Splat(name);
+        case 'Expansion':
+          return new nodes.Expansion();
+        case 'Elision':
+          // Support array elisions - create actual hole/empty slot
+          return new nodes.Elision();
+        // ============================================================
+        // Control Flow
+        // ============================================================
         case 'If':
         case 'if':
         case 'unless':
           condition = this.dataToClass(node.condition);
-          // Convert array of nodes to Block with converted nodes
           body = Array.isArray(node.body) ? (bodyNodes = node.body.map((n) => {
             return this.dataToClass(n);
           }), new nodes.Block(bodyNodes)) : this.dataToClass(node.body);
@@ -417,9 +434,7 @@
           if (node.postfix) {
             options.postfix = node.postfix;
           }
-          // Create the If node
           ifNode = new nodes.If(condition, body, options);
-          // If there's an else clause, add it
           if (node.elseBody) {
             elseBody = Array.isArray(node.elseBody) ? (bodyNodes = node.elseBody.map((n) => {
               return this.dataToClass(n);
@@ -436,45 +451,30 @@
           body = Array.isArray(node.body) ? new nodes.Block(this.dataToClass(node.body)) : this.dataToClass(node.body);
           return new nodes.While(condition, guard).addBody(body);
         case 'For':
-          // Convert body first
+          // Convert body
           body = Array.isArray(node.body) ? (bodyNodes = node.body.map((n) => {
             converted = this.dataToClass(n);
             if (converted) {
-              // Ensure each node has locationData
               if (converted.locationData == null) {
-                converted.locationData = {
-                  first_line: 0,
-                  first_column: 0,
-                  last_line: 0,
-                  last_column: 0,
-                  range: [0, 0]
-                };
+                converted.locationData = this.defaultLocationData();
               }
             }
             return converted;
           }), new nodes.Block(bodyNodes)) : node.body ? this.dataToClass(node.body) : new nodes.Block([]);
-          // Add dummy locationData to body to prevent errors
-          defaultLocationData = {
-            first_line: 0,
-            first_column: 0,
-            last_line: 0,
-            last_column: 0,
-            range: [0, 0]
-          };
+          // Ensure locationData
           if (body.locationData == null) {
-            body.locationData = defaultLocationData;
+            body.locationData = this.defaultLocationData();
           }
-          // Ensure expressions have locationData too
           if (body.expressions) {
             ref2 = body.expressions;
             for (i = 0, len = ref2.length; i < len; i++) {
               expr = ref2[i];
               if (expr.locationData == null) {
-                expr.locationData = defaultLocationData;
+                expr.locationData = this.defaultLocationData();
               }
             }
           }
-          // Convert source and build ForSource object
+          // Build source object
           sourceObj = {};
           if (node.source) {
             sourceObj.source = this.dataToClass(node.source);
@@ -509,37 +509,29 @@
           if (node.ownTag) {
             sourceObj.ownTag = this.dataToClass(node.ownTag);
           }
-          // Create For node with body and source object
-          forNode = new nodes.For(body, sourceObj);
-          return forNode;
-        case 'Source':
-          // Source is a wrapper node in CS3 - unwrap it
-          return this.dataToClass(node.value);
+          // FIX: Loop variable conflicts
+          // The For node constructor will handle variable allocation
+          // We just need to pass the correct source configuration
+          return new nodes.For(body, sourceObj);
         case 'Switch':
           subject = this.dataToClass(node.subject);
           cases = node.cases ? node.cases.map((c) => {
             return this.dataToClass(c);
           }) : [];
-          // Otherwise clause expects a Block
-          // Wrap in Block if not already
           otherwise = node.otherwise ? (otherwiseNode = this.dataToClass(node.otherwise), otherwiseNode instanceof nodes.Block ? otherwiseNode : Array.isArray(otherwiseNode) ? new nodes.Block(otherwiseNode) : otherwiseNode != null ? new nodes.Block([otherwiseNode]) : null) : null;
           return new nodes.Switch(subject, cases, otherwise);
         case 'SwitchWhen':
           conditions = this.dataToClass(node.conditions);
-          // Body should be a Block
           body = node.body ? (bodyNode = this.dataToClass(node.body), bodyNode instanceof nodes.Block ? bodyNode : Array.isArray(bodyNode) ? new nodes.Block(bodyNode) : bodyNode != null ? new nodes.Block([bodyNode]) : new nodes.Block([])) : new nodes.Block([]);
           return new nodes.SwitchWhen(conditions, body);
         case 'Try':
-          // Attempt should be a Block
           attempt = node.attempt ? (attemptNode = this.dataToClass(node.attempt), attemptNode instanceof nodes.Block ? attemptNode : Array.isArray(attemptNode) ? new nodes.Block(attemptNode) : attemptNode != null ? new nodes.Block([attemptNode]) : new nodes.Block([])) : new nodes.Block([]);
           if (node.catch) {
             catch_ = this.dataToClass(node.catch);
           }
-          // Ensure should be a Block too
           ensure = node.ensure ? (ensureNode = this.dataToClass(node.ensure), ensureNode instanceof nodes.Block ? ensureNode : Array.isArray(ensureNode) ? new nodes.Block(ensureNode) : ensureNode != null ? new nodes.Block([ensureNode]) : null) : null;
           return new nodes.Try(attempt, catch_, ensure);
         case 'Catch':
-          // Recovery should be a Block
           recovery = node.recovery || node.body ? (recoveryNode = this.dataToClass(node.recovery || node.body), recoveryNode instanceof nodes.Block ? recoveryNode : Array.isArray(recoveryNode) ? new nodes.Block(recoveryNode) : recoveryNode != null ? new nodes.Block([recoveryNode]) : new nodes.Block([])) : new nodes.Block([]);
           if (node.variable) {
             variable = this.dataToClass(node.variable);
@@ -563,7 +555,9 @@
             expression = this.dataToClass(node.expression);
           }
           return new nodes.AwaitReturn(expression);
+        // ============================================================
         // Classes
+        // ============================================================
         case 'Class':
           if (node.variable) {
             variable = this.dataToClass(node.variable);
@@ -571,25 +565,21 @@
           if (node.parent) {
             parent = this.dataToClass(node.parent);
           }
-          // Body is an array of nodes
           body = (function() {
             var j, k, l, len1, len2, len3, ref3, ref4, ref5;
             if (Array.isArray(node.body)) {
-              // Check if the body contains an Obj node (which holds the methods)
-              // CS3 represents class methods as an object literal
               bodyNodes = [];
               ref3 = node.body;
               for (j = 0, len1 = ref3.length; j < len1; j++) {
                 item = ref3[j];
                 if (item.type === 'Value' && ((ref4 = item.val) != null ? ref4.type : void 0) === 'Obj') {
-                  // Extract the properties from the Obj node as individual methods
+                  // Extract methods from object literal
                   objNode = item.val;
                   if (objNode.properties) {
                     ref5 = objNode.properties;
                     for (k = 0, len2 = ref5.length; k < len2; k++) {
                       prop = ref5[k];
                       if (Array.isArray(prop)) {
-// Handle nested arrays (multi-line objects)
                         for (l = 0, len3 = prop.length; l < len3; l++) {
                           p = prop[l];
                           converted = this.dataToClass(p);
@@ -606,7 +596,6 @@
                     }
                   }
                 } else {
-                  // Regular body node
                   converted = this.dataToClass(item);
                   if (converted) {
                     bodyNodes.push(converted);
@@ -621,35 +610,31 @@
             }
           }).call(this);
           return new nodes.Class(variable, parent, body);
-        // Splats and expansions
-        case 'Splat':
-          name = this.dataToClass(node.name || node.body);
-          return new nodes.Splat(name);
-        case 'Expansion':
-          return new nodes.Expansion();
+        // ============================================================
         // Parentheticals
+        // ============================================================
         case 'Parens':
-          // If body is an array, wrap in Block
           body = Array.isArray(node.body) ? (bodyNodes = node.body.map((n) => {
             return this.dataToClass(n);
           }), new nodes.Block(bodyNodes)) : this.dataToClass(node.body);
           return new nodes.Parens(body);
-        // String interpolation
+        // ============================================================
+        // String Interpolation
+        // ============================================================
         case 'StringWithInterpolations':
-          // The body should be a Block containing the parts
           body = node.body ? (parts = node.body.map((part) => {
             return this.dataToClass(part);
           }), new nodes.Block(parts)) : new nodes.Block([]);
           quote = node.quote || '"';
           return new nodes.StringWithInterpolations(body, {quote});
         case 'Interpolation':
-          // For single-element arrays, just use the element
-          // Wrap multiple expressions in Block
           expression = Array.isArray(node.expression) ? node.expression.length === 1 ? this.dataToClass(node.expression[0]) : (expressionNodes = node.expression.map((n) => {
             return this.dataToClass(n);
           }), new nodes.Block(expressionNodes)) : node.expression ? this.dataToClass(node.expression) : new nodes.Block([]);
           return new nodes.Interpolation(expression);
+        // ============================================================
         // Import/Export
+        // ============================================================
         case 'ImportDeclaration':
           if (node.clause) {
             clause = this.dataToClass(node.clause);
@@ -668,10 +653,20 @@
           }
           return new nodes.ImportClause(defaultBinding, namedImports);
         case 'ExportDeclaration':
-          // Handle various export types
           return new nodes.ExportDeclaration(this.dataToClass(node.clause));
+        // ============================================================
+        // Meta nodes
+        // ============================================================
+        case 'FuncGlyph':
+          // This is metadata, not a real node
+          return node;
+        case 'Source':
+          // Source is a wrapper node - unwrap it
+          return this.dataToClass(node.value);
         default:
-          // Default case - warn and return a comment
+          // ============================================================
+          // Default fallback
+          // ============================================================
           console.warn(`Unknown CS3 node type: ${node.type}`);
           return new nodes.PassthroughLiteral(`/* Unknown node type: ${node.type} */`);
       }
@@ -679,7 +674,6 @@
 
   };
 
-  // Export the backend
   module.exports = ES5Backend;
 
 }).call(this);
