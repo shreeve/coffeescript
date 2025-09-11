@@ -282,7 +282,18 @@ class ES5Backend
 
       when 'Obj'
         properties = if node.properties
-          @dataToClass prop for prop in node.properties when prop
+          # Flatten properties array in case it contains nested arrays
+          result = []
+          for prop in node.properties
+            if Array.isArray(prop)
+              # Flatten nested array
+              for item in prop
+                converted = @dataToClass item
+                result.push converted if converted
+            else if prop
+              converted = @dataToClass prop
+              result.push converted if converted
+          result
         else
           []
         generated = node.generated
@@ -413,9 +424,29 @@ class ES5Backend
         variable = @dataToClass node.variable if node.variable
         parent = @dataToClass node.parent if node.parent
 
-        # Body is an array of nodes, convert to Block
+        # Body is an array of nodes
         body = if Array.isArray node.body
-          bodyNodes = node.body.map (n) => @dataToClass n
+          # Check if the body contains an Obj node (which holds the methods)
+          # CS3 represents class methods as an object literal
+          bodyNodes = []
+          for item in node.body
+            if item.type is 'Value' and item.val?.type is 'Obj'
+              # Extract the properties from the Obj node as individual methods
+              objNode = item.val
+              if objNode.properties
+                for prop in objNode.properties
+                  if Array.isArray(prop)
+                    # Handle nested arrays (multi-line objects)
+                    for p in prop
+                      converted = @dataToClass p
+                      bodyNodes.push converted if converted
+                  else if prop
+                    converted = @dataToClass prop
+                    bodyNodes.push converted if converted
+            else
+              # Regular body node
+              converted = @dataToClass item
+              bodyNodes.push converted if converted
           new nodes.Block bodyNodes
         else if node.body
           @dataToClass node.body
@@ -434,8 +465,39 @@ class ES5Backend
 
       # Parentheticals
       when 'Parens'
-        body = @dataToClass node.body
+        body = if Array.isArray node.body
+          # If body is an array, wrap in Block
+          bodyNodes = node.body.map (n) => @dataToClass n
+          new nodes.Block bodyNodes
+        else
+          @dataToClass node.body
         new nodes.Parens body
+
+      # String interpolation
+      when 'StringWithInterpolations'
+        # The body should be a Block containing the parts
+        body = if node.body
+          parts = node.body.map (part) => @dataToClass part
+          new nodes.Block parts
+        else
+          new nodes.Block []
+        quote = node.quote or '"'
+        new nodes.StringWithInterpolations body, {quote}
+
+      when 'Interpolation'
+        expression = if Array.isArray node.expression
+          # For single-element arrays, just use the element
+          if node.expression.length is 1
+            @dataToClass node.expression[0]
+          else
+            # Wrap multiple expressions in Block
+            expressionNodes = node.expression.map (n) => @dataToClass n
+            new nodes.Block expressionNodes
+        else if node.expression
+          @dataToClass node.expression
+        else
+          new nodes.Block []
+        new nodes.Interpolation expression
 
       # Import/Export
       when 'ImportDeclaration'
