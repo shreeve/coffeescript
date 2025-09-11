@@ -182,7 +182,7 @@ class ES5Backend
           # Regular assignment
           variable = @dataToClass node.variable
           value = @dataToClass node.value
-        
+
         # Ensure we have valid nodes
         if not variable? or not value?
           return null
@@ -337,7 +337,7 @@ class ES5Backend
         to = @dataToClass node.to
         tag = if node.exclusive then 'exclusive' else 'inclusive'
         new nodes.Range from, to, tag
-      
+
       when 'Slice'
         # Slice wraps a Range in CS3
         @dataToClass node.range

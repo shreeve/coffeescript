@@ -203,7 +203,7 @@ class Generator
         if key.startsWith('$')
           hasDirective = true
           break
-      
+
       if hasDirective
         # It's a CS3 directive, convert it
         result = @_convertCS3ToJS action, ruleName, symbols
@@ -211,7 +211,7 @@ class Generator
         # It's a plain object, but may contain CS3 directives as values
         # Use _convertCS3Value which handles plain objects
         result = @_convertCS3Value action, symbols
-      
+
       # Wrap in parentheses if it's an object literal at statement level
       if result.startsWith '{'
         result = "(#{result})"
@@ -303,7 +303,7 @@ class Generator
         args = if directive.args
           # For certain methods like 'slice', args should be treated as literals
           if directive.method in ['slice', 'substring', 'substr']
-            directive.args.map((arg) => 
+            directive.args.map((arg) =>
               # For these methods, numbers are literal values, not position refs
               if typeof arg is 'number'
                 arg.toString()
@@ -427,7 +427,7 @@ class Generator
         argRef = parts[1].replace /\$(\d+)/, (_, n) ->
           offset = symbols.length - parseInt(n, 10)
           "$$[$0-#{offset}]"
-        
+
         # In CS3 mode, wrap as a data object with type
         if @cs3Mode
           # For Source, create a special wrapper
@@ -457,7 +457,7 @@ class Generator
           if key.startsWith('$')
             hasDirective = true
             break
-        
+
         if hasDirective
           # It's a CS3 directive, convert it
           return @_convertCS3ToJS value, null, symbols
