@@ -167,22 +167,22 @@ class ES5Backend
           # Regular assignment
           variable = @dataToClass node.variable
           value = @dataToClass node.value
-        
+
         context = node.context
         options = {}
         options.param = node.param if node.param
         options.subpattern = node.subpattern if node.subpattern
-        
+
         # Handle operatorToken carefully - it might be a data node
         if node.operatorToken
           if typeof node.operatorToken is 'object' and node.operatorToken.type
             # It's a data node, just use its value
-            options.operatorToken = 
+            options.operatorToken =
               value: node.operatorToken.value
               locationData: node.operatorToken.locationData
           else
             options.operatorToken = @dataToClass node.operatorToken
-        
+
         options.moduleDeclaration = node.moduleDeclaration if node.moduleDeclaration
         new nodes.Assign variable, value, context, options
 
@@ -412,7 +412,7 @@ class ES5Backend
       when 'Class'
         variable = @dataToClass node.variable if node.variable
         parent = @dataToClass node.parent if node.parent
-        
+
         # Body is an array of nodes, convert to Block
         body = if Array.isArray node.body
           bodyNodes = node.body.map (n) => @dataToClass n
@@ -421,7 +421,7 @@ class ES5Backend
           @dataToClass node.body
         else
           new nodes.Block []
-        
+
         new nodes.Class variable, parent, body
 
       # Splats and expansions
