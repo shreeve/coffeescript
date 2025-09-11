@@ -34,6 +34,11 @@ CoffeeScript.compile = (code, options) ->
 # setting `__filename`, `__dirname`, and relative `require()`.
 CoffeeScript.run = (code, options = {}) ->
   mainModule = require.main
+  
+  # require.main can be undefined in some contexts, create a dummy module
+  unless mainModule
+    mainModule = new (require 'module')()
+    mainModule.paths = require('module')._nodeModulePaths process.cwd()
 
   # Set the filename.
   mainModule.filename = process.argv[1] =

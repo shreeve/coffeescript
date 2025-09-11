@@ -488,11 +488,17 @@ runTests = (CoffeeScript) ->
   skipUnless '1_2_3', ['numeric_literal_separators.coffee']
   skipUnless '1n', ['numbers_bigint.coffee']
   skipUnless 'async () => { await import(\'data:application/json,{"foo":"bar"}\', { assert: { type: "json" } }) }', ['import_assertions.coffee']
-  files = fs.readdirSync('test').filter (filename) ->
-    filename not in testFilesToSkip
+  allFiles = fs.readdirSync('test')
+  console.log "[DEBUG] All files in test/: #{allFiles.length}" if process.env.DEBUG_CS3
+  files = allFiles.filter (filename) ->
+    result = filename not in testFilesToSkip
+    console.log "[DEBUG] Filter #{filename}: #{result} (skip list has #{testFilesToSkip.length} items)" if process.env.DEBUG_CS3 and filename.endsWith('.coffee')
+    result
 
+  console.log "[DEBUG] Found #{files.length} test files after filter" if process.env.DEBUG_CS3
   startTime = Date.now()
   for file in files when helpers.isCoffee file
+    console.log "[DEBUG] Running test file: #{file}" if process.env.DEBUG_CS3
     literate = helpers.isLiterate file
     currentFile = filename = path.join 'test', file
     code = fs.readFileSync filename

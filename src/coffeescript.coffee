@@ -63,6 +63,15 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
   # Clone `options`, to avoid mutating the `options` object passed in.
   options = Object.assign {}, options
 
+  # Check if CS3 mode is requested (but not for AST generation)
+  if (options.cs3 or process.env.COFFEESCRIPT_CS3) and not options.ast
+    console.log '[CS3] Using CS3/ES5 backend for compilation' if process.env.DEBUG_CS3
+    try
+      return require('./cs3-compiler').compileCS3 code, options
+    catch error
+      throw helpers.updateSyntaxError error, code, options.filename
+  
+  console.log '[CS3] Using standard CoffeeScript compiler' if process.env.DEBUG_CS3
   generateSourceMap = options.sourceMap or options.inlineMap or not options.filename?
   filename = options.filename or helpers.anonymousFileName()
 
