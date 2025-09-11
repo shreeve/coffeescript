@@ -264,13 +264,14 @@ class ES5Backend
             else
               flatParams.push param
 
-        # Check if body contains a super call
-        hasSuperCall = false
+        # Helper to check if super call is simple (direct statement, not in expression)
+        hasSimpleSuperCall = false
         if node.body
           bodyArray = if Array.isArray(node.body) then node.body else [node.body]
           for item in bodyArray
-            if item?.type is 'SuperCall' or item?.val?.type is 'SuperCall'
-              hasSuperCall = true
+            # Only consider direct super calls at statement level
+            if item?.type is 'SuperCall'
+              hasSimpleSuperCall = true
               break
 
         # Process params, handling @params specially if there's a super call
@@ -278,7 +279,7 @@ class ES5Backend
         for param in flatParams
           if param?.type is 'Param' and param.name?.type is 'Value' and
              param.name.val?.type is 'ThisLiteral' and param.name.properties?.length > 0 and
-             hasSuperCall
+             hasSimpleSuperCall
             # This is an @param with a super call in the body
             # Convert @name to regular name parameter
             propName = param.name.properties[0].name.value
@@ -301,24 +302,79 @@ class ES5Backend
           []
 
         # If we have @params that were moved, add assignments after super
-        if atParams.length > 0 and hasSuperCall
-          newBodyNodes = []
+        if atParams.length > 0 and hasSimpleSuperCall
+          # Helper to find and mark where super calls are
+          findAndReplaceSuperCalls = (node) ->
+            return unless node
+
+            # Check if this node contains a super call
+            hasSuper = false
+            if node?.constructor?.name is 'SuperCall'
+              hasSuper = true
+            else if node?.base?.constructor?.name is 'SuperCall'
+              hasSuper = true
+            else
+              # Check in object properties (for { super: super() } case)
+              if node?.constructor?.name is 'Obj' and node.properties
+                for prop in node.properties
+                  if prop?.value?.constructor?.name is 'SuperCall'
+                    hasSuper = true
+                    break
+
+            if hasSuper
+              # Add marker that this node has super
+              node._hasSuperCall = true
+
+            # Recursively check children
+            for key, value of node
+              continue if key[0] is '_' or key in ['constructor']
+              if value and typeof value is 'object'
+                if Array.isArray value
+                  for item in value
+                    findAndReplaceSuperCalls item if item?.constructor
+                else if value.constructor
+                  findAndReplaceSuperCalls value
+
+          # Mark nodes with super calls
           for bodyNode in bodyNodes
-            newBodyNodes.push bodyNode
-            # Check if this is the super call (might be wrapped in Value node)
-            isSuperCall = bodyNode?.constructor?.name is 'SuperCall' or
-                         (bodyNode?.constructor?.name is 'Value' and
-                          bodyNode.base?.constructor?.name is 'SuperCall')
-            if isSuperCall
-              for atParam in atParams
-                # Create @name = name assignment
-                thisLit = new nodes.ThisLiteral()
-                access = new nodes.Access(new nodes.PropertyName(atParam.name))
-                left = new nodes.Value(thisLit, [access])
-                right = new nodes.IdentifierLiteral(atParam.name)
-                assignment = new nodes.Assign(left, right)
-                newBodyNodes.push assignment
-          bodyNodes = newBodyNodes
+            findAndReplaceSuperCalls bodyNode
+
+          # For complex cases (super in expressions), prepend the assignments at the start
+          needsPrepend = false
+          for bodyNode in bodyNodes
+            if bodyNode?._hasSuperCall and bodyNode?.constructor?.name isnt 'SuperCall'
+              needsPrepend = true
+              break
+
+          if needsPrepend
+            # Complex case: add assignments at the very beginning
+            # This is safer but may not be ideal for all cases
+            newBodyNodes = []
+            for atParam in atParams
+              # Create @name = name assignment
+              thisLit = new nodes.ThisLiteral()
+              access = new nodes.Access(new nodes.PropertyName(atParam.name))
+              left = new nodes.Value(thisLit, [access])
+              right = new nodes.IdentifierLiteral(atParam.name)
+              assignment = new nodes.Assign(left, right)
+              newBodyNodes.push assignment
+            newBodyNodes.push bodyNodes...
+            bodyNodes = newBodyNodes
+          else
+            # Simple case: add after the super call statement
+            newBodyNodes = []
+            for bodyNode in bodyNodes
+              newBodyNodes.push bodyNode
+              if bodyNode?.constructor?.name is 'SuperCall' or bodyNode?._hasSuperCall
+                for atParam in atParams
+                  # Create @name = name assignment
+                  thisLit = new nodes.ThisLiteral()
+                  access = new nodes.Access(new nodes.PropertyName(atParam.name))
+                  left = new nodes.Value(thisLit, [access])
+                  right = new nodes.IdentifierLiteral(atParam.name)
+                  assignment = new nodes.Assign(left, right)
+                  newBodyNodes.push assignment
+            bodyNodes = newBodyNodes
 
         body = new nodes.Block bodyNodes
         funcGlyph = node.funcGlyph?.glyph or '->'
@@ -736,6 +792,25 @@ class ES5Backend
         # Regex with interpolations - convert to regular regex for now
         # This would need more complex handling for full support
         new nodes.RegexLiteral node.value or '//', node.flags or ''
+
+      when 'DynamicImportCall'
+        # Dynamic import() call - extends Call
+        variable = new nodes.IdentifierLiteral 'import'
+        args = if node.args
+          @filterNodes node.args
+        else
+          []
+        # DynamicImportCall extends Call, so pass variable and args
+        new nodes.DynamicImportCall variable, args
+
+      when 'TaggedTemplateCall'
+        # Tagged template literals - expects single arg, not array
+        variable = @dataToClass node.variable
+        arg = if node.args?.length > 0
+          @dataToClass node.args[0]
+        else
+          new nodes.StringLiteral ''
+        new nodes.TaggedTemplateCall variable, arg, node.soak
 
       # ============================================================
       # Default fallback
