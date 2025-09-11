@@ -299,7 +299,6 @@
               }
             }
           }
-          
           // Check if body contains a super call
           hasSuperCall = false;
           if (node.body) {
@@ -312,7 +311,6 @@
               }
             }
           }
-          
           // Process params, handling @params specially if there's a super call
           processedParams = [];
           for (l = 0, len3 = flatParams.length; l < len3; l++) {
@@ -336,7 +334,6 @@
           }
           params = processedParams;
           bodyNodes = Array.isArray(node.body) ? this.filterNodes(node.body) : node.body ? (converted = this.dataToClass(node.body), converted != null ? [converted] : []) : [];
-          
           // If we have @params that were moved, add assignments after super
           if (atParams.length > 0 && hasSuperCall) {
             newBodyNodes = [];
