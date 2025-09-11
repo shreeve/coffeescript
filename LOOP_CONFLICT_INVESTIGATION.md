@@ -10,7 +10,7 @@ After extensive testing, **the loop variable conflict issue does NOT exist** in 
 CoffeeScript's `scope.freeVariable` method **already avoids conflicts** by:
 
 1. **Scanning the scope** for already-used variables
-2. **Skipping variables** that are already declared (including destructured ones)  
+2. **Skipping variables** that are already declared (including destructured ones)
 3. **Choosing alternative names** automatically
 
 ### Example: How It Works
