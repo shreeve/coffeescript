@@ -197,8 +197,21 @@ class Generator
   _processSemanticAction: (action, symbols, ruleName) ->
     # Check if CS3 mode and action is an object
     if @cs3Mode and typeof action is 'object'
-      # Convert CS3 directive to JavaScript, wrapping in parens for top-level
-      result = @_convertCS3ToJS action, ruleName, symbols
+      # Check if it's a CS3 directive (has $ prefix) or plain object
+      hasDirective = false
+      for key of action
+        if key.startsWith('$')
+          hasDirective = true
+          break
+      
+      if hasDirective
+        # It's a CS3 directive, convert it
+        result = @_convertCS3ToJS action, ruleName, symbols
+      else
+        # It's a plain object, but may contain CS3 directives as values
+        # Use _convertCS3Value which handles plain objects
+        result = @_convertCS3Value action, symbols
+      
       # Wrap in parentheses if it's an object literal at statement level
       if result.startsWith '{'
         result = "(#{result})"
@@ -344,18 +357,30 @@ class Generator
             [target, elseBody] = directive.addElse
             targetRef = @_convertCS3Value target, symbols
             elseRef = @_convertCS3Value elseBody, symbols
-            return "(function(){ #{targetRef}.addElse(#{elseRef}); return #{targetRef}; })()"
+            # In CS3 mode, we modify the data node directly, not call a method
+            return "(function(){ #{targetRef}.elseBody = #{elseRef}; return #{targetRef}; })()"
         when 'loop'
           if directive.addBody
             [target, body] = directive.addBody
             targetRef = @_convertCS3Value target, symbols
             bodyRef = @_convertCS3Value body, symbols
-            return "(function(){ #{targetRef}.addBody(#{bodyRef}); return #{targetRef}; })()"
+            # In CS3 mode, modify the data node directly
+            return "(function(){ #{targetRef}.body = #{bodyRef}; return #{targetRef}; })()"
           if directive.addSource
             [target, source] = directive.addSource
             targetRef = @_convertCS3Value target, symbols
-            sourceRef = @_convertCS3Value source, symbols
-            return "(function(){ #{targetRef}.addSource(#{sourceRef}); return #{targetRef}; })()"
+            # The source is an object with properties like {source: ..., guard: ..., step: ...}
+            # We need to convert each property value
+            sourceObj = source
+            if typeof sourceObj is 'object' and not Array.isArray(sourceObj)
+              props = []
+              for key, val of sourceObj
+                convertedVal = @_convertCS3Value val, symbols
+                props.push "#{targetRef}.#{key} = #{convertedVal}"
+              return "(function(){ #{props.join('; ')}; return #{targetRef}; })()"
+            else
+              sourceRef = @_convertCS3Value source, symbols
+              return "(function(){ Object.assign(#{targetRef}, #{sourceRef}); return #{targetRef}; })()"
 
     # Handle $seq directive - sequential operations
     if directive.$seq
@@ -395,24 +420,25 @@ class Generator
       offset = symbols.length - value
       return "$$[$0-#{offset}]"
     else if typeof value is 'string'
-      # Check if it's a special string like 'Body $2' - likely a constructor call
+      # Check if it's a special string like 'Body $2' or 'Source $2'
       if value.match /^[A-Z]\w+\s+\$\d+$/
         parts = value.split(/\s+/)
-        className = parts[0]
+        typeName = parts[0]
         argRef = parts[1].replace /\$(\d+)/, (_, n) ->
           offset = symbols.length - parseInt(n, 10)
           "$$[$0-#{offset}]"
-        # Return as a constructor/function call
-        return "#{className}(#{argRef})"
-      # Check if it's a source reference like 'Source $2'
-      else if value.match /^Source\s+\$\d+$/
-        parts = value.split(/\s+/)
-        className = parts[0]
-        argRef = parts[1].replace /\$(\d+)/, (_, n) ->
-          offset = symbols.length - parseInt(n, 10)
-          "$$[$0-#{offset}]"
-        # Return as a constructor/function call
-        return "#{className}(#{argRef})"
+        
+        # In CS3 mode, wrap as a data object with type
+        if @cs3Mode
+          # For Source, create a special wrapper
+          if typeName is 'Source'
+            return "({type: 'Source', value: #{argRef}})"
+          else
+            # For other types, just pass through the value
+            return argRef
+        else
+          # In old mode, return as a constructor/function call
+          return "#{typeName}(#{argRef})"
       else
         return JSON.stringify(value)
     else if typeof value is 'boolean'
@@ -425,8 +451,23 @@ class Generator
         elements = value.map (el) => @_convertCS3Value el, symbols
         return "[#{elements.join(', ')}]"
       else
-        # Nested directive
-        return @_convertCS3ToJS value, null, symbols
+        # Check if it's a CS3 directive (has $ prefix) or a plain object
+        hasDirective = false
+        for key of value
+          if key.startsWith('$')
+            hasDirective = true
+            break
+        
+        if hasDirective
+          # It's a CS3 directive, convert it
+          return @_convertCS3ToJS value, null, symbols
+        else
+          # It's a plain object, convert its properties
+          props = []
+          for key, val of value
+            convertedVal = @_convertCS3Value val, symbols
+            props.push "#{JSON.stringify(key)}: #{convertedVal}"
+          return "{#{props.join(', ')}}"
     else
       return JSON.stringify(value)
 

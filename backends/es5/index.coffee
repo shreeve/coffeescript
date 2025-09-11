@@ -277,16 +277,32 @@ class ES5Backend
         new nodes.Range from, to, tag
 
       # Control flow
-      when 'If'
+      when 'If', 'if'
         condition = @dataToClass node.condition
         body = if Array.isArray node.body
-          new nodes.Block @dataToClass node.body
+          # Convert array of nodes to Block with converted nodes
+          bodyNodes = node.body.map (n) => @dataToClass n
+          new nodes.Block bodyNodes
         else
           @dataToClass node.body
-        options = type: node.type or 'if'
+        options = {}
+        options.type = node.type if node.type
         options.postfix = node.postfix if node.postfix
-        elseBody = @dataToClass node.elseBody if node.elseBody
-        new nodes.If condition, body, options, elseBody
+
+        # Create the If node
+        ifNode = new nodes.If condition, body, options
+
+        # If there's an else clause, add it
+        if node.elseBody
+          elseBody = if Array.isArray node.elseBody
+            bodyNodes = node.elseBody.map (n) => @dataToClass n
+            new nodes.Block bodyNodes
+          else
+            @dataToClass node.elseBody
+          ifNode.elseBody = elseBody
+          ifNode.isChain = elseBody instanceof nodes.If
+
+        ifNode
 
       when 'While'
         condition = @dataToClass node.condition
@@ -299,26 +315,39 @@ class ES5Backend
           .addBody body
 
       when 'For'
+        # Convert body first
         body = if Array.isArray node.body
-          new nodes.Block @dataToClass node.body
+          bodyNodes = node.body.map (n) => @dataToClass n
+          new nodes.Block bodyNodes
         else if node.body
           @dataToClass node.body
         else
           new nodes.Block []
+        
+        # Add dummy locationData to body to prevent errors
+        body.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0}
+        
+        # Convert source (handle ForSource object)
         source = @dataToClass node.source
-        guard = @dataToClass node.guard if node.guard
-        step = @dataToClass node.step if node.step
-        name = @dataToClass node.name if node.name
-        index = @dataToClass node.index if node.index
-        forNode = new nodes.For body, source
-        forNode.guard = guard if guard
-        forNode.step = step if step
-        forNode.name = name if name
-        forNode.index = index if index
+        
+        # Create For node with body and source
+        forNode = new nodes.For body, {source}
+        
+        # Set other properties
+        forNode.guard = @dataToClass node.guard if node.guard
+        forNode.step = @dataToClass node.step if node.step
+        forNode.name = @dataToClass node.name if node.name
+        forNode.index = @dataToClass node.index if node.index
+        forNode.object = node.object if node.object
+        forNode.from = node.from if node.from
         forNode.own = node.own if node.own
         forNode.await = node.await if node.await
-        forNode.object = node.object if node.object
+        
         forNode
+      
+      when 'Source'
+        # Source is a wrapper node in CS3 - unwrap it
+        @dataToClass node.value
 
       when 'Switch'
         subject = @dataToClass node.subject
