@@ -776,7 +776,7 @@ grammar =
     o 'Expression &&       Expression', $ast: 'Op', args: [{$use: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$use: 2, prop: 'original'}
     o 'Expression ||       Expression', $ast: 'Op', args: [{$use: 2, method: 'toString'}, 1, 3, undefined], originalOperator: {$use: 2, prop: 'original'}
     o 'Expression BIN?     Expression', $ast: 'Op', args: [2, 1, 3]
-    o 'Expression RELATION Expression', $ast: 'Op', args: [{$use: 2, method: 'toString'}, 1, 3, undefined], invertOperator: {$ite: {test: {$use: 2, prop: 'invert', prop2: 'original'}, then: {$use: 2, prop: 'invert', prop2: 'original'}, else: {$use: 2, prop: 'invert'}}}
+    o 'Expression RELATION Expression', $ast: 'Op', args: [{$use: 2, method: 'toString'}, 1, 3, undefined], invertOperator: {$use: 2, prop: 'invert'}
 
     o 'SimpleAssignable COMPOUND_ASSIGN Expression'               , $ast: 'Assign', variable: 1, value: 3, operator: {$use: 2, method: 'toString'}, originalContext: {$use: 2, prop: 'original'}
     o 'SimpleAssignable COMPOUND_ASSIGN INDENT Expression OUTDENT', $ast: 'Assign', variable: 1, value: 4, operator: {$use: 2, method: 'toString'}, originalContext: {$use: 2, prop: 'original'}

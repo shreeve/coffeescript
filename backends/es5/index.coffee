@@ -48,7 +48,7 @@ class ES5Backend
 
     # Handle arrays
     if Array.isArray node
-      return (@dataToClass item for item in node)
+      return node.map (item) => @dataToClass item
 
     # Must be an object with a type
     return null unless node.type
@@ -59,7 +59,7 @@ class ES5Backend
       when 'Root'
         # Root expects a Block, not an array
         bodyNodes = if Array.isArray node.body
-          @dataToClass item for item in node.body
+          node.body.map (item) => @dataToClass item
         else if node.body
           [@dataToClass node.body]
         else
@@ -138,7 +138,7 @@ class ES5Backend
       when 'Value'
         base = @dataToClass(node.val or node.base or node.value)
         properties = if node.properties
-          @dataToClass prop for prop in node.properties
+          node.properties.map (prop) => @dataToClass prop
         else
           []
         new nodes.Value base, properties
@@ -209,12 +209,12 @@ class ES5Backend
       # Functions and calls
       when 'Code'
         params = if node.params
-          @dataToClass param for param in node.params
+          node.params.map (param) => @dataToClass param
         else
           []
         # Code expects a Block for body
         bodyNodes = if Array.isArray node.body
-          @dataToClass item for item in node.body
+          node.body.map (item) => @dataToClass item
         else if node.body
           [@dataToClass node.body]
         else
@@ -237,7 +237,7 @@ class ES5Backend
       when 'Call'
         variable = @dataToClass node.variable
         args = if node.args
-          @dataToClass arg for arg in node.args
+          node.args.map (arg) => @dataToClass arg
         else
           []
         soak = node.soak
@@ -245,7 +245,7 @@ class ES5Backend
 
       when 'SuperCall'
         args = if node.args
-          @dataToClass arg for arg in node.args
+          node.args.map (arg) => @dataToClass arg
         else
           []
         new nodes.SuperCall args
@@ -306,7 +306,7 @@ class ES5Backend
         new nodes.Range from, to, tag
 
       # Control flow
-      when 'If', 'if'
+      when 'If', 'if', 'unless'
         condition = @dataToClass node.condition
         body = if Array.isArray node.body
           # Convert array of nodes to Block with converted nodes
@@ -346,7 +346,17 @@ class ES5Backend
       when 'For'
         # Convert body first
         body = if Array.isArray node.body
-          bodyNodes = node.body.map (n) => @dataToClass n
+          bodyNodes = node.body.map (n) => 
+            converted = @dataToClass n
+            # Ensure each node has locationData
+            converted.locationData ?= {
+              first_line: 0
+              first_column: 0
+              last_line: 0  
+              last_column: 0
+              range: [0, 0]
+            } if converted
+            converted
           new nodes.Block bodyNodes
         else if node.body
           @dataToClass node.body
@@ -354,23 +364,36 @@ class ES5Backend
           new nodes.Block []
 
         # Add dummy locationData to body to prevent errors
-        body.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0}
+        defaultLocationData = {
+          first_line: 0
+          first_column: 0  
+          last_line: 0
+          last_column: 0
+          range: [0, 0]
+        }
+        body.locationData ?= defaultLocationData
+        
+        # Ensure expressions have locationData too
+        if body.expressions
+          for expr in body.expressions
+            expr.locationData ?= defaultLocationData
 
-        # Convert source (handle ForSource object)
-        source = @dataToClass node.source
-
-        # Create For node with body and source
-        forNode = new nodes.For body, {source}
-
-        # Set other properties
-        forNode.guard = @dataToClass node.guard if node.guard
-        forNode.step = @dataToClass node.step if node.step
-        forNode.name = @dataToClass node.name if node.name
-        forNode.index = @dataToClass node.index if node.index
-        forNode.object = node.object if node.object
-        forNode.from = node.from if node.from
-        forNode.own = node.own if node.own
-        forNode.await = node.await if node.await
+        # Convert source and build ForSource object
+        sourceObj = {}
+        sourceObj.source = @dataToClass node.source if node.source
+        sourceObj.guard = @dataToClass node.guard if node.guard  
+        sourceObj.step = @dataToClass node.step if node.step
+        sourceObj.name = @dataToClass node.name if node.name
+        sourceObj.index = @dataToClass node.index if node.index
+        sourceObj.object = node.object if node.object
+        sourceObj.from = node.from if node.from
+        sourceObj.own = node.own if node.own
+        sourceObj.await = node.await if node.await
+        sourceObj.awaitTag = @dataToClass node.awaitTag if node.awaitTag
+        sourceObj.ownTag = @dataToClass node.ownTag if node.ownTag
+        
+        # Create For node with body and source object
+        forNode = new nodes.For body, sourceObj
 
         forNode
 
@@ -381,7 +404,7 @@ class ES5Backend
       when 'Switch'
         subject = @dataToClass node.subject
         cases = if node.cases
-          @dataToClass c for c in node.cases
+          node.cases.map (c) => @dataToClass c
         else
           []
         otherwise = @dataToClass node.otherwise if node.otherwise

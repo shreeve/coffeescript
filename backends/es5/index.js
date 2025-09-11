@@ -49,7 +49,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var accessNode, accessor, arg, args, assertions, attempt, base, body, bodyNodes, c, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elseBody, ensure, expression, expressionNodes, expressions, first, flip, forNode, from, funcGlyph, generated, guard, ifNode, index, indexNode, item, name, namedImports, obj, objNode, objects, op, options, otherwise, p, param, params, parent, parts, prop, properties, quote, recovery, ref, ref1, result, second, soak, source, splat, subject, tag, to, value, variable;
+      var accessNode, accessor, args, assertions, attempt, base, body, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, defaultLocationData, elseBody, ensure, expr, expression, expressionNodes, expressions, first, flip, forNode, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, item, len, name, namedImports, obj, objNode, objects, op, options, otherwise, p, params, parent, parts, prop, properties, quote, recovery, ref, ref1, ref2, result, second, soak, source, sourceObj, splat, subject, tag, to, value, variable;
       if (!node) {
         return null;
       }
@@ -59,15 +59,9 @@
       }
       // Handle arrays
       if (Array.isArray(node)) {
-        return (function() {
-          var i, len, results;
-          results = [];
-          for (i = 0, len = node.length; i < len; i++) {
-            item = node[i];
-            results.push(this.dataToClass(item));
-          }
-          return results;
-        }).call(this);
+        return node.map((item) => {
+          return this.dataToClass(item);
+        });
       }
       if (!node.type) {
         // Must be an object with a type
@@ -78,22 +72,9 @@
         // Root and structural nodes
         case 'Root':
           // Root expects a Block, not an array
-          bodyNodes = (function() {
-            var i, len, ref1, results;
-            if (Array.isArray(node.body)) {
-              ref1 = node.body;
-              results = [];
-              for (i = 0, len = ref1.length; i < len; i++) {
-                item = ref1[i];
-                results.push(this.dataToClass(item));
-              }
-              return results;
-            } else if (node.body) {
-              return [this.dataToClass(node.body)];
-            } else {
-              return [];
-            }
-          }).call(this);
+          bodyNodes = Array.isArray(node.body) ? node.body.map((item) => {
+            return this.dataToClass(item);
+          }) : node.body ? [this.dataToClass(node.body)] : [];
           body = new nodes.Block(bodyNodes);
           return new nodes.Root(body);
         case 'Block':
@@ -147,20 +128,9 @@
         // Values and properties
         case 'Value':
           base = this.dataToClass(node.val || node.base || node.value);
-          properties = (function() {
-            var i, len, ref1, results;
-            if (node.properties) {
-              ref1 = node.properties;
-              results = [];
-              for (i = 0, len = ref1.length; i < len; i++) {
-                prop = ref1[i];
-                results.push(this.dataToClass(prop));
-              }
-              return results;
-            } else {
-              return [];
-            }
-          }).call(this);
+          properties = node.properties ? node.properties.map((prop) => {
+            return this.dataToClass(prop);
+          }) : [];
           return new nodes.Value(base, properties);
         case 'Access':
           name = this.dataToClass(node.name);
@@ -243,37 +213,13 @@
           return new nodes.Existence(expression);
         // Functions and calls
         case 'Code':
-          params = (function() {
-            var i, len, ref1, results;
-            if (node.params) {
-              ref1 = node.params;
-              results = [];
-              for (i = 0, len = ref1.length; i < len; i++) {
-                param = ref1[i];
-                results.push(this.dataToClass(param));
-              }
-              return results;
-            } else {
-              return [];
-            }
-          }).call(this);
+          params = node.params ? node.params.map((param) => {
+            return this.dataToClass(param);
+          }) : [];
           // Code expects a Block for body
-          bodyNodes = (function() {
-            var i, len, ref1, results;
-            if (Array.isArray(node.body)) {
-              ref1 = node.body;
-              results = [];
-              for (i = 0, len = ref1.length; i < len; i++) {
-                item = ref1[i];
-                results.push(this.dataToClass(item));
-              }
-              return results;
-            } else if (node.body) {
-              return [this.dataToClass(node.body)];
-            } else {
-              return [];
-            }
-          }).call(this);
+          bodyNodes = Array.isArray(node.body) ? node.body.map((item) => {
+            return this.dataToClass(item);
+          }) : node.body ? [this.dataToClass(node.body)] : [];
           body = new nodes.Block(bodyNodes);
           funcGlyph = ((ref1 = node.funcGlyph) != null ? ref1.glyph : void 0) || '->';
           tag = funcGlyph === '=>' && 'boundfunc' || null;
@@ -290,37 +236,15 @@
           return node;
         case 'Call':
           variable = this.dataToClass(node.variable);
-          args = (function() {
-            var i, len, ref2, results;
-            if (node.args) {
-              ref2 = node.args;
-              results = [];
-              for (i = 0, len = ref2.length; i < len; i++) {
-                arg = ref2[i];
-                results.push(this.dataToClass(arg));
-              }
-              return results;
-            } else {
-              return [];
-            }
-          }).call(this);
+          args = node.args ? node.args.map((arg) => {
+            return this.dataToClass(arg);
+          }) : [];
           soak = node.soak;
           return new nodes.Call(variable, args, soak);
         case 'SuperCall':
-          args = (function() {
-            var i, len, ref2, results;
-            if (node.args) {
-              ref2 = node.args;
-              results = [];
-              for (i = 0, len = ref2.length; i < len; i++) {
-                arg = ref2[i];
-                results.push(this.dataToClass(arg));
-              }
-              return results;
-            } else {
-              return [];
-            }
-          }).call(this);
+          args = node.args ? node.args.map((arg) => {
+            return this.dataToClass(arg);
+          }) : [];
           return new nodes.SuperCall(args);
         // Arrays and objects
         case 'Arr':
@@ -407,6 +331,7 @@
         // Control flow
         case 'If':
         case 'if':
+        case 'unless':
           condition = this.dataToClass(node.condition);
           // Convert array of nodes to Block with converted nodes
           body = Array.isArray(node.body) ? (bodyNodes = node.body.map((n) => {
@@ -440,66 +365,90 @@
         case 'For':
           // Convert body first
           body = Array.isArray(node.body) ? (bodyNodes = node.body.map((n) => {
-            return this.dataToClass(n);
+            converted = this.dataToClass(n);
+            if (converted) {
+              // Ensure each node has locationData
+              if (converted.locationData == null) {
+                converted.locationData = {
+                  first_line: 0,
+                  first_column: 0,
+                  last_line: 0,
+                  last_column: 0,
+                  range: [0, 0]
+                };
+              }
+            }
+            return converted;
           }), new nodes.Block(bodyNodes)) : node.body ? this.dataToClass(node.body) : new nodes.Block([]);
           // Add dummy locationData to body to prevent errors
+          defaultLocationData = {
+            first_line: 0,
+            first_column: 0,
+            last_line: 0,
+            last_column: 0,
+            range: [0, 0]
+          };
           if (body.locationData == null) {
-            body.locationData = {
-              first_line: 0,
-              first_column: 0,
-              last_line: 0,
-              last_column: 0
-            };
+            body.locationData = defaultLocationData;
           }
-          // Convert source (handle ForSource object)
-          source = this.dataToClass(node.source);
-          // Create For node with body and source
-          forNode = new nodes.For(body, {source});
+          
+          // Ensure expressions have locationData too
+          if (body.expressions) {
+            ref2 = body.expressions;
+            for (i = 0, len = ref2.length; i < len; i++) {
+              expr = ref2[i];
+              if (expr.locationData == null) {
+                expr.locationData = defaultLocationData;
+              }
+            }
+          }
+          // Convert source and build ForSource object
+          sourceObj = {};
+          if (node.source) {
+            sourceObj.source = this.dataToClass(node.source);
+          }
           if (node.guard) {
-            // Set other properties
-            forNode.guard = this.dataToClass(node.guard);
+            sourceObj.guard = this.dataToClass(node.guard);
           }
           if (node.step) {
-            forNode.step = this.dataToClass(node.step);
+            sourceObj.step = this.dataToClass(node.step);
           }
           if (node.name) {
-            forNode.name = this.dataToClass(node.name);
+            sourceObj.name = this.dataToClass(node.name);
           }
           if (node.index) {
-            forNode.index = this.dataToClass(node.index);
+            sourceObj.index = this.dataToClass(node.index);
           }
           if (node.object) {
-            forNode.object = node.object;
+            sourceObj.object = node.object;
           }
           if (node.from) {
-            forNode.from = node.from;
+            sourceObj.from = node.from;
           }
           if (node.own) {
-            forNode.own = node.own;
+            sourceObj.own = node.own;
           }
           if (node.await) {
-            forNode.await = node.await;
+            sourceObj.await = node.await;
           }
+          if (node.awaitTag) {
+            sourceObj.awaitTag = this.dataToClass(node.awaitTag);
+          }
+          if (node.ownTag) {
+            sourceObj.ownTag = this.dataToClass(node.ownTag);
+          }
+          
+          // Create For node with body and source object
+          forNode = new nodes.For(body, sourceObj);
           return forNode;
         case 'Source':
           // Source is a wrapper node in CS3 - unwrap it
           return this.dataToClass(node.value);
         case 'Switch':
           subject = this.dataToClass(node.subject);
-          cases = (function() {
-            var i, len, ref2, results;
-            if (node.cases) {
-              ref2 = node.cases;
-              results = [];
-              for (i = 0, len = ref2.length; i < len; i++) {
-                c = ref2[i];
-                results.push(this.dataToClass(c));
-              }
-              return results;
-            } else {
-              return [];
-            }
-          }).call(this);
+          cases = node.cases ? node.cases.map((c) => {
+            return this.dataToClass(c);
+          }) : [];
           if (node.otherwise) {
             otherwise = this.dataToClass(node.otherwise);
           }
@@ -551,25 +500,25 @@
           }
           // Body is an array of nodes
           body = (function() {
-            var i, j, k, len, len1, len2, ref2, ref3, ref4;
+            var j, k, l, len1, len2, len3, ref3, ref4, ref5;
             if (Array.isArray(node.body)) {
               // Check if the body contains an Obj node (which holds the methods)
               // CS3 represents class methods as an object literal
               bodyNodes = [];
-              ref2 = node.body;
-              for (i = 0, len = ref2.length; i < len; i++) {
-                item = ref2[i];
-                if (item.type === 'Value' && ((ref3 = item.val) != null ? ref3.type : void 0) === 'Obj') {
+              ref3 = node.body;
+              for (j = 0, len1 = ref3.length; j < len1; j++) {
+                item = ref3[j];
+                if (item.type === 'Value' && ((ref4 = item.val) != null ? ref4.type : void 0) === 'Obj') {
                   // Extract the properties from the Obj node as individual methods
                   objNode = item.val;
                   if (objNode.properties) {
-                    ref4 = objNode.properties;
-                    for (j = 0, len1 = ref4.length; j < len1; j++) {
-                      prop = ref4[j];
+                    ref5 = objNode.properties;
+                    for (k = 0, len2 = ref5.length; k < len2; k++) {
+                      prop = ref5[k];
                       if (Array.isArray(prop)) {
 // Handle nested arrays (multi-line objects)
-                        for (k = 0, len2 = prop.length; k < len2; k++) {
-                          p = prop[k];
+                        for (l = 0, len3 = prop.length; l < len3; l++) {
+                          p = prop[l];
                           converted = this.dataToClass(p);
                           if (converted) {
                             bodyNodes.push(converted);
