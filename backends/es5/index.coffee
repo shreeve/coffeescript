@@ -346,13 +346,13 @@ class ES5Backend
       when 'For'
         # Convert body first
         body = if Array.isArray node.body
-          bodyNodes = node.body.map (n) => 
+          bodyNodes = node.body.map (n) =>
             converted = @dataToClass n
             # Ensure each node has locationData
             converted.locationData ?= {
               first_line: 0
               first_column: 0
-              last_line: 0  
+              last_line: 0
               last_column: 0
               range: [0, 0]
             } if converted
@@ -366,13 +366,13 @@ class ES5Backend
         # Add dummy locationData to body to prevent errors
         defaultLocationData = {
           first_line: 0
-          first_column: 0  
+          first_column: 0
           last_line: 0
           last_column: 0
           range: [0, 0]
         }
         body.locationData ?= defaultLocationData
-        
+
         # Ensure expressions have locationData too
         if body.expressions
           for expr in body.expressions
@@ -381,7 +381,7 @@ class ES5Backend
         # Convert source and build ForSource object
         sourceObj = {}
         sourceObj.source = @dataToClass node.source if node.source
-        sourceObj.guard = @dataToClass node.guard if node.guard  
+        sourceObj.guard = @dataToClass node.guard if node.guard
         sourceObj.step = @dataToClass node.step if node.step
         sourceObj.name = @dataToClass node.name if node.name
         sourceObj.index = @dataToClass node.index if node.index
@@ -391,7 +391,7 @@ class ES5Backend
         sourceObj.await = node.await if node.await
         sourceObj.awaitTag = @dataToClass node.awaitTag if node.awaitTag
         sourceObj.ownTag = @dataToClass node.ownTag if node.ownTag
-        
+
         # Create For node with body and source object
         forNode = new nodes.For body, sourceObj
 
