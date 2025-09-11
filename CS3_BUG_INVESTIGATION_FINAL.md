@@ -5,7 +5,7 @@
 
 After thorough investigation, none of the suspected issues are actual bugs:
 1. **Loop variable conflict** - CoffeeScript already handles this correctly
-2. **Super calls** - Not a bug, just syntax requirements  
+2. **Super calls** - Not a bug, just syntax requirements
 3. **Array elisions** - Works perfectly in both versions
 
 ## Detailed Findings
@@ -23,7 +23,7 @@ for x in ['a', 'b']
 Generates:
 ```javascript
 for (k = 0, ...) {      // Uses 'k', not 'i'
-  for (j = l = 0, ...) {  // Uses 'l', not 'k'  
+  for (j = l = 0, ...) {  // Uses 'l', not 'k'
     i = ref1[j];         // 'i' is only destructured
 ```
 
