@@ -683,11 +683,13 @@ class ES5Backend
 
       when 'YieldReturn'
         expression = @dataToClass node.expression if node.expression
-        new nodes.YieldReturn expression
+        returnKeyword = @dataToClass node.returnKeyword if node.returnKeyword
+        new nodes.YieldReturn expression, {returnKeyword}
 
       when 'AwaitReturn'
         expression = @dataToClass node.expression if node.expression
-        new nodes.AwaitReturn expression
+        returnKeyword = @dataToClass node.returnKeyword if node.returnKeyword
+        new nodes.AwaitReturn expression, {returnKeyword}
 
       # ============================================================
       # Classes

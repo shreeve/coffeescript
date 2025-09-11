@@ -81,7 +81,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var access, accessNode, accessor, arg, args, assertions, assignment, atParam, atParams, attempt, attemptNode, base, body, bodyArray, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, findAndReplaceSuperCalls, first, flatParams, flip, from, funcGlyph, generated, guard, hasSimpleSuperCall, i, ifNode, index, indexNode, item, j, k, l, left, len, len1, len2, len3, len4, len5, len6, len7, len8, len9, m, meta, name, namedImports, needsPrepend, newBodyNodes, o, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, property, q, quote, r, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, s, second, simpleParam, soak, source, sourceObj, splat, stringNode, subject, t, tag, thisLit, to, value, variable;
+      var access, accessNode, accessor, arg, args, assertions, assignment, atParam, atParams, attempt, attemptNode, base, body, bodyArray, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, findAndReplaceSuperCalls, first, flatParams, flip, from, funcGlyph, generated, guard, hasSimpleSuperCall, i, ifNode, index, indexNode, item, j, k, l, left, len, len1, len2, len3, len4, len5, len6, len7, len8, len9, m, meta, name, namedImports, needsPrepend, newBodyNodes, o, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, property, q, quote, r, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, s, second, simpleParam, soak, source, sourceObj, splat, stringNode, subject, t, tag, thisLit, to, value, variable;
       if (node == null) {
         return null;
       }
@@ -751,12 +751,18 @@
           if (node.expression) {
             expression = this.dataToClass(node.expression);
           }
-          return new nodes.YieldReturn(expression);
+          if (node.returnKeyword) {
+            returnKeyword = this.dataToClass(node.returnKeyword);
+          }
+          return new nodes.YieldReturn(expression, {returnKeyword});
         case 'AwaitReturn':
           if (node.expression) {
             expression = this.dataToClass(node.expression);
           }
-          return new nodes.AwaitReturn(expression);
+          if (node.returnKeyword) {
+            returnKeyword = this.dataToClass(node.returnKeyword);
+          }
+          return new nodes.AwaitReturn(expression, {returnKeyword});
         // ============================================================
         // Classes
         // ============================================================
