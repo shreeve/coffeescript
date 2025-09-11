@@ -161,6 +161,10 @@
         // ============================================================
         case 'Value':
           base = this.dataToClass(node.val || node.base || node.value);
+          if (!base) {
+            // Handle empty Value nodes (like in "yield" without operand)
+            base = new nodes.UndefinedLiteral();
+          }
           properties = (function() {
             var i, j, len, len1, ref1;
             if (node.properties) {

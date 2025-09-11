@@ -163,6 +163,8 @@ class ES5Backend
       # ============================================================
       when 'Value'
         base = @dataToClass(node.val or node.base or node.value)
+        # Handle empty Value nodes (like in "yield" without operand)
+        base = new nodes.UndefinedLiteral() unless base
         properties = if node.properties
           result = []
           for prop in node.properties
