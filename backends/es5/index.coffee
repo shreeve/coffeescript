@@ -488,14 +488,19 @@ class ES5Backend
         new nodes.Obj properties, generated
 
       when 'Range'
-        from = @dataToClass node.from
-        to = @dataToClass node.to
+        from = if node.from then @dataToClass(node.from) else null
+        to = if node.to then @dataToClass(node.to) else null
         tag = if node.exclusive then 'exclusive' else 'inclusive'
         new nodes.Range from, to, tag
 
       when 'Slice'
-        # Unwrap the range
-        @dataToClass node.range
+        # Create a Slice with its range
+        if node.range
+          range = @dataToClass node.range
+          new nodes.Slice range
+        else
+          console.warn "Slice without range:", node
+          null
 
       when 'Splat'
         name = @dataToClass(node.name or node.body)
