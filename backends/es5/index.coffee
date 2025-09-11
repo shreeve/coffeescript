@@ -269,8 +269,11 @@ class ES5Backend
         if node.body
           bodyArray = if Array.isArray(node.body) then node.body else [node.body]
           for item in bodyArray
-            # Only consider direct super calls at statement level
+            # Check for direct super calls or super calls wrapped in Value
             if item?.type is 'SuperCall'
+              hasSimpleSuperCall = true
+              break
+            else if item?.type is 'Value' and item?.val?.type is 'SuperCall'
               hasSimpleSuperCall = true
               break
 
@@ -283,7 +286,9 @@ class ES5Backend
             # This is an @param with a super call in the body
             # Convert @name to regular name parameter
             propName = param.name.properties[0].name.value
-            processedParams.push new nodes.Param(new nodes.IdentifierLiteral(propName))
+            # Create a simple param without any special properties
+            simpleParam = new nodes.Param(new nodes.IdentifierLiteral(propName))
+            processedParams.push simpleParam
             # Save the assignment for after super
             atParams.push {name: propName}
           else
