@@ -7,7 +7,7 @@
 ## ✅ Fixed Issues
 
 1. **Array Elisions** - Preserves holes correctly (`[1,,3]` → `[1, , 3]`)
-2. **Super Calls** - Works in constructors and methods  
+2. **Super Calls** - Works in constructors and methods
 3. **Prototype Access** - The `::` operator works correctly
 4. **Multi-line Parameters** - Functions with whitespace-style params compile
 
@@ -33,7 +33,7 @@
 1. **classes.coffee** - "Can't reference 'this' before calling super" error
 2. **Missing node types** (warnings only):
    - `RegexWithInterpolations`
-   - `MetaProperty` 
+   - `MetaProperty`
    - `ComputedPropertyName`
 
 ## 🚀 Next Steps
