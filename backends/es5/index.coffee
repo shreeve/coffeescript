@@ -158,13 +158,31 @@ class ES5Backend
 
       # Assignment
       when 'Assign'
-        variable = @dataToClass node.variable
-        value = @dataToClass node.value
+        # Handle object property assignments differently
+        if node.context is 'object' and node.expression
+          # Object property: node.value is the key, node.expression is the value
+          variable = @dataToClass node.value
+          value = @dataToClass node.expression
+        else
+          # Regular assignment
+          variable = @dataToClass node.variable
+          value = @dataToClass node.value
+        
         context = node.context
         options = {}
         options.param = node.param if node.param
         options.subpattern = node.subpattern if node.subpattern
-        options.operatorToken = @dataToClass node.operatorToken if node.operatorToken
+        
+        # Handle operatorToken carefully - it might be a data node
+        if node.operatorToken
+          if typeof node.operatorToken is 'object' and node.operatorToken.type
+            # It's a data node, just use its value
+            options.operatorToken = 
+              value: node.operatorToken.value
+              locationData: node.operatorToken.locationData
+          else
+            options.operatorToken = @dataToClass node.operatorToken
+        
         options.moduleDeclaration = node.moduleDeclaration if node.moduleDeclaration
         new nodes.Assign variable, value, context, options
 
@@ -323,16 +341,16 @@ class ES5Backend
           @dataToClass node.body
         else
           new nodes.Block []
-        
+
         # Add dummy locationData to body to prevent errors
         body.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0}
-        
+
         # Convert source (handle ForSource object)
         source = @dataToClass node.source
-        
+
         # Create For node with body and source
         forNode = new nodes.For body, {source}
-        
+
         # Set other properties
         forNode.guard = @dataToClass node.guard if node.guard
         forNode.step = @dataToClass node.step if node.step
@@ -342,9 +360,9 @@ class ES5Backend
         forNode.from = node.from if node.from
         forNode.own = node.own if node.own
         forNode.await = node.await if node.await
-        
+
         forNode
-      
+
       when 'Source'
         # Source is a wrapper node in CS3 - unwrap it
         @dataToClass node.value
@@ -394,7 +412,16 @@ class ES5Backend
       when 'Class'
         variable = @dataToClass node.variable if node.variable
         parent = @dataToClass node.parent if node.parent
-        body = @dataToClass node.body if node.body
+        
+        # Body is an array of nodes, convert to Block
+        body = if Array.isArray node.body
+          bodyNodes = node.body.map (n) => @dataToClass n
+          new nodes.Block bodyNodes
+        else if node.body
+          @dataToClass node.body
+        else
+          new nodes.Block []
+        
         new nodes.Class variable, parent, body
 
       # Splats and expansions
