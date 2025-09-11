@@ -161,9 +161,34 @@
         // ============================================================
         case 'Value':
           base = this.dataToClass(node.val || node.base || node.value);
-          properties = node.properties ? node.properties.map((prop) => {
-            return this.dataToClass(prop);
-          }) : [];
+          properties = (function() {
+            var i, j, len, len1, ref1;
+            if (node.properties) {
+              result = [];
+              ref1 = node.properties;
+              for (i = 0, len = ref1.length; i < len; i++) {
+                prop = ref1[i];
+                if (Array.isArray(prop)) {
+// Handle nested arrays (like [[Access, Access]] for ::)
+                  for (j = 0, len1 = prop.length; j < len1; j++) {
+                    item = prop[j];
+                    converted = this.dataToClass(item);
+                    if (converted) {
+                      result.push(converted);
+                    }
+                  }
+                } else {
+                  converted = this.dataToClass(prop);
+                  if (converted) {
+                    result.push(converted);
+                  }
+                }
+              }
+              return result;
+            } else {
+              return [];
+            }
+          }).call(this);
           return new nodes.Value(base, properties);
         case 'Access':
           name = this.dataToClass(node.name);

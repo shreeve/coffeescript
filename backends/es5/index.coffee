@@ -164,7 +164,17 @@ class ES5Backend
       when 'Value'
         base = @dataToClass(node.val or node.base or node.value)
         properties = if node.properties
-          node.properties.map (prop) => @dataToClass prop
+          result = []
+          for prop in node.properties
+            if Array.isArray prop
+              # Handle nested arrays (like [[Access, Access]] for ::)
+              for item in prop
+                converted = @dataToClass item
+                result.push converted if converted
+            else
+              converted = @dataToClass prop
+              result.push converted if converted
+          result
         else
           []
         new nodes.Value base, properties
@@ -286,7 +296,7 @@ class ES5Backend
           @dataToClass node.variable
         else
           new nodes.Super()
-        
+
         # Process arguments, filtering out empty objects
         args = if node.args
           result = []
@@ -298,7 +308,7 @@ class ES5Backend
           result
         else
           []
-        
+
         # Create SuperCall with Super as variable and filtered args
         new nodes.SuperCall variable, args, node.soak
 
