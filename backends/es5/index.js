@@ -81,7 +81,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var accessNode, accessor, arg, args, assertions, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, item, len, name, namedImports, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, prop, properties, quote, recovery, recoveryNode, ref, ref1, ref2, result, second, soak, source, sourceObj, splat, stringNode, subject, tag, to, value, variable;
+      var access, accessNode, accessor, arg, args, assertions, assignment, atParam, atParams, attempt, attemptNode, base, body, bodyArray, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, hasSuperCall, i, ifNode, index, indexNode, isSuperCall, item, j, k, l, left, len, len1, len2, len3, len4, len5, len6, m, name, namedImports, newBodyNodes, o, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, q, quote, recovery, recoveryNode, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, second, soak, source, sourceObj, splat, stringNode, subject, tag, thisLit, to, value, variable;
       if (node == null) {
         return null;
       }
@@ -282,31 +282,86 @@
         // Functions and Calls
         // ============================================================
         case 'Code':
-          params = (function() {
-            var i, j, len, len1, ref1;
-            if (node.params) {
-              // Handle nested arrays (multi-line params)
-              flatParams = [];
-              ref1 = node.params;
-              for (i = 0, len = ref1.length; i < len; i++) {
-                param = ref1[i];
-                if (Array.isArray(param)) {
-                  for (j = 0, len1 = param.length; j < len1; j++) {
-                    p = param[j];
-                    flatParams.push(p);
-                  }
-                } else {
-                  flatParams.push(param);
+          // First, flatten params and check for @params and super calls
+          flatParams = [];
+          atParams = []; // Track @params that need to be moved after super
+          if (node.params) {
+            ref1 = node.params;
+            for (i = 0, len = ref1.length; i < len; i++) {
+              param = ref1[i];
+              if (Array.isArray(param)) {
+                for (j = 0, len1 = param.length; j < len1; j++) {
+                  p = param[j];
+                  flatParams.push(p);
+                }
+              } else {
+                flatParams.push(param);
+              }
+            }
+          }
+          
+          // Check if body contains a super call
+          hasSuperCall = false;
+          if (node.body) {
+            bodyArray = Array.isArray(node.body) ? node.body : [node.body];
+            for (k = 0, len2 = bodyArray.length; k < len2; k++) {
+              item = bodyArray[k];
+              if ((item != null ? item.type : void 0) === 'SuperCall' || (item != null ? (ref2 = item.val) != null ? ref2.type : void 0 : void 0) === 'SuperCall') {
+                hasSuperCall = true;
+                break;
+              }
+            }
+          }
+          
+          // Process params, handling @params specially if there's a super call
+          processedParams = [];
+          for (l = 0, len3 = flatParams.length; l < len3; l++) {
+            param = flatParams[l];
+            if ((param != null ? param.type : void 0) === 'Param' && ((ref3 = param.name) != null ? ref3.type : void 0) === 'Value' && ((ref4 = param.name.val) != null ? ref4.type : void 0) === 'ThisLiteral' && ((ref5 = param.name.properties) != null ? ref5.length : void 0) > 0 && hasSuperCall) {
+              // This is an @param with a super call in the body
+              // Convert @name to regular name parameter
+              propName = param.name.properties[0].name.value;
+              processedParams.push(new nodes.Param(new nodes.IdentifierLiteral(propName)));
+              // Save the assignment for after super
+              atParams.push({
+                name: propName
+              });
+            } else {
+              // Regular param or no super call
+              converted = this.dataToClass(param);
+              if (converted) {
+                processedParams.push(converted);
+              }
+            }
+          }
+          params = processedParams;
+          bodyNodes = Array.isArray(node.body) ? this.filterNodes(node.body) : node.body ? (converted = this.dataToClass(node.body), converted != null ? [converted] : []) : [];
+          
+          // If we have @params that were moved, add assignments after super
+          if (atParams.length > 0 && hasSuperCall) {
+            newBodyNodes = [];
+            for (m = 0, len4 = bodyNodes.length; m < len4; m++) {
+              bodyNode = bodyNodes[m];
+              newBodyNodes.push(bodyNode);
+              // Check if this is the super call (might be wrapped in Value node)
+              isSuperCall = (bodyNode != null ? (ref6 = bodyNode.constructor) != null ? ref6.name : void 0 : void 0) === 'SuperCall' || ((bodyNode != null ? (ref7 = bodyNode.constructor) != null ? ref7.name : void 0 : void 0) === 'Value' && ((ref8 = bodyNode.base) != null ? (ref9 = ref8.constructor) != null ? ref9.name : void 0 : void 0) === 'SuperCall');
+              if (isSuperCall) {
+                for (o = 0, len5 = atParams.length; o < len5; o++) {
+                  atParam = atParams[o];
+                  // Create @name = name assignment
+                  thisLit = new nodes.ThisLiteral();
+                  access = new nodes.Access(new nodes.PropertyName(atParam.name));
+                  left = new nodes.Value(thisLit, [access]);
+                  right = new nodes.IdentifierLiteral(atParam.name);
+                  assignment = new nodes.Assign(left, right);
+                  newBodyNodes.push(assignment);
                 }
               }
-              return this.filterNodes(flatParams);
-            } else {
-              return [];
             }
-          }).call(this);
-          bodyNodes = Array.isArray(node.body) ? this.filterNodes(node.body) : node.body ? (converted = this.dataToClass(node.body), converted != null ? [converted] : []) : [];
+            bodyNodes = newBodyNodes;
+          }
           body = new nodes.Block(bodyNodes);
-          funcGlyph = ((ref1 = node.funcGlyph) != null ? ref1.glyph : void 0) || '->';
+          funcGlyph = ((ref10 = node.funcGlyph) != null ? ref10.glyph : void 0) || '->';
           tag = funcGlyph === '=>' ? 'boundfunc' : null;
           return new nodes.Code(params, body, tag);
         case 'Param':
@@ -332,12 +387,12 @@
           variable = node.variable ? this.dataToClass(node.variable) : new nodes.Super();
           // Process arguments, filtering out empty objects
           args = (function() {
-            var i, len, ref2;
+            var len6, q, ref11;
             if (node.args) {
               result = [];
-              ref2 = node.args;
-              for (i = 0, len = ref2.length; i < len; i++) {
-                arg = ref2[i];
+              ref11 = node.args;
+              for (q = 0, len6 = ref11.length; q < len6; q++) {
+                arg = ref11[q];
                 // Skip empty objects
                 if ((arg != null) && (arg.type || Object.keys(arg).length > 0)) {
                   converted = this.dataToClass(arg);
@@ -358,16 +413,16 @@
         // ============================================================
         case 'Arr':
           objects = (function() {
-            var i, j, k, len, len1, len2, ref2, ref3;
+            var len6, len7, len8, q, r, ref11, ref12, s;
             if (node.objects) {
               result = [];
-              ref2 = node.objects;
-              for (i = 0, len = ref2.length; i < len; i++) {
-                obj = ref2[i];
+              ref11 = node.objects;
+              for (q = 0, len6 = ref11.length; q < len6; q++) {
+                obj = ref11[q];
                 if (Array.isArray(obj)) {
 // Process all elements in nested arrays (happens with elisions)
-                  for (j = 0, len1 = obj.length; j < len1; j++) {
-                    item = obj[j];
+                  for (r = 0, len7 = obj.length; r < len7; r++) {
+                    item = obj[r];
                     if ((item != null ? item.type : void 0) === 'Elision') {
                       // Handle elisions - create actual hole/empty slot
                       result.push(new nodes.Elision());
@@ -391,9 +446,9 @@
               // Handle trailing elisions stored in separate elisions property
               // Only process elisions that have type: 'Elision', not empty objects
               if (node.elisions) {
-                ref3 = node.elisions;
-                for (k = 0, len2 = ref3.length; k < len2; k++) {
-                  elision = ref3[k];
+                ref12 = node.elisions;
+                for (s = 0, len8 = ref12.length; s < len8; s++) {
+                  elision = ref12[s];
                   if ((elision != null ? elision.type : void 0) === 'Elision') {
                     result.push(new nodes.Elision());
                   }
@@ -417,15 +472,15 @@
           return new nodes.Arr(objects);
         case 'Obj':
           properties = (function() {
-            var i, j, len, len1, ref2;
+            var len6, len7, q, r, ref11;
             if (node.properties) {
               result = [];
-              ref2 = node.properties;
-              for (i = 0, len = ref2.length; i < len; i++) {
-                prop = ref2[i];
+              ref11 = node.properties;
+              for (q = 0, len6 = ref11.length; q < len6; q++) {
+                prop = ref11[q];
                 if (Array.isArray(prop)) {
-                  for (j = 0, len1 = prop.length; j < len1; j++) {
-                    item = prop[j];
+                  for (r = 0, len7 = prop.length; r < len7; r++) {
+                    item = prop[r];
                     converted = this.dataToClass(item);
                     if ((converted != null) && converted instanceof nodes.Base) {
                       result.push(converted);
@@ -510,9 +565,9 @@
             body.locationData = this.defaultLocationData();
           }
           if (body.expressions) {
-            ref2 = body.expressions;
-            for (i = 0, len = ref2.length; i < len; i++) {
-              expr = ref2[i];
+            ref11 = body.expressions;
+            for (q = 0, len6 = ref11.length; q < len6; q++) {
+              expr = ref11[q];
               if (expr.locationData == null) {
                 expr.locationData = this.defaultLocationData();
               }
@@ -610,22 +665,22 @@
             parent = this.dataToClass(node.parent);
           }
           body = (function() {
-            var j, k, l, len1, len2, len3, ref3, ref4, ref5;
+            var len7, len8, len9, r, ref12, ref13, ref14, s, t;
             if (Array.isArray(node.body)) {
               bodyNodes = [];
-              ref3 = node.body;
-              for (j = 0, len1 = ref3.length; j < len1; j++) {
-                item = ref3[j];
-                if (item.type === 'Value' && ((ref4 = item.val) != null ? ref4.type : void 0) === 'Obj') {
+              ref12 = node.body;
+              for (r = 0, len7 = ref12.length; r < len7; r++) {
+                item = ref12[r];
+                if (item.type === 'Value' && ((ref13 = item.val) != null ? ref13.type : void 0) === 'Obj') {
                   // Extract methods from object literal
                   objNode = item.val;
                   if (objNode.properties) {
-                    ref5 = objNode.properties;
-                    for (k = 0, len2 = ref5.length; k < len2; k++) {
-                      prop = ref5[k];
+                    ref14 = objNode.properties;
+                    for (s = 0, len8 = ref14.length; s < len8; s++) {
+                      prop = ref14[s];
                       if (Array.isArray(prop)) {
-                        for (l = 0, len3 = prop.length; l < len3; l++) {
-                          p = prop[l];
+                        for (t = 0, len9 = prop.length; t < len9; t++) {
+                          p = prop[t];
                           converted = this.dataToClass(p);
                           if (converted) {
                             bodyNodes.push(converted);

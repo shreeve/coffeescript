@@ -252,18 +252,45 @@ class ES5Backend
       # Functions and Calls
       # ============================================================
       when 'Code'
-        params = if node.params
-          # Handle nested arrays (multi-line params)
-          flatParams = []
+        # First, flatten params and check for @params and super calls
+        flatParams = []
+        atParams = []  # Track @params that need to be moved after super
+        
+        if node.params
           for param in node.params
             if Array.isArray param
               for p in param
                 flatParams.push p
             else
               flatParams.push param
-          @filterNodes flatParams
-        else
-          []
+        
+        # Check if body contains a super call
+        hasSuperCall = false
+        if node.body
+          bodyArray = if Array.isArray(node.body) then node.body else [node.body]
+          for item in bodyArray
+            if item?.type is 'SuperCall' or item?.val?.type is 'SuperCall'
+              hasSuperCall = true
+              break
+        
+        # Process params, handling @params specially if there's a super call
+        processedParams = []
+        for param in flatParams
+          if param?.type is 'Param' and param.name?.type is 'Value' and 
+             param.name.val?.type is 'ThisLiteral' and param.name.properties?.length > 0 and
+             hasSuperCall
+            # This is an @param with a super call in the body
+            # Convert @name to regular name parameter
+            propName = param.name.properties[0].name.value
+            processedParams.push new nodes.Param(new nodes.IdentifierLiteral(propName))
+            # Save the assignment for after super
+            atParams.push {name: propName}
+          else
+            # Regular param or no super call
+            converted = @dataToClass param
+            processedParams.push converted if converted
+        
+        params = processedParams
 
         bodyNodes = if Array.isArray node.body
           @filterNodes node.body
@@ -272,6 +299,26 @@ class ES5Backend
           if converted? then [converted] else []
         else
           []
+        
+        # If we have @params that were moved, add assignments after super
+        if atParams.length > 0 and hasSuperCall
+          newBodyNodes = []
+          for bodyNode in bodyNodes
+            newBodyNodes.push bodyNode
+            # Check if this is the super call (might be wrapped in Value node)
+            isSuperCall = bodyNode?.constructor?.name is 'SuperCall' or
+                         (bodyNode?.constructor?.name is 'Value' and 
+                          bodyNode.base?.constructor?.name is 'SuperCall')
+            if isSuperCall
+              for atParam in atParams
+                # Create @name = name assignment
+                thisLit = new nodes.ThisLiteral()
+                access = new nodes.Access(new nodes.PropertyName(atParam.name))
+                left = new nodes.Value(thisLit, [access])
+                right = new nodes.IdentifierLiteral(atParam.name)
+                assignment = new nodes.Assign(left, right)
+                newBodyNodes.push assignment
+          bodyNodes = newBodyNodes
 
         body = new nodes.Block bodyNodes
         funcGlyph = node.funcGlyph?.glyph or '->'
