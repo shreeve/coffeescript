@@ -184,6 +184,18 @@ class ES5Backend
           result
         else
           []
+        # Special-case import.meta: convert Value(import, Access(meta)) to MetaProperty
+        try
+          if base instanceof nodes.IdentifierLiteral and base.value is 'import'
+            if properties.length > 0 and properties[0] instanceof nodes.Access
+              firstAccess = properties[0]
+              if firstAccess.name? and firstAccess.name.value is 'meta'
+                metaNode = new nodes.IdentifierLiteral 'import'
+                propertyAccess = new nodes.Access new nodes.PropertyName('meta')
+                base = new nodes.MetaProperty metaNode, propertyAccess
+                properties = properties.slice 1
+        catch err
+          # fall through; keep generic Value
         new nodes.Value base, properties
 
       when 'Access'
