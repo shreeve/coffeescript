@@ -88,7 +88,7 @@ Only 5 test files still have compilation errors:
 ## 🚀 Commits Made
 
 1. Fix unbounded slicing
-2. Fix async/await support  
+2. Fix async/await support
 3. Fix generator support
 4. Partial fix for object rest/spread
 5. Multiple other fixes and improvements
