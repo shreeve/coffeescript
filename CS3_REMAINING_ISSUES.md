@@ -8,8 +8,8 @@ The CS3/ES5 backend achieves approximately **87-89% test compatibility** with th
 
 ### 1. #4889: Nested For-Loop Variable Conflicts ⚠️ **MAJOR**
 
-**Status**: Identified root cause, requires architectural changes  
-**Impact**: All nested for-loops over ranges fail  
+**Status**: Identified root cause, requires architectural changes
+**Impact**: All nested for-loops over ranges fail
 **Test Cases**: `test/ranges.coffee:206-224`
 
 #### Problem Description
@@ -23,7 +23,7 @@ The CS3 backend generates conflicting loop counter variables in nested for-loops
 
 **CS3 Backend (Broken):**
 ```javascript
-// Outer loop: i = j = 0, ref = n; i = 0 <= ref ? ++j : --j  
+// Outer loop: i = j = 0, ref = n; i = 0 <= ref ? ++j : --j
 // Inner loop: j = k = ref1 = i + 1, ref2 = n; j = ref1 <= ref2 ? ++k : --k
 ```
 
@@ -37,7 +37,7 @@ for i in [0..n]
   result.push i
   for j in [(i+1)..n]
     result.push j
-# Expected: [0,1,1,2,1]  
+# Expected: [0,1,1,2,1]
 # CS3 Gets: [0,1] (outer loop stops after first iteration)
 ```
 
@@ -51,8 +51,8 @@ The issue is in `backends/es5/index.coffee` in the `For` node conversion. The ba
 
 ### 2. Regex Compilation Issues ⚠️ **HIGH**
 
-**Status**: Multiple regex-related failures  
-**Impact**: Regex literals, heregex, and regex interpolation  
+**Status**: Multiple regex-related failures
+**Impact**: Regex literals, heregex, and regex interpolation
 **Test Cases**: `test/regex.coffee` (multiple failures)
 
 #### Specific Failures
@@ -62,7 +62,7 @@ The issue is in `backends/es5/index.coffee` in the `For` node conversion. The ba
 - Issue: CS3 backend emitting empty strings instead of proper division operations
 - Example: `eq(2, 4 / 2 / 1)` produces empty result
 
-**B. Compound Division vs Regex**  
+**B. Compound Division vs Regex**
 - Test: `compound division vs regex`
 - Issue: Compound assignment with division produces wrong results
 - Example: `a = 10; b = a = c / i` expects `5`, gets `2`
@@ -99,8 +99,8 @@ The CS3 backend's regex handling in `backends/es5/index.coffee` may not be prope
 
 ### 3. String/Whitespace Normalization Issues ⚠️ **MEDIUM**
 
-**Status**: Partially fixed, some edge cases remain  
-**Impact**: Multiline strings, heredocs, trailing whitespace  
+**Status**: Partially fixed, some edge cases remain
+**Impact**: Multiline strings, heredocs, trailing whitespace
 **Test Cases**: `test/strings.coffee` (multiple failures)
 
 #### Specific Failures
@@ -137,8 +137,8 @@ The `StringLiteral` and `StringWithInterpolations` conversions in the backend ma
 
 ### 4. Tagged Template Literal Issues ⚠️ **MEDIUM**
 
-**Status**: Template conversion working, result shape mismatches  
-**Impact**: Tagged template literal function calls  
+**Status**: Template conversion working, result shape mismatches
+**Impact**: Tagged template literal function calls
 **Test Cases**: `test/tagged_template_literals.coffee`
 
 #### Specific Failures
@@ -170,8 +170,8 @@ The `TaggedTemplateCall` conversion in the backend may have issues with:
 
 ### 5. Import/Export and Module Issues ⚠️ **MEDIUM**
 
-**Status**: Basic conversion implemented, some edge cases  
-**Impact**: ES6 modules, import assertions  
+**Status**: Basic conversion implemented, some edge cases
+**Impact**: ES6 modules, import assertions
 **Test Cases**: `test/repl.coffee`, import-related tests
 
 #### Specific Failures
@@ -195,8 +195,8 @@ The `TaggedTemplateCall` conversion in the backend may have issues with:
 
 ### 6. Soaked Constructor and Property Access ⚠️ **MEDIUM**
 
-**Status**: Soaking logic incomplete  
-**Impact**: Optional chaining with constructors  
+**Status**: Soaking logic incomplete
+**Impact**: Optional chaining with constructors
 **Test Cases**: `test/soaks.coffee:181-201`
 
 #### Specific Failures
@@ -218,8 +218,8 @@ The soaking logic in the backend may not properly handle:
 
 ### 7. Sourcemap Compilation Error ⚠️ **LOW**
 
-**Status**: Syntax error in generated code  
-**Impact**: Sourcemap functionality  
+**Status**: Syntax error in generated code
+**Impact**: Sourcemap functionality
 **Test Cases**: `test/sourcemap.coffee`
 
 #### Specific Failures
@@ -238,8 +238,8 @@ The backend may be generating invalid JavaScript syntax for class properties or 
 
 ### 8. Strict Mode Parameter Validation ⚠️ **LOW**
 
-**Status**: Partially fixed, some cases remain  
-**Impact**: Strict mode duplicate parameter detection  
+**Status**: Partially fixed, some cases remain
+**Impact**: Strict mode duplicate parameter detection
 **Test Cases**: `test/strict.coffee:49-58`
 
 #### Specific Failures
@@ -258,8 +258,8 @@ The parameter duplicate detection may not be working correctly after CS3 paramet
 
 ### 9. Async Class Method Issues ⚠️ **LOW**
 
-**Status**: Static method access broken  
-**Impact**: Async static methods in classes  
+**Status**: Static method access broken
+**Impact**: Async static methods in classes
 **Test Cases**: `test/async.coffee:231-243`
 
 #### Specific Failures
@@ -294,7 +294,7 @@ The class method conversion may not properly handle:
 
 ### Low Priority (Edge Cases)
 7. **Sourcemap Compilation** - Development tooling
-8. **Strict Mode Validation** - Compile-time checks  
+8. **Strict Mode Validation** - Compile-time checks
 9. **Async Class Methods** - Advanced class features
 
 ## Architecture Recommendations
@@ -327,7 +327,7 @@ Each fix should be validated against:
 
 - **Working**: ~87-89% of CoffeeScript test suite
 - **Critical Blockers**: 2 issues (#4889, regex compilation)
-- **Medium Impact**: 4 issues (strings, templates, imports, soaks)  
+- **Medium Impact**: 4 issues (strings, templates, imports, soaks)
 - **Low Impact**: 3 issues (sourcemap, strict mode, async)
 - **Total Remaining**: 9 distinct issue categories
 
