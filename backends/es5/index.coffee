@@ -203,8 +203,11 @@ class ES5Backend
       when 'Assign'
         # Handle object property assignments
         if node.context is 'object' and node.expression
+          # In object literal properties, node.value is the property key/name,
+          # and node.expression is the assigned value.
           variable = @dataToClass node.value
           value = @dataToClass node.expression
+          return new nodes.Assign(variable, value, 'object')
         else
           variable = @dataToClass node.variable
           value = @dataToClass node.value
@@ -419,8 +422,14 @@ class ES5Backend
                 converted = @dataToClass item
                 result.push converted if converted? and converted instanceof nodes.Base
             else if prop?
-              converted = @dataToClass prop
-              result.push converted if converted? and converted instanceof nodes.Base
+              # CS3 Obj property can be an Assign-like structure with key and value
+              if prop.type is 'Assign' and prop.context is 'object'
+                variable = @dataToClass prop.value
+                value = @dataToClass prop.expression
+                result.push new nodes.Assign(variable, value, 'object') if variable? and value?
+              else
+                converted = @dataToClass prop
+                result.push converted if converted? and converted instanceof nodes.Base
           result
         else
           []

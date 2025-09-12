@@ -220,8 +220,11 @@
         case 'Assign':
           // Handle object property assignments
           if (node.context === 'object' && node.expression) {
+            // In object literal properties, node.value is the property key/name,
+            // and node.expression is the assigned value.
             variable = this.dataToClass(node.value);
             value = this.dataToClass(node.expression);
+            return new nodes.Assign(variable, value, 'object');
           } else {
             variable = this.dataToClass(node.variable);
             value = this.dataToClass(node.value);
@@ -485,9 +488,18 @@
                     }
                   }
                 } else if (prop != null) {
-                  converted = this.dataToClass(prop);
-                  if ((converted != null) && converted instanceof nodes.Base) {
-                    result.push(converted);
+                  // CS3 Obj property can be an Assign-like structure with key and value
+                  if (prop.type === 'Assign' && prop.context === 'object') {
+                    variable = this.dataToClass(prop.value);
+                    value = this.dataToClass(prop.expression);
+                    if ((variable != null) && (value != null)) {
+                      result.push(new nodes.Assign(variable, value, 'object'));
+                    }
+                  } else {
+                    converted = this.dataToClass(prop);
+                    if ((converted != null) && converted instanceof nodes.Base) {
+                      result.push(converted);
+                    }
                   }
                 }
               }
