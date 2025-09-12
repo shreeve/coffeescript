@@ -55,14 +55,18 @@
 
     // Helper to ensure value is a proper node
     ensureNode(value) {
+      var ref;
       if (value == null) {
         return null;
       }
       if (value.compileToFragments || value instanceof nodes.Base) {
         return value;
       }
-      // Wrap primitives in Literal
-      return new nodes.Literal(String(value));
+      // Only wrap primitives; drop unknown objects to avoid emitting debug strings.
+      if ((ref = typeof value) === 'string' || ref === 'number' || ref === 'boolean') {
+        return new nodes.Literal(String(value));
+      }
+      return null;
     }
 
     // Helper to filter and ensure all items are nodes

@@ -45,8 +45,10 @@ class ES5Backend
   ensureNode: (value) ->
     return null unless value?
     return value if value.compileToFragments or value instanceof nodes.Base
-    # Wrap primitives in Literal
-    new nodes.Literal String(value)
+    # Only wrap primitives; drop unknown objects to avoid emitting debug strings.
+    if typeof value in ['string', 'number', 'boolean']
+      return new nodes.Literal String(value)
+    null
 
   # Helper to filter and ensure all items are nodes
   filterNodes: (array) ->
