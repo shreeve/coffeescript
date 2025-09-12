@@ -285,7 +285,7 @@ class ES5Backend
           # Check if this is an @param that needs special handling
           isAtParam = param?.type is 'Param' and param.name?.type is 'Value' and
                       param.name.val?.type is 'ThisLiteral' and param.name.properties?.length > 0
-          
+
           if isAtParam and hasSimpleSuperCall
             # This is an @param with a super call in the body
             # Convert @name to regular name parameter
