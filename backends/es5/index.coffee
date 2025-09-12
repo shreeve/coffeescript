@@ -775,8 +775,10 @@ class ES5Backend
 
       when 'MetaProperty'
         # MetaProperty like new.target or import.meta
-        metaName = node.meta?.value or node.meta or 'new'
         propName = node.property?.name?.value or node.property?.value or 'target'
+        # If meta is missing but property is 'meta', infer 'import'
+        inferredMeta = if not node.meta? and propName is 'meta' then 'import' else null
+        metaName = node.meta?.value or node.meta or inferredMeta or 'new'
         metaNode = new nodes.IdentifierLiteral metaName
         propertyAccess = new nodes.Access new nodes.PropertyName(propName)
         new nodes.MetaProperty metaNode, propertyAccess

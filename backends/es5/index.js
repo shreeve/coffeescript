@@ -88,7 +88,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, local, m, metaName, metaNode, name, nameNode, namedImports, obj, objNode, objects, op, options, original, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, propertyAccess, quote, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, specifiers, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable, variableNode;
+      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, inferredMeta, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, local, m, metaName, metaNode, name, nameNode, namedImports, obj, objNode, objects, op, options, original, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, propertyAccess, quote, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, specifiers, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable, variableNode;
       if (node == null) {
         return null;
       }
@@ -822,8 +822,10 @@
           return new nodes.Literal('computed');
         case 'MetaProperty':
           // MetaProperty like new.target or import.meta
-          metaName = ((ref8 = node.meta) != null ? ref8.value : void 0) || node.meta || 'new';
-          propName = ((ref9 = node.property) != null ? (ref10 = ref9.name) != null ? ref10.value : void 0 : void 0) || ((ref11 = node.property) != null ? ref11.value : void 0) || 'target';
+          propName = ((ref8 = node.property) != null ? (ref9 = ref8.name) != null ? ref9.value : void 0 : void 0) || ((ref10 = node.property) != null ? ref10.value : void 0) || 'target';
+          // If meta is missing but property is 'meta', infer 'import'
+          inferredMeta = (node.meta == null) && propName === 'meta' ? 'import' : null;
+          metaName = ((ref11 = node.meta) != null ? ref11.value : void 0) || node.meta || inferredMeta || 'new';
           metaNode = new nodes.IdentifierLiteral(metaName);
           propertyAccess = new nodes.Access(new nodes.PropertyName(propName));
           return new nodes.MetaProperty(metaNode, propertyAccess);
