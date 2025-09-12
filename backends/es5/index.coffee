@@ -735,6 +735,23 @@ class ES5Backend
         namedImports = @dataToClass node.namedImports if node.namedImports
         new nodes.ImportClause defaultBinding, namedImports
 
+      when 'ImportDefaultSpecifier'
+        local = @dataToClass(node.local or node.original or node.name or node.value)
+        new nodes.ImportDefaultSpecifier local
+
+      when 'ImportSpecifier'
+        original = @dataToClass(node.imported or node.original or node.name)
+        local = @dataToClass(node.local or node.alias or node.name)
+        new nodes.ImportSpecifier original, local
+
+      when 'ImportNamespaceSpecifier'
+        local = @dataToClass(node.local or node.name)
+        new nodes.ImportNamespaceSpecifier local
+
+      when 'ImportSpecifierList'
+        specifiers = @filterNodes node.specifiers
+        new nodes.ImportSpecifierList specifiers
+
       when 'ExportDeclaration'
         new nodes.ExportDeclaration @dataToClass node.clause
 
@@ -755,11 +772,12 @@ class ES5Backend
         new nodes.Literal 'computed'
 
       when 'MetaProperty'
-        # MetaProperty like new.target
-        meta = @dataToClass node.meta if node.meta
-        property = @dataToClass node.property if node.property
-        # For now, pass through as literal
-        new nodes.PassthroughLiteral "#{node.meta?.value or 'new'}.#{node.property?.value or 'target'}"
+        # MetaProperty like new.target or import.meta
+        metaName = node.meta?.value or node.meta or 'new'
+        propName = node.property?.name?.value or node.property?.value or 'target'
+        metaNode = new nodes.IdentifierLiteral metaName
+        propertyAccess = new nodes.Access new nodes.PropertyName(propName)
+        new nodes.MetaProperty metaNode, propertyAccess
 
       when 'RegexWithInterpolations'
         # Regex with interpolations - convert to regular regex for now

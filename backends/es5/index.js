@@ -88,7 +88,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, m, meta, name, nameNode, namedImports, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, property, quote, range, recovery, recoveryNode, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable;
+      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, local, m, metaName, metaNode, name, nameNode, namedImports, obj, objNode, objects, op, options, original, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, propertyAccess, quote, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, specifiers, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable;
       if (node == null) {
         return null;
       }
@@ -790,6 +790,19 @@
             namedImports = this.dataToClass(node.namedImports);
           }
           return new nodes.ImportClause(defaultBinding, namedImports);
+        case 'ImportDefaultSpecifier':
+          local = this.dataToClass(node.local || node.original || node.name || node.value);
+          return new nodes.ImportDefaultSpecifier(local);
+        case 'ImportSpecifier':
+          original = this.dataToClass(node.imported || node.original || node.name);
+          local = this.dataToClass(node.local || node.alias || node.name);
+          return new nodes.ImportSpecifier(original, local);
+        case 'ImportNamespaceSpecifier':
+          local = this.dataToClass(node.local || node.name);
+          return new nodes.ImportNamespaceSpecifier(local);
+        case 'ImportSpecifierList':
+          specifiers = this.filterNodes(node.specifiers);
+          return new nodes.ImportSpecifierList(specifiers);
         case 'ExportDeclaration':
           return new nodes.ExportDeclaration(this.dataToClass(node.clause));
         // ============================================================
@@ -806,15 +819,12 @@
           // The actual computed property value should be in the parent context
           return new nodes.Literal('computed');
         case 'MetaProperty':
-          if (node.meta) {
-            // MetaProperty like new.target
-            meta = this.dataToClass(node.meta);
-          }
-          if (node.property) {
-            property = this.dataToClass(node.property);
-          }
-          // For now, pass through as literal
-          return new nodes.PassthroughLiteral(`${((ref8 = node.meta) != null ? ref8.value : void 0) || 'new'}.${((ref9 = node.property) != null ? ref9.value : void 0) || 'target'}`);
+          // MetaProperty like new.target or import.meta
+          metaName = ((ref8 = node.meta) != null ? ref8.value : void 0) || node.meta || 'new';
+          propName = ((ref9 = node.property) != null ? (ref10 = ref9.name) != null ? ref10.value : void 0 : void 0) || ((ref11 = node.property) != null ? ref11.value : void 0) || 'target';
+          metaNode = new nodes.IdentifierLiteral(metaName);
+          propertyAccess = new nodes.Access(new nodes.PropertyName(propName));
+          return new nodes.MetaProperty(metaNode, propertyAccess);
         case 'RegexWithInterpolations':
           // Regex with interpolations - convert to regular regex for now
           // This would need more complex handling for full support
@@ -829,7 +839,7 @@
           // Tagged template literals - expects single arg (the template)
           variable = this.dataToClass(node.variable);
           // CS3 parser provides template property instead of args
-          arg = node.template ? this.dataToClass(node.template) : ((ref10 = node.args) != null ? ref10.length : void 0) > 0 ? this.dataToClass(node.args[0]) : new nodes.StringLiteral('');
+          arg = node.template ? this.dataToClass(node.template) : ((ref12 = node.args) != null ? ref12.length : void 0) > 0 ? this.dataToClass(node.args[0]) : new nodes.StringLiteral('');
           return new nodes.TaggedTemplateCall(variable, arg, node.soak);
         default:
           // ============================================================
