@@ -257,9 +257,9 @@ class ES5Backend
       # Functions and Calls
       # ============================================================
       when 'Code'
-        # First, flatten params and check for @params and super calls
+        # First, flatten params and collect @params to generate thisAssignments
         flatParams = []
-        atParams = []  # Track @params that need to be moved after super
+        atParams = []  # Track @params to lower and assign in body
 
         if node.params
           for param in node.params
@@ -269,29 +269,15 @@ class ES5Backend
             else
               flatParams.push param
 
-        # Helper to check if super call is simple (direct statement, not in expression)
-        hasSimpleSuperCall = false
-        if node.body
-          bodyArray = if Array.isArray(node.body) then node.body else [node.body]
-          for item in bodyArray
-            # Check for direct super calls or super calls wrapped in Value
-            if item?.type is 'SuperCall'
-              hasSimpleSuperCall = true
-              break
-            else if item?.type is 'Value' and item?.val?.type is 'SuperCall'
-              hasSimpleSuperCall = true
-              break
-
-        # Process params, handling @params specially if there's a super call
+        # Process params, handling @params by lowering them to plain params
         processedParams = []
         for param in flatParams
           # Check if this is an @param that needs special handling
           isAtParam = param?.type is 'Param' and param.name?.type is 'Value' and
                       param.name.val?.type is 'ThisLiteral' and param.name.properties?.length > 0
 
-          if isAtParam and hasSimpleSuperCall
-            # This is an @param with a super call in the body
-            # Convert @name to regular name parameter
+          if isAtParam
+            # Convert @name to regular name parameter for all functions
             propName = param.name.properties[0].name.value
             # Create a simple param directly with nodes classes
             nameNode = new nodes.IdentifierLiteral(propName)
@@ -305,12 +291,8 @@ class ES5Backend
             if param.splat
               simpleParam.splat = param.splat
             processedParams.push simpleParam
-            # Save the assignment for after super
+            # Save assignment to be applied in body (ideally after super)
             atParams.push {name: propName}
-          else if isAtParam and not hasSimpleSuperCall
-            # @param without super - convert normally
-            converted = @dataToClass param
-            processedParams.push converted if converted
           else
             # Regular param
             converted = @dataToClass param
@@ -326,85 +308,23 @@ class ES5Backend
         else
           []
 
-        # If we have @params that were moved, add assignments after super
-        if atParams.length > 0 and hasSimpleSuperCall
-          # Helper to find and mark where super calls are
-          findAndReplaceSuperCalls = (node) ->
-            return unless node
-
-            # Check if this node contains a super call
-            hasSuper = false
-            if node?.constructor?.name is 'SuperCall'
-              hasSuper = true
-            else if node?.base?.constructor?.name is 'SuperCall'
-              hasSuper = true
-            else
-              # Check in object properties (for { super: super() } case)
-              if node?.constructor?.name is 'Obj' and node.properties
-                for prop in node.properties
-                  if prop?.value?.constructor?.name is 'SuperCall'
-                    hasSuper = true
-                    break
-
-            if hasSuper
-              # Add marker that this node has super
-              node._hasSuperCall = true
-
-            # Recursively check children
-            for key, value of node
-              continue if key[0] is '_' or key in ['constructor']
-              if value and typeof value is 'object'
-                if Array.isArray value
-                  for item in value
-                    findAndReplaceSuperCalls item if item?.constructor
-                else if value.constructor
-                  findAndReplaceSuperCalls value
-
-          # Mark nodes with super calls
-          for bodyNode in bodyNodes
-            findAndReplaceSuperCalls bodyNode
-
-          # For complex cases (super in expressions), prepend the assignments at the start
-          needsPrepend = false
-          for bodyNode in bodyNodes
-            if bodyNode?._hasSuperCall and bodyNode?.constructor?.name isnt 'SuperCall'
-              needsPrepend = true
-              break
-
-          if needsPrepend
-            # Complex case: add assignments at the very beginning
-            # This is safer but may not be ideal for all cases
-            newBodyNodes = []
-            for atParam in atParams
-              # Create @name = name assignment
-              thisLit = new nodes.ThisLiteral()
-              access = new nodes.Access(new nodes.PropertyName(atParam.name))
-              left = new nodes.Value(thisLit, [access])
-              right = new nodes.IdentifierLiteral(atParam.name)
-              assignment = new nodes.Assign(left, right)
-              newBodyNodes.push assignment
-            newBodyNodes.push bodyNodes...
-            bodyNodes = newBodyNodes
-          else
-            # Simple case: add after the super call statement
-            newBodyNodes = []
-            for bodyNode in bodyNodes
-              newBodyNodes.push bodyNode
-              if bodyNode?.constructor?.name is 'SuperCall' or bodyNode?._hasSuperCall
-                for atParam in atParams
-                  # Create @name = name assignment
-                  thisLit = new nodes.ThisLiteral()
-                  access = new nodes.Access(new nodes.PropertyName(atParam.name))
-                  left = new nodes.Value(thisLit, [access])
-                  right = new nodes.IdentifierLiteral(atParam.name)
-                  assignment = new nodes.Assign(left, right)
-                  newBodyNodes.push assignment
-            bodyNodes = newBodyNodes
+        # Build a nodes.Code and attach thisAssignments; compiler will inject
+        # them after super() when possible via expandCtorSuper.
 
         body = new nodes.Block bodyNodes
         funcGlyph = node.funcGlyph?.glyph or '->'
         tag = if funcGlyph is '=>' then 'boundfunc' else null
-        new nodes.Code params, body, tag
+        codeNode = new nodes.Code params, body, tag
+        if atParams.length > 0
+          assignments = []
+          for atParam in atParams
+            thisLit = new nodes.ThisLiteral()
+            access = new nodes.Access(new nodes.PropertyName(atParam.name))
+            left = new nodes.Value(thisLit, [access])
+            right = new nodes.IdentifierLiteral(atParam.name)
+            assignments.push new nodes.Assign(left, right)
+          codeNode.thisAssignments = assignments
+        codeNode
 
       when 'Param'
         name = @dataToClass node.name

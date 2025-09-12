@@ -84,7 +84,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var access, accessNode, accessor, arg, args, assertions, assignment, atParam, atParams, attempt, attemptNode, base, body, bodyArray, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, findAndReplaceSuperCalls, first, flatParams, flip, from, funcGlyph, generated, guard, hasSimpleSuperCall, i, ifNode, index, indexNode, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, len5, len6, len7, len8, len9, m, meta, name, nameNode, namedImports, needsPrepend, newBodyNodes, o, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, property, q, quote, r, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, s, second, simpleParam, soak, source, sourceObj, splat, stringNode, subject, t, tag, thisLit, to, value, valueNode, variable;
+      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, m, meta, name, nameNode, namedImports, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, property, quote, range, recovery, recoveryNode, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable;
       if (node == null) {
         return null;
       }
@@ -289,9 +289,9 @@
         // Functions and Calls
         // ============================================================
         case 'Code':
-          // First, flatten params and check for @params and super calls
+          // First, flatten params and collect @params to generate thisAssignments
           flatParams = [];
-          atParams = []; // Track @params that need to be moved after super
+          atParams = []; // Track @params to lower and assign in body
           if (node.params) {
             ref1 = node.params;
             for (i = 0, len = ref1.length; i < len; i++) {
@@ -306,31 +306,14 @@
               }
             }
           }
-          // Helper to check if super call is simple (direct statement, not in expression)
-          hasSimpleSuperCall = false;
-          if (node.body) {
-            bodyArray = Array.isArray(node.body) ? node.body : [node.body];
-            for (k = 0, len2 = bodyArray.length; k < len2; k++) {
-              item = bodyArray[k];
-              // Check for direct super calls or super calls wrapped in Value
-              if ((item != null ? item.type : void 0) === 'SuperCall') {
-                hasSimpleSuperCall = true;
-                break;
-              } else if ((item != null ? item.type : void 0) === 'Value' && (item != null ? (ref2 = item.val) != null ? ref2.type : void 0 : void 0) === 'SuperCall') {
-                hasSimpleSuperCall = true;
-                break;
-              }
-            }
-          }
-          // Process params, handling @params specially if there's a super call
+          // Process params, handling @params by lowering them to plain params
           processedParams = [];
-          for (l = 0, len3 = flatParams.length; l < len3; l++) {
-            param = flatParams[l];
+          for (k = 0, len2 = flatParams.length; k < len2; k++) {
+            param = flatParams[k];
             // Check if this is an @param that needs special handling
-            isAtParam = (param != null ? param.type : void 0) === 'Param' && ((ref3 = param.name) != null ? ref3.type : void 0) === 'Value' && ((ref4 = param.name.val) != null ? ref4.type : void 0) === 'ThisLiteral' && ((ref5 = param.name.properties) != null ? ref5.length : void 0) > 0;
-            if (isAtParam && hasSimpleSuperCall) {
-              // This is an @param with a super call in the body
-              // Convert @name to regular name parameter
+            isAtParam = (param != null ? param.type : void 0) === 'Param' && ((ref2 = param.name) != null ? ref2.type : void 0) === 'Value' && ((ref3 = param.name.val) != null ? ref3.type : void 0) === 'ThisLiteral' && ((ref4 = param.name.properties) != null ? ref4.length : void 0) > 0;
+            if (isAtParam) {
+              // Convert @name to regular name parameter for all functions
               propName = param.name.properties[0].name.value;
               // Create a simple param directly with nodes classes
               nameNode = new nodes.IdentifierLiteral(propName);
@@ -346,16 +329,10 @@
                 simpleParam.splat = param.splat;
               }
               processedParams.push(simpleParam);
-              // Save the assignment for after super
+              // Save assignment to be applied in body (ideally after super)
               atParams.push({
                 name: propName
               });
-            } else if (isAtParam && !hasSimpleSuperCall) {
-              // @param without super - convert normally
-              converted = this.dataToClass(param);
-              if (converted) {
-                processedParams.push(converted);
-              }
             } else {
               // Regular param
               converted = this.dataToClass(param);
@@ -366,126 +343,25 @@
           }
           params = processedParams;
           bodyNodes = Array.isArray(node.body) ? this.filterNodes(node.body) : node.body ? (converted = this.dataToClass(node.body), converted != null ? [converted] : []) : [];
-          // If we have @params that were moved, add assignments after super
-          if (atParams.length > 0 && hasSimpleSuperCall) {
-            // Helper to find and mark where super calls are
-            findAndReplaceSuperCalls = function(node) {
-              var hasSuper, key, len4, m, ref10, ref11, ref12, ref6, ref7, ref8, ref9, results;
-              if (!node) {
-                return;
-              }
-              // Check if this node contains a super call
-              hasSuper = false;
-              if ((node != null ? (ref6 = node.constructor) != null ? ref6.name : void 0 : void 0) === 'SuperCall') {
-                hasSuper = true;
-              } else if ((node != null ? (ref7 = node.base) != null ? (ref8 = ref7.constructor) != null ? ref8.name : void 0 : void 0 : void 0) === 'SuperCall') {
-                hasSuper = true;
-              } else {
-                // Check in object properties (for { super: super() } case)
-                if ((node != null ? (ref9 = node.constructor) != null ? ref9.name : void 0 : void 0) === 'Obj' && node.properties) {
-                  ref10 = node.properties;
-                  for (m = 0, len4 = ref10.length; m < len4; m++) {
-                    prop = ref10[m];
-                    if ((prop != null ? (ref11 = prop.value) != null ? (ref12 = ref11.constructor) != null ? ref12.name : void 0 : void 0 : void 0) === 'SuperCall') {
-                      hasSuper = true;
-                      break;
-                    }
-                  }
-                }
-              }
-              if (hasSuper) {
-                // Add marker that this node has super
-                node._hasSuperCall = true;
-              }
-// Recursively check children
-              results = [];
-              for (key in node) {
-                value = node[key];
-                if (key[0] === '_' || (key === 'constructor')) {
-                  continue;
-                }
-                if (value && typeof value === 'object') {
-                  if (Array.isArray(value)) {
-                    results.push((function() {
-                      var len5, o, results1;
-                      results1 = [];
-                      for (o = 0, len5 = value.length; o < len5; o++) {
-                        item = value[o];
-                        if (item != null ? item.constructor : void 0) {
-                          results1.push(findAndReplaceSuperCalls(item));
-                        } else {
-                          results1.push(void 0);
-                        }
-                      }
-                      return results1;
-                    })());
-                  } else if (value.constructor) {
-                    results.push(findAndReplaceSuperCalls(value));
-                  } else {
-                    results.push(void 0);
-                  }
-                } else {
-                  results.push(void 0);
-                }
-              }
-              return results;
-            };
-// Mark nodes with super calls
-            for (m = 0, len4 = bodyNodes.length; m < len4; m++) {
-              bodyNode = bodyNodes[m];
-              findAndReplaceSuperCalls(bodyNode);
-            }
-            // For complex cases (super in expressions), prepend the assignments at the start
-            needsPrepend = false;
-            for (o = 0, len5 = bodyNodes.length; o < len5; o++) {
-              bodyNode = bodyNodes[o];
-              if ((bodyNode != null ? bodyNode._hasSuperCall : void 0) && (bodyNode != null ? (ref6 = bodyNode.constructor) != null ? ref6.name : void 0 : void 0) !== 'SuperCall') {
-                needsPrepend = true;
-                break;
-              }
-            }
-            if (needsPrepend) {
-              // Complex case: add assignments at the very beginning
-              // This is safer but may not be ideal for all cases
-              newBodyNodes = [];
-              for (q = 0, len6 = atParams.length; q < len6; q++) {
-                atParam = atParams[q];
-                // Create @name = name assignment
-                thisLit = new nodes.ThisLiteral();
-                access = new nodes.Access(new nodes.PropertyName(atParam.name));
-                left = new nodes.Value(thisLit, [access]);
-                right = new nodes.IdentifierLiteral(atParam.name);
-                assignment = new nodes.Assign(left, right);
-                newBodyNodes.push(assignment);
-              }
-              newBodyNodes.push(...bodyNodes);
-              bodyNodes = newBodyNodes;
-            } else {
-              // Simple case: add after the super call statement
-              newBodyNodes = [];
-              for (r = 0, len7 = bodyNodes.length; r < len7; r++) {
-                bodyNode = bodyNodes[r];
-                newBodyNodes.push(bodyNode);
-                if ((bodyNode != null ? (ref7 = bodyNode.constructor) != null ? ref7.name : void 0 : void 0) === 'SuperCall' || (bodyNode != null ? bodyNode._hasSuperCall : void 0)) {
-                  for (s = 0, len8 = atParams.length; s < len8; s++) {
-                    atParam = atParams[s];
-                    // Create @name = name assignment
-                    thisLit = new nodes.ThisLiteral();
-                    access = new nodes.Access(new nodes.PropertyName(atParam.name));
-                    left = new nodes.Value(thisLit, [access]);
-                    right = new nodes.IdentifierLiteral(atParam.name);
-                    assignment = new nodes.Assign(left, right);
-                    newBodyNodes.push(assignment);
-                  }
-                }
-              }
-              bodyNodes = newBodyNodes;
-            }
-          }
+          // Build a nodes.Code and attach thisAssignments; compiler will inject
+          // them after super() when possible via expandCtorSuper.
           body = new nodes.Block(bodyNodes);
-          funcGlyph = ((ref8 = node.funcGlyph) != null ? ref8.glyph : void 0) || '->';
+          funcGlyph = ((ref5 = node.funcGlyph) != null ? ref5.glyph : void 0) || '->';
           tag = funcGlyph === '=>' ? 'boundfunc' : null;
-          return new nodes.Code(params, body, tag);
+          codeNode = new nodes.Code(params, body, tag);
+          if (atParams.length > 0) {
+            assignments = [];
+            for (l = 0, len3 = atParams.length; l < len3; l++) {
+              atParam = atParams[l];
+              thisLit = new nodes.ThisLiteral();
+              access = new nodes.Access(new nodes.PropertyName(atParam.name));
+              left = new nodes.Value(thisLit, [access]);
+              right = new nodes.IdentifierLiteral(atParam.name);
+              assignments.push(new nodes.Assign(left, right));
+            }
+            codeNode.thisAssignments = assignments;
+          }
+          return codeNode;
         case 'Param':
           name = this.dataToClass(node.name);
           if (node.value) {
@@ -509,12 +385,12 @@
           variable = node.variable ? this.dataToClass(node.variable) : new nodes.Super();
           // Process arguments, filtering out empty objects
           args = (function() {
-            var len9, ref9, t;
+            var len4, m, ref6;
             if (node.args) {
               result = [];
-              ref9 = node.args;
-              for (t = 0, len9 = ref9.length; t < len9; t++) {
-                arg = ref9[t];
+              ref6 = node.args;
+              for (m = 0, len4 = ref6.length; m < len4; m++) {
+                arg = ref6[m];
                 // Skip empty objects
                 if ((arg != null) && (arg.type || Object.keys(arg).length > 0)) {
                   converted = this.dataToClass(arg);
@@ -535,16 +411,16 @@
         // ============================================================
         case 'Arr':
           objects = (function() {
-            var len10, len11, len9, ref10, ref9, t, u, w;
+            var len4, len5, len6, m, o, q, ref6, ref7;
             if (node.objects) {
               result = [];
-              ref9 = node.objects;
-              for (t = 0, len9 = ref9.length; t < len9; t++) {
-                obj = ref9[t];
+              ref6 = node.objects;
+              for (m = 0, len4 = ref6.length; m < len4; m++) {
+                obj = ref6[m];
                 if (Array.isArray(obj)) {
 // Process all elements in nested arrays (happens with elisions)
-                  for (u = 0, len10 = obj.length; u < len10; u++) {
-                    item = obj[u];
+                  for (o = 0, len5 = obj.length; o < len5; o++) {
+                    item = obj[o];
                     if ((item != null ? item.type : void 0) === 'Elision') {
                       // Handle elisions - create actual hole/empty slot
                       result.push(new nodes.Elision());
@@ -568,9 +444,9 @@
               // Handle trailing elisions stored in separate elisions property
               // Only process elisions that have type: 'Elision', not empty objects
               if (node.elisions) {
-                ref10 = node.elisions;
-                for (w = 0, len11 = ref10.length; w < len11; w++) {
-                  elision = ref10[w];
+                ref7 = node.elisions;
+                for (q = 0, len6 = ref7.length; q < len6; q++) {
+                  elision = ref7[q];
                   if ((elision != null ? elision.type : void 0) === 'Elision') {
                     result.push(new nodes.Elision());
                   }
@@ -594,15 +470,15 @@
           return new nodes.Arr(objects);
         case 'Obj':
           properties = (function() {
-            var len10, len9, ref9, t, u;
+            var len4, len5, m, o, ref6;
             if (node.properties) {
               result = [];
-              ref9 = node.properties;
-              for (t = 0, len9 = ref9.length; t < len9; t++) {
-                prop = ref9[t];
+              ref6 = node.properties;
+              for (m = 0, len4 = ref6.length; m < len4; m++) {
+                prop = ref6[m];
                 if (Array.isArray(prop)) {
-                  for (u = 0, len10 = prop.length; u < len10; u++) {
-                    item = prop[u];
+                  for (o = 0, len5 = prop.length; o < len5; o++) {
+                    item = prop[o];
                     converted = this.dataToClass(item);
                     if ((converted != null) && converted instanceof nodes.Base) {
                       result.push(converted);
@@ -694,9 +570,9 @@
             body.locationData = this.defaultLocationData();
           }
           if (body.expressions) {
-            ref9 = body.expressions;
-            for (t = 0, len9 = ref9.length; t < len9; t++) {
-              expr = ref9[t];
+            ref6 = body.expressions;
+            for (m = 0, len4 = ref6.length; m < len4; m++) {
+              expr = ref6[m];
               if (expr.locationData == null) {
                 expr.locationData = this.defaultLocationData();
               }
@@ -800,22 +676,22 @@
             parent = this.dataToClass(node.parent);
           }
           body = (function() {
-            var len10, len11, len12, ref10, ref11, ref12, u, w, x;
+            var len5, len6, len7, o, q, r, ref7, ref8, ref9;
             if (Array.isArray(node.body)) {
               bodyNodes = [];
-              ref10 = node.body;
-              for (u = 0, len10 = ref10.length; u < len10; u++) {
-                item = ref10[u];
-                if (item.type === 'Value' && ((ref11 = item.val) != null ? ref11.type : void 0) === 'Obj') {
+              ref7 = node.body;
+              for (o = 0, len5 = ref7.length; o < len5; o++) {
+                item = ref7[o];
+                if (item.type === 'Value' && ((ref8 = item.val) != null ? ref8.type : void 0) === 'Obj') {
                   // Extract methods from object literal
                   objNode = item.val;
                   if (objNode.properties) {
-                    ref12 = objNode.properties;
-                    for (w = 0, len11 = ref12.length; w < len11; w++) {
-                      prop = ref12[w];
+                    ref9 = objNode.properties;
+                    for (q = 0, len6 = ref9.length; q < len6; q++) {
+                      prop = ref9[q];
                       if (Array.isArray(prop)) {
-                        for (x = 0, len12 = prop.length; x < len12; x++) {
-                          p = prop[x];
+                        for (r = 0, len7 = prop.length; r < len7; r++) {
+                          p = prop[r];
                           converted = this.dataToClass(p);
                           if (converted) {
                             bodyNodes.push(converted);
@@ -910,7 +786,7 @@
             property = this.dataToClass(node.property);
           }
           // For now, pass through as literal
-          return new nodes.PassthroughLiteral(`${((ref10 = node.meta) != null ? ref10.value : void 0) || 'new'}.${((ref11 = node.property) != null ? ref11.value : void 0) || 'target'}`);
+          return new nodes.PassthroughLiteral(`${((ref7 = node.meta) != null ? ref7.value : void 0) || 'new'}.${((ref8 = node.property) != null ? ref8.value : void 0) || 'target'}`);
         case 'RegexWithInterpolations':
           // Regex with interpolations - convert to regular regex for now
           // This would need more complex handling for full support
@@ -925,7 +801,7 @@
           // Tagged template literals - expects single arg (the template)
           variable = this.dataToClass(node.variable);
           // CS3 parser provides template property instead of args
-          arg = node.template ? this.dataToClass(node.template) : ((ref12 = node.args) != null ? ref12.length : void 0) > 0 ? this.dataToClass(node.args[0]) : new nodes.StringLiteral('');
+          arg = node.template ? this.dataToClass(node.template) : ((ref9 = node.args) != null ? ref9.length : void 0) > 0 ? this.dataToClass(node.args[0]) : new nodes.StringLiteral('');
           return new nodes.TaggedTemplateCall(variable, arg, node.soak);
         default:
           // ============================================================
