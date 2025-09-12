@@ -494,7 +494,11 @@ class ES5Backend
         from = if node.from then @dataToClass(node.from) else null
         to = if node.to then @dataToClass(node.to) else null
         tag = if node.exclusive then 'exclusive' else 'inclusive'
-        new nodes.Range from, to, tag
+        
+        # Ensure proper range evaluation for nested loops
+        rangeNode = new nodes.Range from, to, tag
+        rangeNode.locationData = node.locationData if node.locationData
+        rangeNode
 
       when 'Slice'
         # Create a Slice with its range
