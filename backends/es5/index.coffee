@@ -599,10 +599,12 @@ class ES5Backend
         if node.ownTag?
           sourceObj.ownTag = @dataToClass node.ownTag
 
-        # FIX: Loop variable conflicts
-        # The For node constructor will handle variable allocation
-        # We just need to pass the correct source configuration
-        new nodes.For body, sourceObj
+        # CRITICAL FIX: Use the original CoffeeScript For constructor approach
+        # This lets the For node handle variable allocation via scope.freeVariable
+        # which prevents the nested loop variable conflicts (#4889)
+        forNode = new nodes.For body, sourceObj
+        forNode.locationData = node.locationData if node.locationData
+        forNode
 
       when 'Switch'
         subject = @dataToClass node.subject

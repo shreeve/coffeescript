@@ -42,12 +42,27 @@ for i in [0..n]
 ```
 
 #### Root Cause
-The issue is in `backends/es5/index.coffee` in the `For` node conversion. The backend doesn't properly manage scope and variable allocation for nested loops. The core CoffeeScript compiler uses `o.scope.freeVariable()` to generate unique variable names, but the CS3 backend conversion bypasses this mechanism.
+**ARCHITECTURAL ISSUE**: The CS3 backend bypasses CoffeeScript's normal compilation pipeline where `o.scope.freeVariable('i', single: true)` generates unique loop variables (`i`, `j`, `k`, `l`, etc.).
+
+**Original CoffeeScript Solution (lines 5061-5062 in src/nodes.coffee):**
+```coffeescript
+ivar = (@object and index) or scope.freeVariable 'i', single: true
+kvar = ((@range or @from) and name) or index or ivar
+```
+
+The `scope.freeVariable` method with `single: true` generates unique single-character variables using the `temporary` method in `src/scope.litcoffee` (lines 69-79):
+- First loop: `i`, second: `j`, third: `k`, etc.
+- After `z`: `i1`, `j1`, `k1`, etc.
+
+**Why Our Backend Fails**: We create For nodes via `new nodes.For(body, sourceObj)` but they don't go through the compilation pipeline where scope allocation happens. The backend converts data directly to class nodes without proper scope context.
 
 #### Required Fix
-1. **Scope Management**: Implement proper scope tracking in the backend
-2. **Variable Allocation**: Ensure each For loop gets unique counter variables
-3. **Alternative Approach**: Consider pre-processing the AST to rename conflicting variables before conversion
+**FUNDAMENTAL ARCHITECTURE CHANGE NEEDED**:
+1. **Integrate with Scope System**: The backend needs access to the compilation scope context
+2. **Pipeline Integration**: For nodes need to be created within the proper compilation context
+3. **Alternative**: Pre-process the data AST to allocate unique variables before conversion
+
+**Evidence of Partial Success**: The fix improved variable allocation (inner loop now uses `k` instead of conflicting `j`), but both loops still share the loop variable name `j`, proving the scope system isn't fully integrated.
 
 ### 2. Regex Compilation Issues ⚠️ **HIGH**
 

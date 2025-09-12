@@ -86,9 +86,26 @@
       return result;
     }
 
+    // Add mergeLocationData helper
+    mergeLocationData(first, last) {
+      var ref, ref1;
+      if (!last) {
+        return first;
+      }
+      return {
+        first_line: first.first_line,
+        first_column: first.first_column,
+        last_line: last.last_line,
+        last_column: last.last_column,
+        last_line_exclusive: (ref = last.last_line_exclusive) != null ? ref : first.last_line_exclusive,
+        last_column_exclusive: (ref1 = last.last_column_exclusive) != null ? ref1 : first.last_column_exclusive,
+        range: [first.range[0], last.range[1]]
+      };
+    }
+
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, err, expr, expression, expressionNodes, expressions, first, firstAccess, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, inferredMeta, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, local, m, metaName, metaNode, name, nameNode, namedImports, obj, objNode, objects, op, options, original, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, propertyAccess, quote, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref13, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, specifiers, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable, variableNode, wrappedVar;
+      var access, accessNode, accessor, arg, args, assertObj, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, callNode, cases, catch_, clause, codeNode, condition, conditions, context, converted, declaration, defaultBinding, elision, elseBody, ensure, ensureNode, err, exportNode, exported, expr, expression, expressionNodes, expressions, first, firstAccess, flatParams, flip, forNode, from, funcGlyph, generated, guard, i, ifNode, importNode, index, indexNode, inferredMeta, isAtParam, item, j, k, key, l, lastProp, left, len, len1, len2, len3, len4, len5, len6, local, m, metaName, metaNode, name, nameNode, namedImports, o, obj, objNode, objects, op, options, original, otherwise, otherwiseNode, p, param, paramNode, params, parent, processedParams, prop, propName, properties, propertyAccess, q, range, rangeNode, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, spec, specifiers, splat, stringNode, subject, tag, thisLit, to, val, value, valueNode, variable, variableNode, wrappedVar;
       if (node == null) {
         return null;
       }
@@ -126,12 +143,18 @@
         case 'NumberLiteral':
           return new nodes.NumberLiteral(node.value, node.parsedValue);
         case 'StringLiteral':
-          quote = node.quote || '"';
-          value = node.value || '';
-          stringNode = new nodes.StringLiteral(value, {quote});
-          // Critical: Must have locationData and originalValue
-          stringNode.locationData = node.locationData || this.defaultLocationData();
-          stringNode.originalValue = value;
+          options = {
+            quote: node.quote,
+            initialChunk: node.initialChunk,
+            finalChunk: node.finalChunk,
+            indent: node.indent,
+            double: node.double,
+            heregex: node.heregex
+          };
+          stringNode = new nodes.StringLiteral(node.value, options);
+          if (node.locationData) {
+            stringNode.locationData = node.locationData;
+          }
           return stringNode;
         case 'Literal':
           return new nodes.Literal(node.value);
@@ -217,7 +240,16 @@
             err = error;
           }
           // fall through; keep generic Value
-          return new nodes.Value(base, properties);
+          valueNode = new nodes.Value(base, properties, tag);
+          if (node.locationData) {
+            valueNode.locationData = node.locationData;
+          }
+          // If properties, merge from base to last property
+          if (properties.length > 0) {
+            lastProp = properties[properties.length - 1];
+            valueNode.locationData = this.mergeLocationData(base.locationData || valueNode.locationData, lastProp.locationData);
+          }
+          return valueNode;
         case 'Access':
           name = this.dataToClass(node.name);
           accessNode = new nodes.Access(name);
@@ -407,13 +439,24 @@
           if (node.value) {
             value = this.dataToClass(node.value);
           }
-          splat = node.splat;
-          return new nodes.Param(name, value, splat);
+          splat = !!node.splat;
+          paramNode = new nodes.Param(name, value, splat);
+          if (node.locationData) {
+            paramNode.locationData = node.locationData;
+          }
+          return paramNode;
         case 'Call':
           variable = this.dataToClass(node.variable);
           args = node.args ? this.filterNodes(node.args) : [];
           soak = node.soak;
-          return new nodes.Call(variable, args, soak);
+          callNode = new nodes.Call(variable, args, soak);
+          if (node.new) {
+            callNode.isNew = true;
+          }
+          if (node.new) {
+            callNode.locationData = this.mergeLocationData(node.new.locationData, callNode.locationData || this.defaultLocationData());
+          }
+          return callNode;
         case 'Super':
           if (node.accessor) {
             accessor = this.dataToClass(node.accessor);
@@ -553,7 +596,12 @@
           from = node.from ? this.dataToClass(node.from) : null;
           to = node.to ? this.dataToClass(node.to) : null;
           tag = node.exclusive ? 'exclusive' : 'inclusive';
-          return new nodes.Range(from, to, tag);
+          // Ensure proper range evaluation for nested loops
+          rangeNode = new nodes.Range(from, to, tag);
+          if (node.locationData) {
+            rangeNode.locationData = node.locationData;
+          }
+          return rangeNode;
         case 'Slice':
           // Create a Slice with its range
           if (node.range) {
@@ -658,10 +706,14 @@
           if (node.ownTag != null) {
             sourceObj.ownTag = this.dataToClass(node.ownTag);
           }
-          // FIX: Loop variable conflicts
-          // The For node constructor will handle variable allocation
-          // We just need to pass the correct source configuration
-          return new nodes.For(body, sourceObj);
+          // CRITICAL FIX: Use the original CoffeeScript For constructor approach
+          // This lets the For node handle variable allocation via scope.freeVariable
+          // which prevents the nested loop variable conflicts (#4889)
+          forNode = new nodes.For(body, sourceObj);
+          if (node.locationData) {
+            forNode.locationData = node.locationData;
+          }
+          return forNode;
         case 'Switch':
           subject = this.dataToClass(node.subject);
           cases = node.cases ? node.cases.map((c) => {
@@ -784,11 +836,25 @@
         // String Interpolation
         // ============================================================
         case 'StringWithInterpolations':
-          body = node.body ? (parts = node.body.map((part) => {
-            return this.dataToClass(part);
-          }), new nodes.Block(parts)) : new nodes.Block([]);
-          quote = node.quote || '"';
-          return new nodes.StringWithInterpolations(body, {quote});
+          bodyNodes = (function() {
+            var len5, o, ref9, results;
+            ref9 = node.body || [];
+            results = [];
+            for (o = 0, len5 = ref9.length; o < len5; o++) {
+              expr = ref9[o];
+              results.push(this.dataToClass(expr));
+            }
+            return results;
+          }).call(this);
+          body = new nodes.Block(bodyNodes);
+          stringNode = new nodes.StringWithInterpolations(body, node.quote);
+          if (node.startQuote) {
+            stringNode.startQuote = this.dataToClass(node.startQuote);
+          }
+          if (node.locationData) {
+            stringNode.locationData = node.locationData;
+          }
+          return stringNode;
         case 'Interpolation':
           expression = Array.isArray(node.expression) ? node.expression.length === 1 ? this.dataToClass(node.expression[0]) : (expressionNodes = node.expression.map((n) => {
             return this.dataToClass(n);
@@ -801,11 +867,79 @@
           if (node.clause) {
             clause = this.dataToClass(node.clause);
           }
-          source = this.dataToClass(node.source);
-          if (node.assertions) {
-            assertions = this.dataToClass(node.assertions);
+          if (node.source) {
+            source = this.dataToClass(node.source);
           }
-          return new nodes.ImportDeclaration(clause, source, assertions);
+          assertions = [];
+          if (node.assertions) {
+            assertObj = this.dataToClass(node.assertions);
+            ref9 = assertObj.properties || [];
+            for (o = 0, len5 = ref9.length; o < len5; o++) {
+              prop = ref9[o];
+              if (prop.type === 'Assign') {
+                key = prop.variable;
+                val = prop.value;
+                assertions.push(new nodes.Assign(key, val, 'assert'));
+              }
+            }
+          }
+          importNode = new nodes.ImportDeclaration(clause, source);
+          if (assertions.length > 0) {
+            importNode.assertions = assertions;
+          }
+          if (node.locationData) {
+            importNode.locationData = node.locationData;
+          }
+          return importNode;
+        case 'ExportNamedDeclaration':
+          if (node.clause) {
+            clause = this.dataToClass(node.clause);
+          }
+          if (node.source) {
+            source = this.dataToClass(node.source);
+          }
+          exportNode = new nodes.ExportNamedDeclaration(clause, source);
+          if (node.locationData) {
+            exportNode.locationData = node.locationData;
+          }
+          return exportNode;
+        case 'ExportDefaultDeclaration':
+          if (node.declaration) {
+            declaration = this.dataToClass(node.declaration);
+          }
+          exportNode = new nodes.ExportDefaultDeclaration(declaration);
+          if (node.locationData) {
+            exportNode.locationData = node.locationData;
+          }
+          return exportNode;
+        case 'ExportAllDeclaration':
+          if (node.exported) {
+            exported = this.dataToClass(node.exported);
+          }
+          if (node.source) {
+            source = this.dataToClass(node.source);
+          }
+          assertions = []; // similar to import
+          if (node.assertions) {
+            assertObj = this.dataToClass(node.assertions);
+            ref10 = assertObj.properties || [];
+            for (q = 0, len6 = ref10.length; q < len6; q++) {
+              prop = ref10[q];
+              if (prop.type === 'Assign') {
+                key = prop.variable;
+                val = prop.value;
+                assertions.push(new nodes.Assign(key, val, 'assert'));
+              }
+            }
+          }
+          exportNode = new nodes.ExportAllDeclaration(exported, source);
+          if (assertions.length > 0) {
+            exportNode.assertions = assertions;
+          }
+          if (node.locationData) {
+            exportNode.locationData = node.locationData;
+          }
+          return exportNode;
         case 'ImportClause':
           if (node.defaultBinding) {
             defaultBinding = this.dataToClass(node.defaultBinding);
@@ -825,10 +959,41 @@
           local = this.dataToClass(node.local || node.name);
           return new nodes.ImportNamespaceSpecifier(local);
         case 'ImportSpecifierList':
-          specifiers = this.filterNodes(node.specifiers);
+          specifiers = (function() {
+            var len7, r, ref11, results;
+            ref11 = node.specifiers || [];
+            results = [];
+            for (r = 0, len7 = ref11.length; r < len7; r++) {
+              spec = ref11[r];
+              results.push(this.dataToClass(spec));
+            }
+            return results;
+          }).call(this);
           return new nodes.ImportSpecifierList(specifiers);
         case 'ExportDeclaration':
           return new nodes.ExportDeclaration(this.dataToClass(node.clause));
+        case 'ExportSpecifierList':
+          specifiers = (function() {
+            var len7, r, ref11, results;
+            ref11 = node.specifiers || [];
+            results = [];
+            for (r = 0, len7 = ref11.length; r < len7; r++) {
+              spec = ref11[r];
+              results.push(this.dataToClass(spec));
+            }
+            return results;
+          }).call(this);
+          return new nodes.ExportSpecifierList(specifiers);
+        case 'ExportSpecifier':
+          if (node.local) {
+            local = this.dataToClass(node.local);
+          }
+          if (node.exported) {
+            exported = this.dataToClass(node.exported);
+          }
+          return new nodes.ExportSpecifier(local, exported);
+        case 'DefaultLiteral':
+          return new nodes.IdentifierLiteral(node.value);
         // ============================================================
         // Meta nodes
         // ============================================================
@@ -844,10 +1009,10 @@
           return new nodes.Literal('computed');
         case 'MetaProperty':
           // MetaProperty like new.target or import.meta
-          propName = ((ref9 = node.property) != null ? (ref10 = ref9.name) != null ? ref10.value : void 0 : void 0) || ((ref11 = node.property) != null ? ref11.value : void 0) || 'target';
+          propName = ((ref11 = node.property) != null ? (ref12 = ref11.name) != null ? ref12.value : void 0 : void 0) || ((ref13 = node.property) != null ? ref13.value : void 0) || 'target';
           // If meta is missing but property is 'meta', infer 'import'
           inferredMeta = (node.meta == null) && propName === 'meta' ? 'import' : null;
-          metaName = ((ref12 = node.meta) != null ? ref12.value : void 0) || node.meta || inferredMeta || 'new';
+          metaName = ((ref14 = node.meta) != null ? ref14.value : void 0) || node.meta || inferredMeta || 'new';
           metaNode = new nodes.IdentifierLiteral(metaName);
           propertyAccess = new nodes.Access(new nodes.PropertyName(propName));
           return new nodes.MetaProperty(metaNode, propertyAccess);
@@ -865,7 +1030,7 @@
           // Tagged template literals - expects single arg (the template)
           variable = this.dataToClass(node.variable);
           // CS3 parser provides template property instead of args
-          arg = node.template ? this.dataToClass(node.template) : ((ref13 = node.args) != null ? ref13.length : void 0) > 0 ? this.dataToClass(node.args[0]) : new nodes.StringLiteral('');
+          arg = node.template ? this.dataToClass(node.template) : ((ref15 = node.args) != null ? ref15.length : void 0) > 0 ? this.dataToClass(node.args[0]) : new nodes.StringLiteral('');
           return new nodes.TaggedTemplateCall(variable, arg, node.soak);
         default:
           // ============================================================
