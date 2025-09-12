@@ -152,9 +152,9 @@
             heregex: node.heregex
           };
           stringNode = new nodes.StringLiteral(node.value, options);
-          if (node.locationData) {
-            stringNode.locationData = node.locationData;
-          }
+          stringNode.originalValue = node.value; // Critical: needed for withoutQuotesInLocationData
+          // Ensure locationData is properly set with defaults if missing
+          stringNode.locationData = node.locationData || this.defaultLocationData();
           return stringNode;
         case 'Literal':
           return new nodes.Literal(node.value);
@@ -851,9 +851,8 @@
           if (node.startQuote) {
             stringNode.startQuote = this.dataToClass(node.startQuote);
           }
-          if (node.locationData) {
-            stringNode.locationData = node.locationData;
-          }
+          // Ensure locationData is properly set with defaults if missing
+          stringNode.locationData = node.locationData || this.defaultLocationData();
           return stringNode;
         case 'Interpolation':
           expression = Array.isArray(node.expression) ? node.expression.length === 1 ? this.dataToClass(node.expression[0]) : (expressionNodes = node.expression.map((n) => {
