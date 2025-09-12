@@ -213,11 +213,13 @@ class ES5Backend
             base = node.value
           if base?.type is 'PropertyName'
             variable = @dataToClass base
-          else if base?.type is 'IdentifierLiteral' or base?.type is 'StringLiteral' or base?.type is 'NumberLiteral'
+          else if base?.type in ['IdentifierLiteral', 'StringLiteral', 'NumberLiteral']
             variable = new nodes.PropertyName(base.value)
           else
             # Fallback to class conversion; Obj compile will validate
             variable = @dataToClass node.value
+          # Ensure Value for downstream class initializer analysis
+          variable = new nodes.Value(variable) unless variable instanceof nodes.Value
           value = @dataToClass node.expression
           return new nodes.Assign(variable, value, 'object')
         else
