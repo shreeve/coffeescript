@@ -505,7 +505,7 @@ class ES5Backend
           null
 
       when 'Splat'
-        name = @dataToClass(node.name or node.body)
+        name = @dataToClass(node.name or node.body or node.value)
         new nodes.Splat name
 
       when 'Expansion'

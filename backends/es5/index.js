@@ -616,7 +616,7 @@
           }
           break;
         case 'Splat':
-          name = this.dataToClass(node.name || node.body);
+          name = this.dataToClass(node.name || node.body || node.value);
           return new nodes.Splat(name);
         case 'Expansion':
           return new nodes.Expansion();
