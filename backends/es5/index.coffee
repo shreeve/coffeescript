@@ -436,7 +436,9 @@ class ES5Backend
             else if prop?
               # CS3 Obj property can be an Assign-like structure with key and value
               if prop.type is 'Assign' and prop.context is 'object'
-                variable = @dataToClass prop.value
+                variableNode = @dataToClass prop.value
+                # Ensure variable is a Value so downstream methods like hasProperties/lookStatic exist
+                variable = if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode
                 value = @dataToClass prop.expression
                 result.push new nodes.Assign(variable, value, 'object') if variable? and value?
               else

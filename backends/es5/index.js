@@ -88,7 +88,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, local, m, metaName, metaNode, name, nameNode, namedImports, obj, objNode, objects, op, options, original, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, propertyAccess, quote, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, specifiers, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable;
+      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, local, m, metaName, metaNode, name, nameNode, namedImports, obj, objNode, objects, op, options, original, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, propertyAccess, quote, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, specifiers, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable, variableNode;
       if (node == null) {
         return null;
       }
@@ -506,7 +506,9 @@
                 } else if (prop != null) {
                   // CS3 Obj property can be an Assign-like structure with key and value
                   if (prop.type === 'Assign' && prop.context === 'object') {
-                    variable = this.dataToClass(prop.value);
+                    variableNode = this.dataToClass(prop.value);
+                    // Ensure variable is a Value so downstream methods like hasProperties/lookStatic exist
+                    variable = variableNode instanceof nodes.Value ? variableNode : new nodes.Value(variableNode);
                     value = this.dataToClass(prop.expression);
                     if ((variable != null) && (value != null)) {
                       result.push(new nodes.Assign(variable, value, 'object'));
