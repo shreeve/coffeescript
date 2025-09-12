@@ -84,7 +84,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, m, meta, name, nameNode, namedImports, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, property, quote, range, recovery, recoveryNode, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable;
+      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, first, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, m, meta, name, nameNode, namedImports, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, property, quote, range, recovery, recoveryNode, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable;
       if (node == null) {
         return null;
       }
@@ -221,8 +221,20 @@
           // Handle object property assignments
           if (node.context === 'object' && node.expression) {
             // In object literal properties, node.value is the property key/name,
-            // and node.expression is the assigned value.
-            variable = this.dataToClass(node.value);
+            // and node.expression is the assigned value. Normalize key to PropertyName.
+            if (((ref1 = node.value) != null ? ref1.type : void 0) === 'Value') {
+              base = node.value.val;
+            } else {
+              base = node.value;
+            }
+            if ((base != null ? base.type : void 0) === 'PropertyName') {
+              variable = this.dataToClass(base);
+            } else if ((base != null ? base.type : void 0) === 'IdentifierLiteral' || (base != null ? base.type : void 0) === 'StringLiteral' || (base != null ? base.type : void 0) === 'NumberLiteral') {
+              variable = new nodes.PropertyName(base.value);
+            } else {
+              // Fallback to class conversion; Obj compile will validate
+              variable = this.dataToClass(node.value);
+            }
             value = this.dataToClass(node.expression);
             return new nodes.Assign(variable, value, 'object');
           } else {
@@ -296,9 +308,9 @@
           flatParams = [];
           atParams = []; // Track @params to lower and assign in body
           if (node.params) {
-            ref1 = node.params;
-            for (i = 0, len = ref1.length; i < len; i++) {
-              param = ref1[i];
+            ref2 = node.params;
+            for (i = 0, len = ref2.length; i < len; i++) {
+              param = ref2[i];
               if (Array.isArray(param)) {
                 for (j = 0, len1 = param.length; j < len1; j++) {
                   p = param[j];
@@ -314,7 +326,7 @@
           for (k = 0, len2 = flatParams.length; k < len2; k++) {
             param = flatParams[k];
             // Check if this is an @param that needs special handling
-            isAtParam = (param != null ? param.type : void 0) === 'Param' && ((ref2 = param.name) != null ? ref2.type : void 0) === 'Value' && ((ref3 = param.name.val) != null ? ref3.type : void 0) === 'ThisLiteral' && ((ref4 = param.name.properties) != null ? ref4.length : void 0) > 0;
+            isAtParam = (param != null ? param.type : void 0) === 'Param' && ((ref3 = param.name) != null ? ref3.type : void 0) === 'Value' && ((ref4 = param.name.val) != null ? ref4.type : void 0) === 'ThisLiteral' && ((ref5 = param.name.properties) != null ? ref5.length : void 0) > 0;
             if (isAtParam) {
               // Convert @name to regular name parameter for all functions
               propName = param.name.properties[0].name.value;
@@ -349,7 +361,7 @@
           // Build a nodes.Code and attach thisAssignments; compiler will inject
           // them after super() when possible via expandCtorSuper.
           body = new nodes.Block(bodyNodes);
-          funcGlyph = ((ref5 = node.funcGlyph) != null ? ref5.glyph : void 0) || '->';
+          funcGlyph = ((ref6 = node.funcGlyph) != null ? ref6.glyph : void 0) || '->';
           tag = funcGlyph === '=>' ? 'boundfunc' : null;
           codeNode = new nodes.Code(params, body, tag);
           if (atParams.length > 0) {
@@ -388,12 +400,12 @@
           variable = node.variable ? this.dataToClass(node.variable) : new nodes.Super();
           // Process arguments, filtering out empty objects
           args = (function() {
-            var len4, m, ref6;
+            var len4, m, ref7;
             if (node.args) {
               result = [];
-              ref6 = node.args;
-              for (m = 0, len4 = ref6.length; m < len4; m++) {
-                arg = ref6[m];
+              ref7 = node.args;
+              for (m = 0, len4 = ref7.length; m < len4; m++) {
+                arg = ref7[m];
                 // Skip empty objects
                 if ((arg != null) && (arg.type || Object.keys(arg).length > 0)) {
                   converted = this.dataToClass(arg);
@@ -414,12 +426,12 @@
         // ============================================================
         case 'Arr':
           objects = (function() {
-            var len4, len5, len6, m, o, q, ref6, ref7;
+            var len4, len5, len6, m, o, q, ref7, ref8;
             if (node.objects) {
               result = [];
-              ref6 = node.objects;
-              for (m = 0, len4 = ref6.length; m < len4; m++) {
-                obj = ref6[m];
+              ref7 = node.objects;
+              for (m = 0, len4 = ref7.length; m < len4; m++) {
+                obj = ref7[m];
                 if (Array.isArray(obj)) {
 // Process all elements in nested arrays (happens with elisions)
                   for (o = 0, len5 = obj.length; o < len5; o++) {
@@ -447,9 +459,9 @@
               // Handle trailing elisions stored in separate elisions property
               // Only process elisions that have type: 'Elision', not empty objects
               if (node.elisions) {
-                ref7 = node.elisions;
-                for (q = 0, len6 = ref7.length; q < len6; q++) {
-                  elision = ref7[q];
+                ref8 = node.elisions;
+                for (q = 0, len6 = ref8.length; q < len6; q++) {
+                  elision = ref8[q];
                   if ((elision != null ? elision.type : void 0) === 'Elision') {
                     result.push(new nodes.Elision());
                   }
@@ -473,12 +485,12 @@
           return new nodes.Arr(objects);
         case 'Obj':
           properties = (function() {
-            var len4, len5, m, o, ref6;
+            var len4, len5, m, o, ref7;
             if (node.properties) {
               result = [];
-              ref6 = node.properties;
-              for (m = 0, len4 = ref6.length; m < len4; m++) {
-                prop = ref6[m];
+              ref7 = node.properties;
+              for (m = 0, len4 = ref7.length; m < len4; m++) {
+                prop = ref7[m];
                 if (Array.isArray(prop)) {
                   for (o = 0, len5 = prop.length; o < len5; o++) {
                     item = prop[o];
@@ -582,9 +594,9 @@
             body.locationData = this.defaultLocationData();
           }
           if (body.expressions) {
-            ref6 = body.expressions;
-            for (m = 0, len4 = ref6.length; m < len4; m++) {
-              expr = ref6[m];
+            ref7 = body.expressions;
+            for (m = 0, len4 = ref7.length; m < len4; m++) {
+              expr = ref7[m];
               if (expr.locationData == null) {
                 expr.locationData = this.defaultLocationData();
               }
@@ -688,19 +700,19 @@
             parent = this.dataToClass(node.parent);
           }
           body = (function() {
-            var len5, len6, len7, o, q, r, ref7, ref8, ref9;
+            var len5, len6, len7, o, q, r, ref10, ref8, ref9;
             if (Array.isArray(node.body)) {
               bodyNodes = [];
-              ref7 = node.body;
-              for (o = 0, len5 = ref7.length; o < len5; o++) {
-                item = ref7[o];
-                if (item.type === 'Value' && ((ref8 = item.val) != null ? ref8.type : void 0) === 'Obj') {
+              ref8 = node.body;
+              for (o = 0, len5 = ref8.length; o < len5; o++) {
+                item = ref8[o];
+                if (item.type === 'Value' && ((ref9 = item.val) != null ? ref9.type : void 0) === 'Obj') {
                   // Extract methods from object literal
                   objNode = item.val;
                   if (objNode.properties) {
-                    ref9 = objNode.properties;
-                    for (q = 0, len6 = ref9.length; q < len6; q++) {
-                      prop = ref9[q];
+                    ref10 = objNode.properties;
+                    for (q = 0, len6 = ref10.length; q < len6; q++) {
+                      prop = ref10[q];
                       if (Array.isArray(prop)) {
                         for (r = 0, len7 = prop.length; r < len7; r++) {
                           p = prop[r];
@@ -798,7 +810,7 @@
             property = this.dataToClass(node.property);
           }
           // For now, pass through as literal
-          return new nodes.PassthroughLiteral(`${((ref7 = node.meta) != null ? ref7.value : void 0) || 'new'}.${((ref8 = node.property) != null ? ref8.value : void 0) || 'target'}`);
+          return new nodes.PassthroughLiteral(`${((ref8 = node.meta) != null ? ref8.value : void 0) || 'new'}.${((ref9 = node.property) != null ? ref9.value : void 0) || 'target'}`);
         case 'RegexWithInterpolations':
           // Regex with interpolations - convert to regular regex for now
           // This would need more complex handling for full support
@@ -813,7 +825,7 @@
           // Tagged template literals - expects single arg (the template)
           variable = this.dataToClass(node.variable);
           // CS3 parser provides template property instead of args
-          arg = node.template ? this.dataToClass(node.template) : ((ref9 = node.args) != null ? ref9.length : void 0) > 0 ? this.dataToClass(node.args[0]) : new nodes.StringLiteral('');
+          arg = node.template ? this.dataToClass(node.template) : ((ref10 = node.args) != null ? ref10.length : void 0) > 0 ? this.dataToClass(node.args[0]) : new nodes.StringLiteral('');
           return new nodes.TaggedTemplateCall(variable, arg, node.soak);
         default:
           // ============================================================

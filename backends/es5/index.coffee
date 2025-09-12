@@ -204,8 +204,18 @@ class ES5Backend
         # Handle object property assignments
         if node.context is 'object' and node.expression
           # In object literal properties, node.value is the property key/name,
-          # and node.expression is the assigned value.
-          variable = @dataToClass node.value
+          # and node.expression is the assigned value. Normalize key to PropertyName.
+          if node.value?.type is 'Value'
+            base = node.value.val
+          else
+            base = node.value
+          if base?.type is 'PropertyName'
+            variable = @dataToClass base
+          else if base?.type is 'IdentifierLiteral' or base?.type is 'StringLiteral' or base?.type is 'NumberLiteral'
+            variable = new nodes.PropertyName(base.value)
+          else
+            # Fallback to class conversion; Obj compile will validate
+            variable = @dataToClass node.value
           value = @dataToClass node.expression
           return new nodes.Assign(variable, value, 'object')
         else
