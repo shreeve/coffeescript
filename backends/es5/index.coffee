@@ -134,7 +134,9 @@ class ES5Backend
           double: node.double
           heregex: node.heregex
         stringNode = new nodes.StringLiteral node.value, options
-        stringNode.locationData = node.locationData if node.locationData
+        stringNode.originalValue = node.value  # Critical: needed for withoutQuotesInLocationData
+        # Ensure locationData is properly set with defaults if missing
+        stringNode.locationData = node.locationData or @defaultLocationData()
         stringNode
 
       when 'Literal'
@@ -765,7 +767,8 @@ class ES5Backend
         body = new nodes.Block bodyNodes
         stringNode = new nodes.StringWithInterpolations body, node.quote
         stringNode.startQuote = @dataToClass node.startQuote if node.startQuote
-        stringNode.locationData = node.locationData if node.locationData
+        # Ensure locationData is properly set with defaults if missing
+        stringNode.locationData = node.locationData or @defaultLocationData()
         stringNode
 
       when 'Interpolation'
