@@ -900,9 +900,10 @@
           // DynamicImportCall extends Call, so pass variable and args
           return new nodes.DynamicImportCall(variable, args);
         case 'TaggedTemplateCall':
-          // Tagged template literals - expects single arg, not array
+          // Tagged template literals - expects single arg (the template)
           variable = this.dataToClass(node.variable);
-          arg = ((ref12 = node.args) != null ? ref12.length : void 0) > 0 ? this.dataToClass(node.args[0]) : new nodes.StringLiteral('');
+          // CS3 parser provides template property instead of args
+          arg = node.template ? this.dataToClass(node.template) : ((ref12 = node.args) != null ? ref12.length : void 0) > 0 ? this.dataToClass(node.args[0]) : new nodes.StringLiteral('');
           return new nodes.TaggedTemplateCall(variable, arg, node.soak);
         default:
           // ============================================================

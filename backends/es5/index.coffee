@@ -818,9 +818,12 @@ class ES5Backend
         new nodes.DynamicImportCall variable, args
 
       when 'TaggedTemplateCall'
-        # Tagged template literals - expects single arg, not array
+        # Tagged template literals - expects single arg (the template)
         variable = @dataToClass node.variable
-        arg = if node.args?.length > 0
+        # CS3 parser provides template property instead of args
+        arg = if node.template
+          @dataToClass node.template
+        else if node.args?.length > 0
           @dataToClass node.args[0]
         else
           new nodes.StringLiteral ''
