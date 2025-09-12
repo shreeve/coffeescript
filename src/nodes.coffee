@@ -3591,6 +3591,10 @@ exports.Code = class Code extends Base
   # parameters after the splat, they are declared via expressions in the
   # function body.
   compileNode: (o) ->
+    # In CS3 pipeline, allow backend to handle @params lowering around super()
+    # by disabling early "this-before-super" checks. We store the flag on the
+    # instance so helper methods can see it.
+    @_cs3 = !!o.cs3
     @checkForAsyncOrGeneratorConstructor()
 
     if @bound
@@ -3829,15 +3833,17 @@ exports.Code = class Code extends Base
   disallowSuperInParamDefaults: ({forAst} = {}) ->
     return false unless @ctor
 
+    options = {checkForThisBeforeSuper: (not forAst) and not @_cs3}
     @eachSuperCall Block.wrap(@params), (superCall) ->
       superCall.error "'super' is not allowed in constructor parameter defaults"
-    , checkForThisBeforeSuper: not forAst
+    , options
 
   checkSuperCallsInConstructorBody: ->
     return false unless @ctor
 
     seenSuper = @eachSuperCall @body, (superCall) =>
       superCall.error "'super' is only allowed in derived class constructors" if @ctor is 'base'
+    , {checkForThisBeforeSuper: not @_cs3}
 
     seenSuper
 

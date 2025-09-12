@@ -162,7 +162,8 @@ grammar =
 
   # Object literal spread properties.
   ObjRestValue: [
-    o 'SimpleObjAssignable ...', $ast: 'Splat', value: {$ast: 'Value'}
+    # Shorthand rest: `r...` — ensure identifier is captured
+    o 'SimpleObjAssignable ...', $ast: 'Splat', name: {$ast: 'Value', val: 1}, postfix: false
     o '... SimpleObjAssignable', $ast: 'Splat', name: {$ast: 'Value', val: 2}, postfix: false
     o 'ObjSpreadExpr ...'      , $ast: 'Splat', name: 1
     o '... ObjSpreadExpr'      , $ast: 'Splat', name: 2, postfix: false
@@ -245,12 +246,15 @@ grammar =
 
   ParamVar: [
     o 'Identifier'
+    # Treat @ inside destructuring params as a name to be lowered later,
+    # not as assignment to `this` during parsing.
     o 'ThisProperty'
     o 'Array'
     o 'Object'
   ]
 
   Splat: [
+    # Keep original behavior for general splats
     o 'Expression ...', $ast: '@', body: 1
     o '... Expression', $ast: '@', name: 2, postfix: false
   ]

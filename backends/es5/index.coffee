@@ -22,6 +22,9 @@ class ES5Backend
       header: @options.header ? false
       sourceMap: @options.sourceMap ? false
       inlineMap: @options.inlineMap ? false
+      # Signal to nodes compiler that we're in CS3 pipeline, so it can relax
+      # early "this-before-super" checks to let our lowering run.
+      cs3: true
 
   # Main entry point - convert CS3 data node to JavaScript
   generate: (dataNode) ->

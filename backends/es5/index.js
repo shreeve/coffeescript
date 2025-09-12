@@ -26,7 +26,10 @@
         bare: (ref = this.options.bare) != null ? ref : true,
         header: (ref1 = this.options.header) != null ? ref1 : false,
         sourceMap: (ref2 = this.options.sourceMap) != null ? ref2 : false,
-        inlineMap: (ref3 = this.options.inlineMap) != null ? ref3 : false
+        inlineMap: (ref3 = this.options.inlineMap) != null ? ref3 : false,
+        // Signal to nodes compiler that we're in CS3 pipeline, so it can relax
+        // early "this-before-super" checks to let our lowering run.
+        cs3: true
       };
     }
 
