@@ -59,6 +59,17 @@ class ES5Backend
       result.push node if node?
     result
 
+  # Add mergeLocationData helper
+  mergeLocationData: (first, last) ->
+    return first unless last
+    first_line: first.first_line
+    first_column: first.first_column
+    last_line: last.last_line
+    last_column: last.last_column
+    last_line_exclusive: last.last_line_exclusive ? first.last_line_exclusive
+    last_column_exclusive: last.last_column_exclusive ? first.last_column_exclusive
+    range: [first.range[0], last.range[1]]
+
   # Convert CS3 data nodes to CoffeeScript class nodes
   dataToClass: (node) ->
     return null unless node?
@@ -115,12 +126,15 @@ class ES5Backend
         new nodes.NumberLiteral node.value, node.parsedValue
 
       when 'StringLiteral'
-        quote = node.quote or '"'
-        value = node.value or ''
-        stringNode = new nodes.StringLiteral value, {quote}
-        # Critical: Must have locationData and originalValue
-        stringNode.locationData = node.locationData or @defaultLocationData()
-        stringNode.originalValue = value
+        options =
+          quote: node.quote
+          initialChunk: node.initialChunk
+          finalChunk: node.finalChunk
+          indent: node.indent
+          double: node.double
+          heregex: node.heregex
+        stringNode = new nodes.StringLiteral node.value, options
+        stringNode.locationData = node.locationData if node.locationData
         stringNode
 
       when 'Literal'
@@ -196,7 +210,13 @@ class ES5Backend
                 properties = properties.slice 1
         catch err
           # fall through; keep generic Value
-        new nodes.Value base, properties
+        valueNode = new nodes.Value base, properties, tag
+        valueNode.locationData = node.locationData if node.locationData
+        # If properties, merge from base to last property
+        if properties.length > 0
+          lastProp = properties[properties.length - 1]
+          valueNode.locationData = @mergeLocationData(base.locationData or valueNode.locationData, lastProp.locationData)
+        valueNode
 
       when 'Access'
         name = @dataToClass node.name
@@ -358,8 +378,10 @@ class ES5Backend
       when 'Param'
         name = @dataToClass node.name
         value = @dataToClass node.value if node.value
-        splat = node.splat
-        new nodes.Param name, value, splat
+        splat = !!node.splat
+        paramNode = new nodes.Param name, value, splat
+        paramNode.locationData = node.locationData if node.locationData
+        paramNode
 
       when 'Call'
         variable = @dataToClass node.variable
@@ -368,7 +390,11 @@ class ES5Backend
         else
           []
         soak = node.soak
-        new nodes.Call variable, args, soak
+        callNode = new nodes.Call variable, args, soak
+        callNode.isNew = true if node.new
+        if node.new
+          callNode.locationData = @mergeLocationData(node.new.locationData, callNode.locationData or @defaultLocationData())
+        callNode
 
       when 'Super'
         accessor = @dataToClass node.accessor if node.accessor
@@ -548,19 +574,26 @@ class ES5Backend
           for expr in body.expressions
             expr.locationData ?= @defaultLocationData()
 
-        # Build source object
+        # Build source object (only pass class nodes; avoid raw flags that confuse semantics)
         sourceObj = {}
-        sourceObj.source = @dataToClass node.source if node.source
-        sourceObj.guard = @dataToClass node.guard if node.guard
-        sourceObj.step = @dataToClass node.step if node.step
-        sourceObj.name = @dataToClass node.name if node.name
-        sourceObj.index = @dataToClass node.index if node.index
-        sourceObj.object = node.object if node.object
-        sourceObj.from = node.from if node.from
-        sourceObj.own = node.own if node.own
-        sourceObj.await = node.await if node.await
-        sourceObj.awaitTag = @dataToClass node.awaitTag if node.awaitTag
-        sourceObj.ownTag = @dataToClass node.ownTag if node.ownTag
+        if node.source?
+          sourceObj.source = @dataToClass node.source
+        if node.guard?
+          sourceObj.guard = @dataToClass node.guard
+        if node.step?
+          sourceObj.step = @dataToClass node.step
+        if node.name?
+          sourceObj.name = @dataToClass node.name
+        if node.index?
+          sourceObj.index = @dataToClass node.index
+        if node.own?
+          sourceObj.own = !!node.own
+        if node.await?
+          sourceObj.await = !!node.await
+        if node.awaitTag?
+          sourceObj.awaitTag = @dataToClass node.awaitTag
+        if node.ownTag?
+          sourceObj.ownTag = @dataToClass node.ownTag
 
         # FIX: Loop variable conflicts
         # The For node constructor will handle variable allocation
@@ -722,13 +755,12 @@ class ES5Backend
       # String Interpolation
       # ============================================================
       when 'StringWithInterpolations'
-        body = if node.body
-          parts = node.body.map (part) => @dataToClass part
-          new nodes.Block parts
-        else
-          new nodes.Block []
-        quote = node.quote or '"'
-        new nodes.StringWithInterpolations body, {quote}
+        bodyNodes = (@dataToClass expr for expr in node.body or [])
+        body = new nodes.Block bodyNodes
+        stringNode = new nodes.StringWithInterpolations body, node.quote
+        stringNode.startQuote = @dataToClass node.startQuote if node.startQuote
+        stringNode.locationData = node.locationData if node.locationData
+        stringNode
 
       when 'Interpolation'
         expression = if Array.isArray node.expression
@@ -748,9 +780,48 @@ class ES5Backend
       # ============================================================
       when 'ImportDeclaration'
         clause = @dataToClass node.clause if node.clause
-        source = @dataToClass node.source
-        assertions = @dataToClass node.assertions if node.assertions
-        new nodes.ImportDeclaration clause, source, assertions
+        source = @dataToClass node.source if node.source
+        assertions = []
+        if node.assertions
+          assertObj = @dataToClass node.assertions
+          for prop in assertObj.properties or []
+            if prop.type is 'Assign'
+              key = prop.variable
+              val = prop.value
+              assertions.push new nodes.Assign key, val, 'assert'
+        importNode = new nodes.ImportDeclaration clause, source
+        importNode.assertions = assertions if assertions.length > 0
+        importNode.locationData = node.locationData if node.locationData
+        importNode
+
+      when 'ExportNamedDeclaration'
+        clause = @dataToClass node.clause if node.clause
+        source = @dataToClass node.source if node.source
+        exportNode = new nodes.ExportNamedDeclaration clause, source
+        exportNode.locationData = node.locationData if node.locationData
+        exportNode
+
+      when 'ExportDefaultDeclaration'
+        declaration = @dataToClass node.declaration if node.declaration
+        exportNode = new nodes.ExportDefaultDeclaration declaration
+        exportNode.locationData = node.locationData if node.locationData
+        exportNode
+
+      when 'ExportAllDeclaration'
+        exported = @dataToClass node.exported if node.exported
+        source = @dataToClass node.source if node.source
+        assertions = [] # similar to import
+        if node.assertions
+          assertObj = @dataToClass node.assertions
+          for prop in assertObj.properties or []
+            if prop.type is 'Assign'
+              key = prop.variable
+              val = prop.value
+              assertions.push new nodes.Assign key, val, 'assert'
+        exportNode = new nodes.ExportAllDeclaration exported, source
+        exportNode.assertions = assertions if assertions.length > 0
+        exportNode.locationData = node.locationData if node.locationData
+        exportNode
 
       when 'ImportClause'
         defaultBinding = @dataToClass node.defaultBinding if node.defaultBinding
@@ -771,11 +842,23 @@ class ES5Backend
         new nodes.ImportNamespaceSpecifier local
 
       when 'ImportSpecifierList'
-        specifiers = @filterNodes node.specifiers
+        specifiers = (@dataToClass spec for spec in node.specifiers or [])
         new nodes.ImportSpecifierList specifiers
 
       when 'ExportDeclaration'
         new nodes.ExportDeclaration @dataToClass node.clause
+
+      when 'ExportSpecifierList'
+        specifiers = (@dataToClass spec for spec in node.specifiers or [])
+        new nodes.ExportSpecifierList specifiers
+
+      when 'ExportSpecifier'
+        local = @dataToClass node.local if node.local
+        exported = @dataToClass node.exported if node.exported
+        new nodes.ExportSpecifier local, exported
+
+      when 'DefaultLiteral'
+        new nodes.IdentifierLiteral node.value
 
       # ============================================================
       # Meta nodes

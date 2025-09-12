@@ -629,39 +629,33 @@
               }
             }
           }
-          // Build source object
+          // Build source object (only pass class nodes; avoid raw flags that confuse semantics)
           sourceObj = {};
-          if (node.source) {
+          if (node.source != null) {
             sourceObj.source = this.dataToClass(node.source);
           }
-          if (node.guard) {
+          if (node.guard != null) {
             sourceObj.guard = this.dataToClass(node.guard);
           }
-          if (node.step) {
+          if (node.step != null) {
             sourceObj.step = this.dataToClass(node.step);
           }
-          if (node.name) {
+          if (node.name != null) {
             sourceObj.name = this.dataToClass(node.name);
           }
-          if (node.index) {
+          if (node.index != null) {
             sourceObj.index = this.dataToClass(node.index);
           }
-          if (node.object) {
-            sourceObj.object = node.object;
+          if (node.own != null) {
+            sourceObj.own = !!node.own;
           }
-          if (node.from) {
-            sourceObj.from = node.from;
+          if (node.await != null) {
+            sourceObj.await = !!node.await;
           }
-          if (node.own) {
-            sourceObj.own = node.own;
-          }
-          if (node.await) {
-            sourceObj.await = node.await;
-          }
-          if (node.awaitTag) {
+          if (node.awaitTag != null) {
             sourceObj.awaitTag = this.dataToClass(node.awaitTag);
           }
-          if (node.ownTag) {
+          if (node.ownTag != null) {
             sourceObj.ownTag = this.dataToClass(node.ownTag);
           }
           // FIX: Loop variable conflicts

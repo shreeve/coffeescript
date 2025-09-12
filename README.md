@@ -178,3 +178,13 @@ CS3 is an ambitious project that needs community involvement:
 ---
 
 *CoffeeScript 3: Where elegant syntax meets universal compilation.*
+
+### CS3/ES5 Backend Remaining Issues
+
+- Ranges/comprehensions (#4889) [in progress]: default step by direction, single-eval of endpoints (e.g., (i+1)), inclusive/exclusive bounds; nested loops must match core output.
+- Location data (nested new/new()): column ranges don’t match; ensure Value/Call/Index carry correct locationData through CS3→AST conversion.
+- Strict mode: duplicate-parameter errors missing in some CS3-lowered patterns (including destructuring and @-params); preserve duplicate detection after lowering.
+- Strings/whitespace: heredocs, backslash-at-EOL escaping, and trailing-whitespace normalization differ from expected outputs.
+- Tagged template literals: multi-line and empty-template result shapes don’t match (htmlFragments/expressions arrays).
+- Import assertions: minor formatting/shape discrepancies with default specifiers and assert clauses in import declarations.
+- (Possibly remaining) object rest shorthand r... in deeper/nested patterns and [@bar] params in destructuring (parser/grammar nuance).
