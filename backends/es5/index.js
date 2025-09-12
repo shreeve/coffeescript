@@ -88,7 +88,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, err, expr, expression, expressionNodes, expressions, first, firstAccess, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, inferredMeta, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, local, m, metaName, metaNode, name, nameNode, namedImports, obj, objNode, objects, op, options, original, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, propertyAccess, quote, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref13, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, specifiers, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable, variableNode;
+      var access, accessNode, accessor, arg, args, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, cases, catch_, clause, codeNode, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, err, expr, expression, expressionNodes, expressions, first, firstAccess, flatParams, flip, from, funcGlyph, generated, guard, i, ifNode, index, indexNode, inferredMeta, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, local, m, metaName, metaNode, name, nameNode, namedImports, obj, objNode, objects, op, options, original, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, propertyAccess, quote, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref13, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, specifiers, splat, stringNode, subject, tag, thisLit, to, value, valueNode, variable, variableNode, wrappedVar;
       if (node == null) {
         return null;
       }
@@ -759,6 +759,13 @@
                 } else {
                   converted = this.dataToClass(item);
                   if (converted) {
+                    // Ensure class initializer assignments have Value variable
+                    if (converted instanceof nodes.Assign && converted.value instanceof nodes.Code) {
+                      if (!(converted.variable instanceof nodes.Value)) {
+                        wrappedVar = new nodes.Value(converted.variable);
+                        converted = new nodes.Assign(wrappedVar, converted.value, converted.context);
+                      }
+                    }
                     bodyNodes.push(converted);
                   }
                 }

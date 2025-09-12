@@ -692,7 +692,13 @@ class ES5Backend
                     bodyNodes.push converted if converted
             else
               converted = @dataToClass item
-              bodyNodes.push converted if converted
+              if converted
+                # Ensure class initializer assignments have Value variable
+                if converted instanceof nodes.Assign and converted.value instanceof nodes.Code
+                  unless converted.variable instanceof nodes.Value
+                    wrappedVar = new nodes.Value converted.variable
+                    converted = new nodes.Assign wrappedVar, converted.value, converted.context
+                bodyNodes.push converted
           new nodes.Block bodyNodes
         else if node.body
           @dataToClass node.body
