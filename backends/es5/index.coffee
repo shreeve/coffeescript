@@ -693,8 +693,8 @@ class ES5Backend
             else
               converted = @dataToClass item
               if converted
-                # Ensure class initializer assignments have Value variable
-                if converted instanceof nodes.Assign and converted.value instanceof nodes.Code
+                # Ensure any class body assignment has a Value variable for core checks
+                if converted instanceof nodes.Assign
                   unless converted.variable instanceof nodes.Value
                     wrappedVar = new nodes.Value converted.variable
                     converted = new nodes.Assign wrappedVar, converted.value, converted.context

@@ -759,8 +759,8 @@
                 } else {
                   converted = this.dataToClass(item);
                   if (converted) {
-                    // Ensure class initializer assignments have Value variable
-                    if (converted instanceof nodes.Assign && converted.value instanceof nodes.Code) {
+                    // Ensure any class body assignment has a Value variable for core checks
+                    if (converted instanceof nodes.Assign) {
                       if (!(converted.variable instanceof nodes.Value)) {
                         wrappedVar = new nodes.Value(converted.variable);
                         converted = new nodes.Assign(wrappedVar, converted.value, converted.context);
