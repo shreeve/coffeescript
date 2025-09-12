@@ -59,7 +59,7 @@ when 'Assign'
 **3. Missing Context Awareness**
 The backend doesn't distinguish between:
 - Object literal properties: `obj = {prop: value}` → `obj.prop = value`
-- Class instance properties: `class C; prop: value` → `C.prototype.prop = value`  
+- Class instance properties: `class C; prop: value` → `C.prototype.prop = value`
 - Class static properties: `class C; @prop: value` → `C.prop = value`
 
 ## What Happens as a Result
@@ -89,7 +89,7 @@ when 'Assign'
         # Static property: @prop -> ClassName.prop
         createStaticPropertyAssignment(node)
       else
-        # Instance property: prop -> ClassName.prototype.prop  
+        # Instance property: prop -> ClassName.prototype.prop
         createInstancePropertyAssignment(node)
     else
       # Handle as object literal property
@@ -134,7 +134,7 @@ createInstancePropertyAssignment: (node) ->
 
 **Implementation Steps**:
 1. Add class body context tracking to the backend
-2. Enhance `Assign` node conversion with context awareness  
+2. Enhance `Assign` node conversion with context awareness
 3. Create helper methods for different property assignment types
 4. Add tests for class property conversion
 
@@ -179,7 +179,7 @@ createInstancePropertyAssignment: (node) ->
 
 ### Fixing This Issue Would Resolve
 - **Soaked constructor invocations with property access** ✅
-- **Sourcemap compilation syntax error** ✅  
+- **Sourcemap compilation syntax error** ✅
 - **Async class static method access** ✅
 - **Class inheritance and prototype chain issues** ✅
 - **Estimated test suite improvement**: +8-10% (from ~87% to ~95-97%)
@@ -199,7 +199,7 @@ instance = new C()
 assert instance.prop == 'test'
 assert C.prototype.prop == 'test'
 
-# Test Case 2: Static Properties  
+# Test Case 2: Static Properties
 class C
   @staticProp: 'static'
 assert C.staticProp == 'static'
@@ -208,7 +208,7 @@ assert C.staticProp == 'static'
 class C
   instanceProp: 'instance'
   @staticProp: 'static'
-assert new C().instanceProp == 'instance'  
+assert new C().instanceProp == 'instance'
 assert C.staticProp == 'static'
 
 # Test Case 4: Soaked Constructor (Original Failing Test)
