@@ -81,7 +81,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var access, accessNode, accessor, arg, args, assertions, assignment, atParam, atParams, attempt, attemptNode, base, body, bodyArray, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, findAndReplaceSuperCalls, first, flatParams, flip, from, funcGlyph, generated, guard, hasSimpleSuperCall, i, ifNode, index, indexNode, item, j, k, l, left, len, len1, len2, len3, len4, len5, len6, len7, len8, len9, m, meta, name, namedImports, needsPrepend, newBodyNodes, o, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, property, q, quote, r, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, s, second, simpleParam, soak, source, sourceObj, splat, stringNode, subject, t, tag, thisLit, to, value, variable;
+      var access, accessNode, accessor, arg, args, assertions, assignment, atParam, atParams, attempt, attemptNode, base, body, bodyArray, bodyNode, bodyNodes, cases, catch_, clause, condition, conditions, context, converted, defaultBinding, elision, elseBody, ensure, ensureNode, expr, expression, expressionNodes, expressions, findAndReplaceSuperCalls, first, flatParams, flip, from, funcGlyph, generated, guard, hasSimpleSuperCall, i, ifNode, index, indexNode, isAtParam, item, j, k, l, left, len, len1, len2, len3, len4, len5, len6, len7, len8, len9, m, meta, name, nameNode, namedImports, needsPrepend, newBodyNodes, o, obj, objNode, objects, op, options, otherwise, otherwiseNode, p, param, params, parent, parts, processedParams, prop, propName, properties, property, q, quote, r, range, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, s, second, simpleParam, soak, source, sourceObj, splat, stringNode, subject, t, tag, thisLit, to, value, valueNode, variable;
       if (node == null) {
         return null;
       }
@@ -323,19 +323,38 @@
           processedParams = [];
           for (l = 0, len3 = flatParams.length; l < len3; l++) {
             param = flatParams[l];
-            if ((param != null ? param.type : void 0) === 'Param' && ((ref3 = param.name) != null ? ref3.type : void 0) === 'Value' && ((ref4 = param.name.val) != null ? ref4.type : void 0) === 'ThisLiteral' && ((ref5 = param.name.properties) != null ? ref5.length : void 0) > 0 && hasSimpleSuperCall) {
+            // Check if this is an @param that needs special handling
+            isAtParam = (param != null ? param.type : void 0) === 'Param' && ((ref3 = param.name) != null ? ref3.type : void 0) === 'Value' && ((ref4 = param.name.val) != null ? ref4.type : void 0) === 'ThisLiteral' && ((ref5 = param.name.properties) != null ? ref5.length : void 0) > 0;
+            if (isAtParam && hasSimpleSuperCall) {
               // This is an @param with a super call in the body
               // Convert @name to regular name parameter
               propName = param.name.properties[0].name.value;
-              // Create a simple param without any special properties
-              simpleParam = new nodes.Param(new nodes.IdentifierLiteral(propName));
+              // Create a simple param directly with nodes classes
+              nameNode = new nodes.IdentifierLiteral(propName);
+              // Handle default values if present
+              if (param.value) {
+                valueNode = this.dataToClass(param.value);
+                simpleParam = new nodes.Param(nameNode, valueNode);
+              } else {
+                simpleParam = new nodes.Param(nameNode);
+              }
+              // Handle splat if present
+              if (param.splat) {
+                simpleParam.splat = param.splat;
+              }
               processedParams.push(simpleParam);
               // Save the assignment for after super
               atParams.push({
                 name: propName
               });
+            } else if (isAtParam && !hasSimpleSuperCall) {
+              // @param without super - convert normally
+              converted = this.dataToClass(param);
+              if (converted) {
+                processedParams.push(converted);
+              }
             } else {
-              // Regular param or no super call
+              // Regular param
               converted = this.dataToClass(param);
               if (converted) {
                 processedParams.push(converted);

@@ -17,9 +17,10 @@
 Only 4 test files still have compilation errors:
 
 ### 1. **classes.coffee** (122 tests)
-- **Issue**: Complex @param patterns with super
-- **Root Cause**: The error checking for "this before super" happens during Code node compilation, before our AST transformation takes effect
-- **Status**: Requires deep changes to how constructors are processed
+- **Issue**: @param patterns with super() calls
+- **Root Cause**: The error "Can't reference 'this' before calling super" is thrown during Code node compilation when it finds ThisLiteral in params before seeing super in the body
+- **Attempted Fix**: Backend tries to transform @params to regular params and add assignments after super, but the error check happens too early in the compilation pipeline
+- **Status**: Architectural limitation - would require changes to how/when the error checking is performed in the compiler itself
 
 ### 2. **formatting.coffee** (30 tests)
 - **Issue**: Incomplete expressions during parsing

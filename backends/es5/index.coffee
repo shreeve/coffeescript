@@ -282,19 +282,34 @@ class ES5Backend
         # Process params, handling @params specially if there's a super call
         processedParams = []
         for param in flatParams
-          if param?.type is 'Param' and param.name?.type is 'Value' and
-             param.name.val?.type is 'ThisLiteral' and param.name.properties?.length > 0 and
-             hasSimpleSuperCall
+          # Check if this is an @param that needs special handling
+          isAtParam = param?.type is 'Param' and param.name?.type is 'Value' and
+                      param.name.val?.type is 'ThisLiteral' and param.name.properties?.length > 0
+          
+          if isAtParam and hasSimpleSuperCall
             # This is an @param with a super call in the body
             # Convert @name to regular name parameter
             propName = param.name.properties[0].name.value
-            # Create a simple param without any special properties
-            simpleParam = new nodes.Param(new nodes.IdentifierLiteral(propName))
+            # Create a simple param directly with nodes classes
+            nameNode = new nodes.IdentifierLiteral(propName)
+            # Handle default values if present
+            if param.value
+              valueNode = @dataToClass param.value
+              simpleParam = new nodes.Param(nameNode, valueNode)
+            else
+              simpleParam = new nodes.Param(nameNode)
+            # Handle splat if present
+            if param.splat
+              simpleParam.splat = param.splat
             processedParams.push simpleParam
             # Save the assignment for after super
             atParams.push {name: propName}
+          else if isAtParam and not hasSimpleSuperCall
+            # @param without super - convert normally
+            converted = @dataToClass param
+            processedParams.push converted if converted
           else
-            # Regular param or no super call
+            # Regular param
             converted = @dataToClass param
             processedParams.push converted if converted
 
