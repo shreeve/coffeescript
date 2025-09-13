@@ -38,22 +38,17 @@
 
     // Main entry point - convert CS3 data node to JavaScript
     generate(dataNode) {
-      var classNode, error, result;
+      var classNode, result;
       classNode = this.dataToClass(dataNode);
       if (classNode == null) {
         return ''; // CRITICAL: Never return undefined
       }
-      try {
-        result = classNode.compile(this.compileOptions);
-        return result || ''; // CRITICAL: Ensure we always return a string
-      } catch (error1) {
-        error = error1;
-        console.error("CS3 Backend compilation error:", error.message);
-        return `/* CS3 compilation error: ${error.message} */`;
-      }
+      result = classNode.compile(this.compileOptions);
+      return result || ''; // CRITICAL: Ensure we always return a string
     }
 
-    // Helper to create default locationData
+    
+      // Helper to create default locationData
     defaultLocationData() {
       return {
         first_line: 0,
