@@ -239,8 +239,36 @@ class ES5Backend
       when 'Assign'
         # Handle object property assignments
         if node.context is 'object' and node.expression
-          # In object literal properties, node.value is the property key/name,
-          # and node.expression is the assigned value. Normalize key to PropertyName.
+          # CRITICAL FIX: Detect class properties vs object literal properties
+          
+          # CRITICAL FIX: Detect class properties vs object literal properties
+          
+          # Check if this is a class static property (@prop)
+          if node.value?.type is 'Value' and node.value.val?.type is 'Value' and 
+             node.value.val.val?.type is 'ThisLiteral'
+            # Static property: @prop -> ClassName.prop = value
+            # The property name is in node.value.val.properties[0].name.value
+            propName = node.value.val.properties?[0]?.name?.value
+            if propName and @currentClassName
+              # Create ClassName.propName
+              className = new nodes.IdentifierLiteral(@currentClassName)
+              propAccess = new nodes.Value(className, [new nodes.Access(new nodes.PropertyName(propName))])
+              value = @dataToClass node.expression
+              return new nodes.Assign(propAccess, value)
+          
+          # Check if this is a class instance property (prop:) - but not constructor
+          else if @inClassBody and node.value?.type is 'Value' and node.value.val?.type is 'PropertyName'
+            propName = node.value.val.value
+            # Skip constructor - it's handled separately by the Class node
+            if propName isnt 'constructor' and propName and @currentClassName
+              # Instance property: prop -> ClassName.prototype.prop = value
+              className = new nodes.IdentifierLiteral(@currentClassName)
+              prototypeAccess = new nodes.Value(className, [new nodes.Access(new nodes.PropertyName('prototype'))])
+              propAccess = new nodes.Value(prototypeAccess, [new nodes.Access(new nodes.PropertyName(propName))])
+              value = @dataToClass node.expression
+              return new nodes.Assign(propAccess, value)
+          
+          # Regular object literal property
           if node.value?.type is 'Value'
             base = node.value.val
           else
@@ -716,6 +744,17 @@ class ES5Backend
         variable = @dataToClass node.variable if node.variable
         parent = @dataToClass node.parent if node.parent
 
+        # CRITICAL FIX: Track class context for property conversion
+        prevInClassBody = @inClassBody
+        prevClassName = @currentClassName
+        @inClassBody = true
+        @currentClassName = if node.variable?.type is 'IdentifierLiteral'
+          node.variable.value
+        else if node.variable?.type is 'Value' and node.variable.val?.type is 'IdentifierLiteral'
+          node.variable.val.value
+        else
+          'UnknownClass'
+
         body = if Array.isArray node.body
           bodyNodes = []
           for item in node.body
@@ -745,6 +784,10 @@ class ES5Backend
           @dataToClass node.body
         else
           new nodes.Block []
+
+        # Restore previous class context
+        @inClassBody = prevInClassBody
+        @currentClassName = prevClassName
 
         new nodes.Class variable, parent, body
 
