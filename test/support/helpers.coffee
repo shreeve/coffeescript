@@ -1,4 +1,8 @@
 # See [http://wiki.ecmascript.org/doku.php?id=harmony:egal](http://wiki.ecmascript.org/doku.php?id=harmony:egal).
+
+# Import Node.js assert functions for test framework
+{throws, doesNotThrow, ok} = require 'assert'
+
 egal = (a, b) ->
   if a is b
     a isnt 0 or 1/a is 1/b
@@ -80,3 +84,8 @@ exports.throwsCompileError = (code, compileOpts, args...) ->
 exports.doesNotThrowCompileError = (code, compileOpts, args...) ->
   doesNotThrow -> CoffeeScript.compile code, compileOpts, args...
   doesNotThrow -> CoffeeScript.compile code, Object.assign({}, (compileOpts ? {}), ast: yes), args...
+
+# Export Node.js assert functions for global test framework access
+exports.throws = throws
+exports.doesNotThrow = doesNotThrow
+exports.ok = ok
