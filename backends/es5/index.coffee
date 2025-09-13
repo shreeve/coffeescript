@@ -25,7 +25,7 @@ class ES5Backend
       # Signal to nodes compiler that we're in CS3 pipeline, so it can relax
       # early "this-before-super" checks to let our lowering run.
       cs3: true
-    
+
     # CRITICAL FIX for #4889: Track unique variable allocation for nested for-loops
     @loopVarCounter = 0
     @usedLoopVars = new Set()
@@ -52,12 +52,12 @@ class ES5Backend
     startCode = 'i'.charCodeAt(0)  # 105
     endCode = 'z'.charCodeAt(0)    # 122
     diff = endCode - startCode     # 17
-    
+
     newCode = startCode + @loopVarCounter % (diff + 1)
     letter = String.fromCharCode(newCode)
     num = Math.floor(@loopVarCounter / (diff + 1))
     varName = "#{letter}#{num or ''}"
-    
+
     @loopVarCounter++
     @usedLoopVars.add varName
     varName
@@ -650,17 +650,17 @@ class ES5Backend
         if node.ownTag?
           sourceObj.ownTag = @dataToClass node.ownTag
 
-        # CRITICAL FIX for #4889: Pre-allocate unique loop variables  
+        # CRITICAL FIX for #4889: Pre-allocate unique loop variables
         # The issue is that nested For loops reuse variable names
         # Solution: Override ALL variable allocation for this For loop
-        
+
         # Pre-allocate unique variables for this loop (loop var + increment var)
         loopVar = @getUniqueLoopVar()      # i, j, k, l, etc.
         incrementVar = @getUniqueLoopVar() # j, k, l, m, etc.
-        
+
         # Create the For node
         forNode = new nodes.For body, sourceObj
-        
+
         # CRITICAL HACK: Override freeVariable to return our pre-allocated unique names
         # This ensures each nested loop gets truly unique variables
         originalCompileNode = forNode.compileNode
@@ -669,7 +669,7 @@ class ES5Backend
             originalFreeVariable = o.scope.freeVariable
             varCounter = 0
             preAllocatedVars = [loopVar, incrementVar]
-            
+
             # Override freeVariable to return our pre-allocated unique variables
             o.scope.freeVariable = (name, options = {}) =>
               if options.single and (name is 'i' or name in ['i', 'j', 'k', 'l'])
@@ -683,14 +683,14 @@ class ES5Backend
               else
                 # For non-loop variables, use original allocation
                 return originalFreeVariable.call(o.scope, name, options)
-          
+
           result = originalCompileNode.call(this, o)
-          
+
           # Restore original freeVariable
           o.scope.freeVariable = originalFreeVariable if originalFreeVariable
-          
+
           result
-        
+
         forNode.locationData = node.locationData if node.locationData
         forNode
 
