@@ -35,12 +35,8 @@ class ES5Backend
     classNode = @dataToClass dataNode
     return '' unless classNode?  # CRITICAL: Never return undefined
 
-    try
-      result = classNode.compile @compileOptions
-      return result or ''  # CRITICAL: Ensure we always return a string
-    catch error
-      console.error "CS3 Backend compilation error:", error.message
-      return "/* CS3 compilation error: #{error.message} */"
+    result = classNode.compile @compileOptions
+    return result or ''  # CRITICAL: Ensure we always return a string
 
   # Helper to create default locationData
   defaultLocationData: ->
