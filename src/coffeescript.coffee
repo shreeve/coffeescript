@@ -67,7 +67,7 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
   if (options.cs3 or process.env.COFFEESCRIPT_CS3) and not options.ast
     console.log '[CS3] Using CS3/ES5 backend for compilation' if process.env.DEBUG_CS3
     try
-      return require('./cs3-compiler').compileCS3 code, options
+      return require('./cs3').compileCS3 code, options
     catch error
       throw helpers.updateSyntaxError error, code, options.filename
   
