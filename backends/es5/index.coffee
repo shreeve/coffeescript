@@ -583,9 +583,9 @@ class ES5Backend
         if nameData?
           name = @dataToClass nameData
           # Validate that name can be assigned to
-          if name and (name instanceof nodes.IdentifierLiteral or 
+          if name and (name instanceof nodes.IdentifierLiteral or
                       name instanceof nodes.Value or
-                      name instanceof nodes.Arr or 
+                      name instanceof nodes.Arr or
                       name instanceof nodes.Obj)
             new nodes.Splat name
           else
