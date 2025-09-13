@@ -38,9 +38,19 @@
 
     // Main entry point - convert CS3 data node to JavaScript
     generate(dataNode) {
-      var classNode;
+      var classNode, error, result;
       classNode = this.dataToClass(dataNode);
-      return classNode.compile(this.compileOptions);
+      if (classNode == null) {
+        return ''; // CRITICAL: Never return undefined
+      }
+      try {
+        result = classNode.compile(this.compileOptions);
+        return result || ''; // CRITICAL: Ensure we always return a string
+      } catch (error1) {
+        error = error1;
+        console.error("CS3 Backend compilation error:", error.message);
+        return `/* CS3 compilation error: ${error.message} */`;
+      }
     }
 
     // Helper to create default locationData
@@ -87,6 +97,22 @@
         return new nodes.Literal(String(value));
       }
       return null;
+    }
+
+    // CRITICAL: Enhanced null-safe node conversion
+    safeDataToClass(node) {
+      var error, result;
+      if (node == null) {
+        return null;
+      }
+      try {
+        result = this.dataToClass(node);
+        return result || null;
+      } catch (error1) {
+        error = error1;
+        console.error("CS3 Backend node conversion error:", error.message);
+        return new nodes.Literal("/* conversion error */");
+      }
     }
 
     // Helper to filter and ensure all items are nodes
@@ -256,8 +282,8 @@
                 }
               }
             }
-          } catch (error) {
-            err = error;
+          } catch (error1) {
+            err = error1;
           }
           // fall through; keep generic Value
           valueNode = new nodes.Value(base, properties, tag);
@@ -744,6 +770,9 @@
           }
           if (node.own != null) {
             sourceObj.own = !!node.own;
+          }
+          if (node.object != null) {
+            sourceObj.object = !!node.object;
           }
           if (node.await != null) {
             sourceObj.await = !!node.await;
