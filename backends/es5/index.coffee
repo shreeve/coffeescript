@@ -33,7 +33,14 @@ class ES5Backend
   # Main entry point - convert CS3 data node to JavaScript
   generate: (dataNode) ->
     classNode = @dataToClass dataNode
-    classNode.compile @compileOptions
+    return '' unless classNode?  # CRITICAL: Never return undefined
+    
+    try
+      result = classNode.compile @compileOptions
+      return result or ''  # CRITICAL: Ensure we always return a string
+    catch error
+      console.error "CS3 Backend compilation error:", error.message
+      return "/* CS3 compilation error: #{error.message} */"
 
   # Helper to create default locationData
   defaultLocationData: ->
@@ -70,6 +77,16 @@ class ES5Backend
     if typeof value in ['string', 'number', 'boolean']
       return new nodes.Literal String(value)
     null
+
+  # CRITICAL: Enhanced null-safe node conversion
+  safeDataToClass: (node) ->
+    return null unless node?
+    try
+      result = @dataToClass node
+      return result or null
+    catch error
+      console.error "CS3 Backend node conversion error:", error.message
+      return new nodes.Literal "/* conversion error */"
 
   # Helper to filter and ensure all items are nodes
   filterNodes: (array) ->
