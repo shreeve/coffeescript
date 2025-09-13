@@ -240,11 +240,11 @@ class ES5Backend
         # Handle object property assignments
         if node.context is 'object' and node.expression
           # CRITICAL FIX: Detect class properties vs object literal properties
-          
+
           # CRITICAL FIX: Detect class properties vs object literal properties
-          
+
           # Check if this is a class static property (@prop)
-          if node.value?.type is 'Value' and node.value.val?.type is 'Value' and 
+          if node.value?.type is 'Value' and node.value.val?.type is 'Value' and
              node.value.val.val?.type is 'ThisLiteral'
             # Static property: @prop -> ClassName.prop = value
             # The property name is in node.value.val.properties[0].name.value
@@ -255,7 +255,7 @@ class ES5Backend
               propAccess = new nodes.Value(className, [new nodes.Access(new nodes.PropertyName(propName))])
               value = @dataToClass node.expression
               return new nodes.Assign(propAccess, value)
-          
+
           # Check if this is a class instance property (prop:) - but not constructor
           else if @inClassBody and node.value?.type is 'Value' and node.value.val?.type is 'PropertyName'
             propName = node.value.val.value
@@ -267,7 +267,7 @@ class ES5Backend
               propAccess = new nodes.Value(prototypeAccess, [new nodes.Access(new nodes.PropertyName(propName))])
               value = @dataToClass node.expression
               return new nodes.Assign(propAccess, value)
-          
+
           # Regular object literal property
           if node.value?.type is 'Value'
             base = node.value.val
