@@ -70,7 +70,7 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
       return require('./cs3').compileCS3 code, options
     catch error
       throw helpers.updateSyntaxError error, code, options.filename
-  
+
   console.log '[CS3] Using standard CoffeeScript compiler' if process.env.DEBUG_CS3
   generateSourceMap = options.sourceMap or options.inlineMap or not options.filename?
   filename = options.filename or helpers.anonymousFileName()
