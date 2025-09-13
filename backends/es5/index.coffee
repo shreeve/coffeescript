@@ -34,7 +34,7 @@ class ES5Backend
   generate: (dataNode) ->
     classNode = @dataToClass dataNode
     return '' unless classNode?  # CRITICAL: Never return undefined
-    
+
     try
       result = classNode.compile @compileOptions
       return result or ''  # CRITICAL: Ensure we always return a string
@@ -578,8 +578,22 @@ class ES5Backend
           null
 
       when 'Splat'
-        name = @dataToClass(node.name or node.body or node.value)
-        new nodes.Splat name
+        # CRITICAL FIX: Ensure splat name is valid for assignment
+        nameData = node.name or node.body or node.value
+        if nameData?
+          name = @dataToClass nameData
+          # Validate that name can be assigned to
+          if name and (name instanceof nodes.IdentifierLiteral or 
+                      name instanceof nodes.Value or
+                      name instanceof nodes.Arr or 
+                      name instanceof nodes.Obj)
+            new nodes.Splat name
+          else
+            # Invalid splat name, create a safe placeholder
+            new nodes.Splat new nodes.IdentifierLiteral('rest')
+        else
+          # No name provided, create default
+          new nodes.Splat new nodes.IdentifierLiteral('rest')
 
       when 'Expansion'
         new nodes.Expansion()

@@ -151,7 +151,7 @@
 
     // Convert CS3 data nodes to CoffeeScript class nodes
     dataToClass(node) {
-      var access, accessNode, accessor, arg, args, assertObj, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, callNode, cases, catch_, className, clause, codeNode, condition, conditions, context, converted, declaration, defaultBinding, elision, elseBody, ensure, ensureNode, err, exportNode, exported, expr, expression, expressionNodes, expressions, first, firstAccess, flatParams, flip, forNode, from, funcGlyph, generated, guard, i, ifNode, importNode, index, indexNode, inferredMeta, isAtParam, item, j, k, key, l, lastProp, left, len, len1, len2, len3, len4, len5, len6, local, m, metaName, metaNode, name, nameNode, namedImports, o, obj, objNode, objects, op, options, original, otherwise, otherwiseNode, p, param, paramNode, params, parent, prevClassName, prevInClassBody, processedParams, prop, propAccess, propName, properties, propertyAccess, prototypeAccess, q, range, rangeNode, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref17, ref18, ref19, ref2, ref20, ref21, ref22, ref23, ref24, ref25, ref26, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, spec, specifiers, splat, stringNode, subject, tag, thisLit, to, val, value, valueNode, variable, variableNode, wrappedVar;
+      var access, accessNode, accessor, arg, args, assertObj, assertions, assignments, atParam, atParams, attempt, attemptNode, base, body, bodyNode, bodyNodes, callNode, cases, catch_, className, clause, codeNode, condition, conditions, context, converted, declaration, defaultBinding, elision, elseBody, ensure, ensureNode, err, exportNode, exported, expr, expression, expressionNodes, expressions, first, firstAccess, flatParams, flip, forNode, from, funcGlyph, generated, guard, i, ifNode, importNode, index, indexNode, inferredMeta, isAtParam, item, j, k, key, l, lastProp, left, len, len1, len2, len3, len4, len5, len6, local, m, metaName, metaNode, name, nameData, nameNode, namedImports, o, obj, objNode, objects, op, options, original, otherwise, otherwiseNode, p, param, paramNode, params, parent, prevClassName, prevInClassBody, processedParams, prop, propAccess, propName, properties, propertyAccess, prototypeAccess, q, range, rangeNode, recovery, recoveryNode, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref17, ref18, ref19, ref2, ref20, ref21, ref22, ref23, ref24, ref25, ref26, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, returnKeyword, right, second, simpleParam, soak, source, sourceObj, spec, specifiers, splat, stringNode, subject, tag, thisLit, to, val, value, valueNode, variable, variableNode, wrappedVar;
       if (node == null) {
         return null;
       }
@@ -687,8 +687,22 @@
           }
           break;
         case 'Splat':
-          name = this.dataToClass(node.name || node.body || node.value);
-          return new nodes.Splat(name);
+          // CRITICAL FIX: Ensure splat name is valid for assignment
+          nameData = node.name || node.body || node.value;
+          if (nameData != null) {
+            name = this.dataToClass(nameData);
+            // Validate that name can be assigned to
+            if (name && (name instanceof nodes.IdentifierLiteral || name instanceof nodes.Value || name instanceof nodes.Arr || name instanceof nodes.Obj)) {
+              return new nodes.Splat(name);
+            } else {
+              // Invalid splat name, create a safe placeholder
+              return new nodes.Splat(new nodes.IdentifierLiteral('rest'));
+            }
+          } else {
+            // No name provided, create default
+            return new nodes.Splat(new nodes.IdentifierLiteral('rest'));
+          }
+          break;
         case 'Expansion':
           return new nodes.Expansion();
         case 'Elision':
