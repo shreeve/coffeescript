@@ -660,6 +660,8 @@ class ES5Backend
           sourceObj.index = @dataToClass node.index
         if node.own?
           sourceObj.own = !!node.own
+        if node.object?
+          sourceObj.object = !!node.object
         if node.await?
           sourceObj.await = !!node.await
         if node.awaitTag?
