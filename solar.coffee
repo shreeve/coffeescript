@@ -69,6 +69,14 @@ class Generator
     @parseParams = grammar.parseParams
     @yy          = {}
 
+    # Detect grammar mode based on export structure
+    if grammar.bnf?
+      @mode = 'traditional'  # Traditional grammar.coffee with string actions
+    else if grammar.grammar?
+      @mode = 'cs3'         # CS3 syntax.coffee with directive objects
+    else
+      throw new Error "Unknown grammar format: expected 'bnf' or 'grammar' property"
+
     # Grammar structures
     @types     = {}
     @rules     = []
@@ -154,7 +162,7 @@ class Generator
 
         # Process semantic actions
         if action
-          action = @_processSemanticAction action, symbols
+          action = @_processGrammarAction action, symbols
           label = 'case ' + (@rules.length + 1) + ':'
           actionGroups[action]?.push(label) or actionGroups[action] = [label]
 
@@ -192,7 +200,19 @@ class Generator
       symbols = handle.trim().split ' '
       [symbols, null, null]
 
-  _processSemanticAction: (action, symbols) ->
+  _processGrammarAction: (action, symbols) ->
+    # Main dispatcher - handles both traditional and CS3 formats
+    if @mode is 'cs3' and typeof action is 'object' and action?
+      @_generateDataAction(action, symbols)
+    else if @mode is 'traditional' and typeof action is 'string'
+      @_generateClassAction(action, symbols)
+    else if action is null or action is undefined
+      'return null;'  # Handle empty actions
+    else
+      throw new Error "Invalid action type for mode #{@mode}: #{typeof action}"
+
+  _generateClassAction: (action, symbols) ->
+    # Traditional mode: process string actions like "-> new Value $1"
     # Process named semantic values
     if action.match(/[$@][a-zA-Z][a-zA-Z0-9_]*/)
       count = {}
@@ -222,6 +242,44 @@ class Generator
       .replace(/@[0$]/g, "this._$") # Like @var
       .replace(/\$(-?\d+)/g, (_, n) -> "$$[$0" + (parseInt(n, 10) - symbols.length || '') + "]") # Like $1
       .replace( /@(-?\d+)/g, (_, n) -> "_$[$0" +               (n - symbols.length || '') + "]") # Like @1
+
+  _generateDataAction: (directive, symbols) ->
+    # CS3 mode: generate data object construction code
+    # Input: CS3 directive like {$ast: 'Value', val: 1}
+    # Output: JavaScript like "return {$ast: 'Value', val: $$[1]};"
+
+    "return #{@_objectToJS(directive, symbols)};"
+
+  _objectToJS: (obj, symbols) ->
+    return 'null' unless obj?
+
+    if typeof obj is 'number'
+      # Position reference
+      index = obj - symbols.length
+      "$$[#{if index then index else '0'}]"
+    else if typeof obj is 'string'
+      JSON.stringify(obj)
+    else if typeof obj is 'boolean'
+      JSON.stringify(obj)
+    else if Array.isArray(obj)
+      # Array of directives
+      items = (if typeof item is 'object' then @_objectToJS(item, symbols) else JSON.stringify(item) for item in obj)
+      "[#{items.join(', ')}]"
+    else if typeof obj is 'object'
+      # Object with properties
+      props = []
+      for key, value of obj
+        if typeof value is 'number'
+          index = value - symbols.length
+          props.push "#{JSON.stringify(key)}: $$[#{if index then index else '0'}]"
+        else if typeof value is 'object' and value?
+          props.push "#{JSON.stringify(key)}: #{@_objectToJS(value, symbols)}"
+        else
+          props.push "#{JSON.stringify(key)}: #{JSON.stringify(value)}"
+
+      "{#{props.join(', ')}}"
+    else
+      JSON.stringify(obj)
 
   _assignPrecedence: (rule, precedence) ->
     if precedence?.prec and @operators[precedence.prec]
