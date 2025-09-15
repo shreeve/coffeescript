@@ -73,7 +73,7 @@ buildParserCS3 = ->
 
 buildExceptParser = (callback) ->
   files = fs.readdirSync 'src'
-  files = ('src/' + file for file in files when file.match(/\.(lit)?coffee$/))
+  files = ('src/' + file for file in files when file.match(/\.(lit)?coffee$/) and file not in ['grammar.coffee', 'syntax.coffee'])
   run ['-c', '-o', 'lib/coffeescript'].concat(files), callback
 
 build = (callback) ->
