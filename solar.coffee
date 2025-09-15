@@ -122,7 +122,7 @@ class Generator
           @operators[precedence[k]] = {precedence: i + 1, assoc: precedence[0]}
     null # prevent comprehension building above
 
-  _buildRules: (bnf) ->
+  _buildRules: (grammar) ->
     actionGroups = {}
     ruleTable    = [0]
     @symbolIds   = {"$accept": 0, "$end": 1, "error": 2}  # Add reserved symbols
@@ -135,12 +135,12 @@ class Generator
       # Use existing symbol or create a new one
       unless symbol = @symbolTable.get(name)
         id = symbolId++
-        symbol = if bnf[name] then new Type(name, id) else new Token(name, id)
+        symbol = if grammar[name] then new Type(name, id) else new Token(name, id)
         @symbolTable.set name, symbol
       @symbolIds[name] = symbol.id
 
     # Process types and their rules
-    for own type, rules of bnf
+    for own type, rules of grammar
       addSymbol type
       @types[type] = @symbolTable.get type
 
