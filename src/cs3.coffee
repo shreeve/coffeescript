@@ -191,9 +191,8 @@ exports.register = ->
   # Also register literate extensions
   require.extensions['.litcoffee'] = require.extensions['.coffee.md'] = require.extensions['.coffee']
 
-# Version compatibility
-packageJson = require '../../package.json'
-exports.VERSION = packageJson.version
+# CS3 Version - separate from traditional CoffeeScript
+exports.VERSION = '3.0.0'
 
 # Browser support
 if typeof window isnt 'undefined'
