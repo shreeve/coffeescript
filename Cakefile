@@ -52,9 +52,12 @@ run = (args, callback) ->
 # Build the CoffeeScript language from source.
 buildParser = ->
   helpers.extend global, require 'util'
-  require 'jison'
-  # We don't need `moduleMain`, since the parser is unlikely to be run standalone.
-  parser = require('./lib/coffeescript/grammar').parser.generate(moduleMain: ->)
+  grammar = require('./src/grammar')
+  language =
+    bnf: grammar.bnf
+    operators: grammar.operators
+  {Generator} = require './solar.coffee'
+  parser = Generator(language).generate(compress: !true)
   fs.writeFileSync 'lib/coffeescript/parser.js', parser
 
 buildExceptParser = (callback) ->
