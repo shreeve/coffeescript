@@ -255,8 +255,7 @@ class Generator
 
     if typeof obj is 'number'
       # Position reference
-      index = obj - symbols.length
-      "$$[#{if index then index else '0'}]"
+      "$$[#{obj}]"
     else if typeof obj is 'string'
       JSON.stringify(obj)
     else if typeof obj is 'boolean'
@@ -270,8 +269,7 @@ class Generator
       props = []
       for key, value of obj
         if typeof value is 'number'
-          index = value - symbols.length
-          props.push "#{JSON.stringify(key)}: $$[#{if index then index else '0'}]"
+          props.push "#{JSON.stringify(key)}: $$[#{value}]"
         else if typeof value is 'object' and value?
           props.push "#{JSON.stringify(key)}: #{@_objectToJS(value, symbols)}"
         else
