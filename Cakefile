@@ -60,6 +60,17 @@ buildParser = ->
   parser = Generator(language).generate(compress: !true)
   fs.writeFileSync 'lib/coffeescript/parser.js', parser
 
+# Build the CS3 parser from syntax.coffee using Solar
+buildParserCS3 = ->
+  helpers.extend global, require 'util'
+  syntax = require('./src/syntax')
+  language =
+    grammar: syntax.grammar    # CS3 uses 'grammar' instead of 'bnf'
+    operators: syntax.operators
+  {Generator} = require './solar.coffee'
+  parser = Generator(language).generate(compress: !true)
+  fs.writeFileSync 'lib/coffeescript/parser-cs3.js', parser
+
 buildExceptParser = (callback) ->
   files = fs.readdirSync 'src'
   files = ('src/' + file for file in files when file.match(/\.(lit)?coffee$/))
@@ -127,6 +138,8 @@ watchAndBuildAndTest = (harmony = no) ->
 task 'build', 'build the CoffeeScript compiler from source', build
 
 task 'build:parser', 'build the Jison parser only', buildParser
+
+task 'build:parser-cs3', 'build the CS3 parser from syntax.coffee using Solar', buildParserCS3
 
 task 'build:except-parser', 'build the CoffeeScript compiler, except for the Jison parser', buildExceptParser
 
