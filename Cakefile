@@ -514,6 +514,9 @@ runTests = (CoffeeScript) ->
 task 'test', 'run the CoffeeScript language test suite', ->
   runTests(CoffeeScript).catch -> process.exit 1
 
+task 'test:cs3', 'run the test suite using CS3 data-oriented pipeline', ->
+  CS3 = require './lib/coffeescript/cs3'
+  runTests(CS3).catch -> process.exit 1
 
 task 'test:browser', 'run the test suite against the modern browser compiler in a headless browser', ->
   # Create very simple web server to serve the two files we need.

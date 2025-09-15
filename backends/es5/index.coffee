@@ -13,7 +13,7 @@
 # 3. Array elision support
 # ==============================================================================
 
-nodes = require '../../lib/coffeescript/nodes'
+nodes = require '../../coffeescript/nodes'
 
 class ES5Backend
   constructor: (@options = {}) ->
