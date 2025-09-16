@@ -73,8 +73,10 @@ class CS3DebugBackend
         arr = if Array.isArray(d.$ary) then d.$ary else [d.$ary]
         return arr.map (x)=> @evaluate x, fr, rn
       if d.$ops?
-        # Handle $ops directives - these are operations on arrays/values
+        # Handle $ops directives - these are operations on arrays/values/properties
         op = d.$ops
+
+        # Array operations
         if op is 'array'
           if d.append?
             # append: [target, ...items] - append items to target array
@@ -91,10 +93,84 @@ class CS3DebugBackend
               if Array.isArray(arr)
                 for item in arr
                   target.push item
+              else if arr?
+                target.push arr
             return target
           return []
-        # For other $ops types, just return as-is for now
-        return {$ops: op}
+
+        # Value operations - add accessors to a value
+        if op is 'value'
+          if d.add?
+            # add: [value, accessor] - add accessor to value
+            mapped = d.add.map (x)=> @evaluate x, fr, rn
+            val = mapped[0]
+            accessor = mapped[1]
+            if val? and typeof val is 'object'
+              val.properties ?= []
+              val.properties.push accessor if accessor?
+              # Also set bareLiteral for proper AST structure
+              val.bareLiteral ?= val.val if val.type is 'Value' and val.val?
+            return val
+          return null
+
+        # Property operations - set properties on objects
+        if op is 'prop'
+          if d.set?
+            # set: {target, property, value} - set property on target
+            target = @evaluate d.set.target, fr, rn
+            propName = d.set.property
+            propValue = @evaluate d.set.value, fr, rn
+            if target? and typeof target is 'object'
+              target[propName] = propValue
+            return target
+          return null
+
+        # Loop operations - add body/source to loops
+        if op is 'loop'
+          if d.addBody?
+            # addBody: [loop, body] - add body to loop
+            mapped = d.addBody.map (x)=>
+              if typeof x is 'string' and x.startsWith 'Body $'
+                # Handle special Body $N syntax
+                num = parseInt(x.replace('Body $', ''))
+                {type: 'Body', expressions: [@evaluate num, fr, rn]}
+              else
+                @evaluate x, fr, rn
+            loopNode = mapped[0]
+            bodyNode = mapped[1]
+            if loopNode? and typeof loopNode is 'object'
+              # Handle array body (for postfix loops)
+              if Array.isArray(bodyNode)
+                loopNode.body = {type: 'Body', expressions: bodyNode}
+              else
+                loopNode.body = bodyNode
+            return loopNode
+          if d.addSource?
+            # addSource: [loop, source] - add source to for loop
+            mapped = d.addSource.map (x)=> @evaluate x, fr, rn
+            loopNode = mapped[0]
+            sourceNode = mapped[1]
+            if loopNode? and sourceNode? and typeof loopNode is 'object'
+              # Merge source properties into loop
+              for k, v of sourceNode when k isnt 'type'
+                loopNode[k] = v
+            return loopNode
+          return null
+
+        # If operations - add else branches
+        if op is 'if'
+          if d.addElse?
+            # addElse: [ifBlock, elseBlock] - add else to if
+            mapped = d.addElse.map (x)=> @evaluate x, fr, rn
+            ifBlock = mapped[0]
+            elseBlock = mapped[1]
+            if ifBlock? and typeof ifBlock is 'object'
+              ifBlock.elseBody = elseBlock
+            return ifBlock
+          return null
+
+        # Unknown operation - return as-is for debugging
+        return {$ops: op, data: d}
       if d.$seq? then r=null; for s in d.$seq then r=@evaluate s, fr, rn; return r
       if d.$ite?
         return if @evaluate(d.$ite.test,fr,rn) then @evaluate(d.$ite.then,fr,rn) else @evaluate(d.$ite.else,fr,rn)
