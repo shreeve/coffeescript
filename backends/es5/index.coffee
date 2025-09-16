@@ -178,8 +178,14 @@ class ES5Backend
 
           when 'Value'
             inner = @evaluateDirective (if directive.val? then directive.val else directive.value), frame, ruleName
+            # Handle properties (accessors)
+            properties = @evaluateDirective directive.properties, frame, ruleName
             if inner?.compileToFragments or inner instanceof nodes.Base
-              return if inner instanceof nodes.Value then inner else new nodes.Value inner
+              valueNode = if inner instanceof nodes.Value then inner else new nodes.Value inner
+              if properties and Array.isArray(properties) and properties.length > 0
+                for prop in properties
+                  valueNode.add prop if prop
+              return valueNode
             @ensureNode(inner) or new nodes.Literal "/* TODO: Solar Value */"
 
           when 'Access'
@@ -225,6 +231,136 @@ class ES5Backend
             value = @evaluateDirective directive.value, frame, ruleName
             context = @evaluateDirective directive.context, frame, ruleName
             new nodes.Assign variable, value, context
+
+          when 'StringLiteral'
+            value = @evaluateDirective directive.value, frame, ruleName
+            quote = @evaluateDirective directive.quote, frame, ruleName
+            # Debug: console.error "[ES5] Creating StringLiteral:", value, quote
+            new nodes.StringLiteral value, {quote}
+
+          when 'BooleanLiteral'
+            value = @evaluateDirective directive.value, frame, ruleName
+            new nodes.BooleanLiteral value
+
+          when 'NullLiteral'
+            new nodes.NullLiteral()
+
+          when 'UndefinedLiteral'
+            new nodes.UndefinedLiteral()
+
+          when 'Arr'
+            objects = @evaluateDirective directive.objects, frame, ruleName
+            objects = @filterNodes (if Array.isArray(objects) then objects else [])
+            new nodes.Arr objects
+
+          when 'Obj'
+            properties = @evaluateDirective directive.properties, frame, ruleName
+            properties = @filterNodes (if Array.isArray(properties) then properties else [])
+            generated = @evaluateDirective directive.generated, frame, ruleName
+            new nodes.Obj properties, generated
+
+          when 'Range'
+            from = @evaluateDirective directive.from, frame, ruleName
+            to = @evaluateDirective directive.to, frame, ruleName
+            exclusive = if directive.exclusive? then directive.exclusive else directive.equals is 'exclusive'
+            new nodes.Range from, to, exclusive
+
+          when 'If', 'if'
+            condition = @evaluateDirective directive.condition, frame, ruleName
+            body = @evaluateDirective directive.body, frame, ruleName
+            elseBody = @evaluateDirective directive.elseBody, frame, ruleName
+            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            elseNode = if elseBody
+              if Array.isArray(elseBody) then new nodes.Block @filterNodes(elseBody) else elseBody
+            else
+              null
+            new nodes.If condition, bodyNode, {elseBody: elseNode}
+
+          when 'While'
+            condition = @evaluateDirective directive.condition, frame, ruleName
+            body = @evaluateDirective directive.body, frame, ruleName
+            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            new nodes.While condition, null, bodyNode
+
+          when 'For'
+            body = @evaluateDirective directive.body, frame, ruleName
+            source = @evaluateDirective directive.source, frame, ruleName
+            guard = @evaluateDirective directive.guard, frame, ruleName
+            name = @evaluateDirective directive.name, frame, ruleName
+            index = @evaluateDirective directive.index, frame, ruleName
+            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            # For node constructor expects (body, source)
+            forNode = new nodes.For bodyNode
+            if source
+              forNode.addSource source
+            if name
+              forNode.name = name
+            if index
+              forNode.index = index
+            if guard
+              forNode.guard = guard
+            forNode
+
+          when 'Try'
+            attempt = @evaluateDirective directive.attempt, frame, ruleName
+            recovery = @evaluateDirective directive.recovery, frame, ruleName
+            ensure = @evaluateDirective directive.ensure, frame, ruleName
+            attemptNode = if Array.isArray(attempt) then new nodes.Block @filterNodes(attempt) else attempt
+            new nodes.Try attemptNode, recovery, ensure
+
+          when 'Code'
+            params = @evaluateDirective directive.params, frame, ruleName
+            body = @evaluateDirective directive.body, frame, ruleName
+            bound = @evaluateDirective directive.bound, frame, ruleName
+            paramsNode = @filterNodes (if Array.isArray(params) then params else [])
+            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            new nodes.Code paramsNode, bodyNode, bound or 'func'
+
+          when 'Param'
+            name = @evaluateDirective directive.name, frame, ruleName
+            value = @evaluateDirective directive.value, frame, ruleName
+            splat = @evaluateDirective directive.splat, frame, ruleName
+            new nodes.Param name, value, splat
+
+          when 'Return'
+            expression = @evaluateDirective directive.expression, frame, ruleName
+            new nodes.Return expression
+
+          when 'Yield'
+            expression = @evaluateDirective directive.expression, frame, ruleName
+            from = @evaluateDirective directive.from, frame, ruleName
+            new nodes.Yield expression, from
+
+          when 'Class'
+            variable = @evaluateDirective directive.variable, frame, ruleName
+            parent = @evaluateDirective directive.parent, frame, ruleName
+            body = @evaluateDirective directive.body, frame, ruleName
+            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            new nodes.Class variable, parent, bodyNode
+
+          when 'Super'
+            args = @evaluateDirective directive.args, frame, ruleName
+            argsNode = @filterNodes (if Array.isArray(args) then args else [])
+            new nodes.SuperCall argsNode
+
+          when 'StringWithInterpolations'
+            body = @evaluateDirective directive.body, frame, ruleName
+            quote = @evaluateDirective directive.quote, frame, ruleName
+            bodyNode = @filterNodes (if Array.isArray(body) then body else [])
+            new nodes.StringWithInterpolations bodyNode, {quote}
+
+          when 'TemplateElement'
+            value = @evaluateDirective directive.value, frame, ruleName
+            tail = @evaluateDirective directive.tail, frame, ruleName
+            new nodes.TemplateElement value, tail
+
+          when 'Block'
+            expressions = @evaluateDirective directive.expressions, frame, ruleName
+            new nodes.Block @filterNodes (if Array.isArray(expressions) then expressions else [])
+
+          when 'Body'
+            expressions = @evaluateDirective directive.expressions, frame, ruleName
+            new nodes.Block @filterNodes (if Array.isArray(expressions) then expressions else [])
 
           else
             # For unimplemented types, create placeholder
@@ -276,6 +412,18 @@ class ES5Backend
       when 'NumberLiteral'
         new nodes.NumberLiteral solarNode.value, solarNode.parsedValue
 
+      when 'StringLiteral'
+        new nodes.StringLiteral solarNode.value, {quote: solarNode.quote}
+
+      when 'BooleanLiteral'
+        new nodes.BooleanLiteral solarNode.value
+
+      when 'NullLiteral'
+        new nodes.NullLiteral()
+
+      when 'UndefinedLiteral'
+        new nodes.UndefinedLiteral()
+
       when 'Op'
         first = @solarNodeToClass solarNode.left if solarNode.left
         second = @solarNodeToClass solarNode.right if solarNode.right
@@ -285,6 +433,19 @@ class ES5Backend
         variable = @solarNodeToClass solarNode.variable if solarNode.variable
         value = @solarNodeToClass solarNode.value if solarNode.value
         new nodes.Assign variable, value, solarNode.context
+
+      when 'Arr'
+        objects = (if solarNode.objects then solarNode.objects.map((o) => @solarNodeToClass o) else [])
+        new nodes.Arr @filterNodes objects
+
+      when 'Obj'
+        properties = (if solarNode.properties then solarNode.properties.map((p) => @solarNodeToClass p) else [])
+        new nodes.Obj @filterNodes properties, solarNode.generated
+
+      when 'Range'
+        from = @solarNodeToClass solarNode.from if solarNode.from
+        to = @solarNodeToClass solarNode.to if solarNode.to
+        new nodes.Range from, to, solarNode.exclusive
 
       else
         # Placeholder for unimplemented node types
