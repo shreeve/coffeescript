@@ -95,6 +95,9 @@ class ES5Backend
     return [] unless array?
     result = []
     for item in array
+      if item?.compileToFragments or item instanceof nodes.Base
+        result.push item
+        continue
       node = @ensureNode @dataToClass item
       result.push node if node?
     result
@@ -155,6 +158,11 @@ class ES5Backend
 
         # Directly create CoffeeScript node with evaluated properties
         switch nodeType
+          when 'Root'
+            body = @evaluateDirective directive.body, frame, ruleName
+            body = if Array.isArray(body) then body else (if body? then [body] else [])
+            new nodes.Root new nodes.Block @filterNodes body
+
           when 'IdentifierLiteral'
             value = @evaluateDirective directive.value, frame, ruleName
             new nodes.IdentifierLiteral value
@@ -167,6 +175,50 @@ class ES5Backend
             value = @evaluateDirective directive.value, frame, ruleName
             parsedValue = @evaluateDirective directive.parsedValue, frame, ruleName
             new nodes.NumberLiteral value, parsedValue
+
+          when 'Value'
+            inner = @evaluateDirective (if directive.val? then directive.val else directive.value), frame, ruleName
+            if inner?.compileToFragments or inner instanceof nodes.Base
+              return if inner instanceof nodes.Value then inner else new nodes.Value inner
+            @ensureNode(inner) or new nodes.Literal "/* TODO: Solar Value */"
+
+          when 'Access'
+            nameNode = @evaluateDirective directive.name, frame, ruleName
+            new nodes.Access nameNode, soak: directive.soak, shorthand: directive.shorthand
+
+          when 'Index'
+            idx = @evaluateDirective (if directive.index? then directive.index else if directive.name? then directive.name else directive.object), frame, ruleName
+            new nodes.Index @ensureNode idx
+
+          when 'PropertyName'
+            value = @evaluateDirective directive.value, frame, ruleName
+            new nodes.PropertyName value
+
+          when 'Op'
+            op = @evaluateDirective (if directive.operator? then directive.operator else directive.args?[0]), frame, ruleName
+            left  = @ensureNode @evaluateDirective (if directive.left? then directive.left else directive.args?[1]), frame, ruleName
+            right = @ensureNode @evaluateDirective (if directive.right? then directive.right else directive.args?[2]), frame, ruleName
+            flip  = @evaluateDirective (if directive.flip? then directive.flip else directive.args?[3]), frame, ruleName
+            originalOperator = @evaluateDirective directive.originalOperator, frame, ruleName
+            invertOperator   = @evaluateDirective directive.invertOperator, frame, ruleName
+            new nodes.Op op, left, right, flip, {originalOperator, invertOperator}
+
+          when 'Arguments'
+            args = @evaluateDirective (if directive.args? then directive.args else if directive.$ary? then directive.$ary else directive), frame, ruleName
+            args = @filterNodes (if Array.isArray(args) then args else [])
+            args.implicit = !!directive.implicit
+            args
+
+          when 'Call'
+            variableNode = @evaluateDirective directive.variable, frame, ruleName
+            argsNode = @evaluateDirective directive.args, frame, ruleName
+            argsNode = [] unless Array.isArray argsNode
+            new nodes.Call (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), argsNode, @evaluateDirective(directive.soak, frame, ruleName), @evaluateDirective(directive.token, frame, ruleName)
+
+          when 'TaggedTemplateCall'
+            vNode = @evaluateDirective directive.variable, frame, ruleName
+            templateArg = @ensureNode @evaluateDirective directive.template, frame, ruleName
+            new nodes.Call (if vNode instanceof nodes.Value then vNode else new nodes.Value vNode), [templateArg]
 
           when 'Assign'
             variable = @evaluateDirective directive.variable, frame, ruleName
@@ -279,7 +331,17 @@ class ES5Backend
           result
 
       when 'value'
-        # TODO: Implement value operations (add accessor)
+        # Add an accessor (Access/Index) to a Value
+        if directive.add?
+          targetRaw = @evaluateDirective directive.add[0], frame, ruleName
+          propRaw = @evaluateDirective directive.add[1], frame, ruleName
+          targetNode = if targetRaw?.compileToFragments or targetRaw instanceof nodes.Base then targetRaw else @ensureNode targetRaw
+          propNode = if propRaw?.compileToFragments or propRaw instanceof nodes.Base then propRaw else @ensureNode propRaw
+          if targetNode instanceof nodes.Value
+            targetNode.add [propNode]
+            return targetNode
+          else
+            return new nodes.Value targetNode, [propNode]
         @evaluateDirective directive.add?[0], frame, ruleName
 
       when 'if'
