@@ -59,7 +59,7 @@ Class: [
 CoffeeScript Code → Solar Parser → ReductionFrame → Solar Directive Evaluator → Target Code
                     (100ms gen)     (Per-reduction   (Universal backend)       ├── JavaScript ✅
                                     RHS frames)                               ├── Python
-                                                                              ├── WASM  
+                                                                              ├── WASM
                                                                               └── Any Language
 ```
 
