@@ -63,9 +63,13 @@ exports.compileCS3 = (code, options = {}) ->
     upcomingInput: ->
       ""
 
-  # Step 3: Parse to CS3 AST
+  # Step 3: Set up parser with ReductionFrame backend
   parser.parser.lexer = lexerInterface
-  parser.parser.yy = {}  # CS3 doesn't need yy helpers
+  parser.parser.yy = {}
+
+  # Step 3.5: Initialize backend for ReductionFrame interface
+  backend = new ES5Backend(options)
+  parser.parser.yy.backend = backend  # Set on yy for performAction access
 
   try
     ast = parser.parse()
@@ -75,9 +79,11 @@ exports.compileCS3 = (code, options = {}) ->
       throw new Error 'Parser initialization error - ensure CS3 parser is properly generated'
     throw error
 
-  # Step 4: Generate JavaScript using ES5 backend
-  backend = new ES5Backend(options)
-  jsCode = backend.generate ast
+  # Step 4: Generate JavaScript (ast is already the final CoffeeScript node)
+  jsCode = if ast?.compile
+    ast.compile(backend.compileOptions)
+  else
+    backend.generate ast
 
   jsCode
 
@@ -126,11 +132,15 @@ exports.parseCS3 = (code) ->
     upcomingInput: ->
       ""
 
-  # Set up parser
+  # Set up parser with ReductionFrame backend
   parser.parser.lexer = lexerInterface
   parser.parser.yy = {}
 
-  # Parse and return the AST
+  # Initialize backend for ReductionFrame interface
+  backend = new ES5Backend({})
+  parser.parser.yy.backend = backend  # Set on yy for performAction access
+
+  # Parse and return the AST (will be a CoffeeScript node from backend.reduce())
   parser.parse()
 
 # CoffeeScript-Compatible API for testing

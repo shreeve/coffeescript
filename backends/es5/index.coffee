@@ -30,13 +30,19 @@ class ES5Backend
     @loopVarCounter = 0
     @usedLoopVars = new Set()
 
-  # Main entry point - convert CS3 data node to JavaScript
-  generate: (dataNode) ->
-    classNode = @dataToClass dataNode
-    return '' unless classNode?  # CRITICAL: Never return undefined
+  # Main entry point - convert Solar directive or CoffeeScript node to JavaScript
+  generate: (node) ->
+    # If already a CoffeeScript class node (from ReductionFrame), compile directly
+    if node?.compile
+      result = node.compile @compileOptions
+      return result or ''
+
+    # Otherwise, convert via legacy dataToClass method
+    classNode = @dataToClass node
+    return '' unless classNode?
 
     result = classNode.compile @compileOptions
-    return result or ''  # CRITICAL: Ensure we always return a string
+    return result or ''
 
   # Helper to create default locationData
   defaultLocationData: ->
@@ -104,94 +110,209 @@ class ES5Backend
     last_column_exclusive: last.last_column_exclusive ? first.last_column_exclusive
     range: [first.range[0], last.range[1]]
 
-  # Convert Solar directives directly to CoffeeScript class nodes
-  dataToClass: (node) ->
-    return null unless node?
+  # ReductionFrame-based Solar directive evaluation
+  reduce: (ruleName, directive, frame) ->
+    # Evaluate Solar directive against ReductionFrame
+    @evaluateDirective directive, frame, ruleName
 
-    # Handle primitives
-    return node if typeof node in ['string', 'number', 'boolean']
+  # Core directive evaluator - evaluates Solar directives against RHS frame
+  evaluateDirective: (directive, frame, ruleName = null) ->
+    # Handle position references (1, 2, 3, ...) FIRST
+    if typeof directive is 'number'
+      return frame.rhs[directive - 1]?.value  # 1-based → 0-based
+
+    # Handle primitives (except numbers, handled above)
+    return directive if typeof directive in ['string', 'boolean']
 
     # Handle arrays
+    if Array.isArray directive
+      return directive.map (item) => @evaluateDirective item, frame, ruleName
+
+    # Handle Solar directives
+    if directive? and typeof directive is 'object'
+
+      # $use directive (with optional method/prop)
+      if directive.$use?
+        ref = directive.$use
+        value = if typeof ref is 'number'
+          frame.rhs[ref - 1]?.value  # Position reference
+        else
+          ref  # Direct value or temp variable
+
+        # Apply method calls
+        if directive.method?
+          args = directive.args?.map((arg) => @evaluateDirective arg, frame) or []
+          value?[directive.method]?.apply(value, args) or String(value)
+        # Apply property access
+        else if directive.prop?
+          value?[directive.prop] or String(value)
+        else
+          value
+
+      # $ast directive (AST node creation)
+      else if directive.$ast?
+        nodeType = if directive.$ast is '@' then ruleName else directive.$ast
+
+        # Directly create CoffeeScript node with evaluated properties
+        switch nodeType
+          when 'IdentifierLiteral'
+            value = @evaluateDirective directive.value, frame, ruleName
+            new nodes.IdentifierLiteral value
+
+          when 'Literal'
+            value = @evaluateDirective directive.value, frame, ruleName
+            new nodes.Literal value
+
+          when 'NumberLiteral'
+            value = @evaluateDirective directive.value, frame, ruleName
+            parsedValue = @evaluateDirective directive.parsedValue, frame, ruleName
+            new nodes.NumberLiteral value, parsedValue
+
+          when 'Assign'
+            variable = @evaluateDirective directive.variable, frame, ruleName
+            value = @evaluateDirective directive.value, frame, ruleName
+            context = @evaluateDirective directive.context, frame, ruleName
+            new nodes.Assign variable, value, context
+
+          else
+            # For unimplemented types, create placeholder
+            new nodes.Literal "/* TODO: Solar #{nodeType} */"
+
+      # $ary directive (array creation)
+      else if directive.$ary?
+        directive.$ary.map (item) => @evaluateDirective item, frame, ruleName
+
+      # $ops directive (operations)
+      else if directive.$ops?
+        @applyOperation directive, frame, ruleName
+
+      # $seq directive (sequences)
+      else if directive.$seq?
+        result = null
+        for step in directive.$seq
+          result = @evaluateDirective step, frame, ruleName
+        result
+
+      # $ite directive (conditionals)
+      else if directive.$ite?
+        test = @evaluateDirective directive.$ite.test, frame, ruleName
+        if test
+          @evaluateDirective directive.$ite.then, frame, ruleName
+        else
+          @evaluateDirective directive.$ite.else, frame, ruleName
+
+      # Plain object (evaluate properties)
+      else
+        result = {}
+        for key, value of directive when not key.startsWith '$'
+          result[key] = @evaluateDirective value, frame, ruleName
+        result
+    else
+      directive
+
+  # Convert evaluated Solar node to CoffeeScript class (Phase A: Legacy adapter)
+  solarNodeToClass: (solarNode) ->
+    return null unless solarNode?.type
+
+    switch solarNode.type
+      when 'IdentifierLiteral'
+        new nodes.IdentifierLiteral solarNode.value
+
+      when 'Literal'
+        new nodes.Literal solarNode.value
+
+      when 'NumberLiteral'
+        new nodes.NumberLiteral solarNode.value, solarNode.parsedValue
+
+      when 'Op'
+        first = @solarNodeToClass solarNode.left if solarNode.left
+        second = @solarNodeToClass solarNode.right if solarNode.right
+        new nodes.Op solarNode.operator, first, second, solarNode.flip
+
+      when 'Assign'
+        variable = @solarNodeToClass solarNode.variable if solarNode.variable
+        value = @solarNodeToClass solarNode.value if solarNode.value
+        new nodes.Assign variable, value, solarNode.context
+
+      else
+        # Placeholder for unimplemented node types
+        new nodes.Literal "/* TODO: Solar node #{solarNode.type} */"
+
+  # Resolve $pos directive to locationData
+  resolvePosition: (posDirective, frame) ->
+    if typeof posDirective is 'number'
+      # $pos: 1 → copy slot 1's position
+      frame.rhs[posDirective - 1]?.pos or @defaultLocationData()
+    else if Array.isArray posDirective
+      if posDirective.length is 2
+        # $pos: [1, 3] → span from slot 1 to slot 3
+        start = frame.rhs[posDirective[0] - 1]?.pos
+        end = frame.rhs[posDirective[1] - 1]?.pos
+        @mergeLocationData(start, end) if start and end
+      else if posDirective.length is 4
+        # $pos: [sl, sc, el, ec] → explicit position
+        [startLine, startCol, endLine, endCol] = posDirective
+        first_line: startLine, first_column: startCol
+        last_line: endLine, last_column: endCol
+        range: [0, 0]
+    else
+      @defaultLocationData()
+
+  # Apply $ops operations
+  applyOperation: (directive, frame, ruleName) ->
+    switch directive.$ops
+      when 'array'
+        if directive.append?
+          target = @evaluateDirective directive.append[0], frame, ruleName
+          for item in directive.append[1..]
+            value = @evaluateDirective item, frame, ruleName
+            target.push value if value?
+          target
+        else if directive.gather?
+          result = []
+          for item in directive.gather
+            evaluated = @evaluateDirective item, frame, ruleName
+            if Array.isArray evaluated
+              result = result.concat evaluated
+            else
+              result.push evaluated if evaluated?
+          result
+
+      when 'value'
+        # TODO: Implement value operations (add accessor)
+        @evaluateDirective directive.add?[0], frame, ruleName
+
+      when 'if'
+        # TODO: Implement if operations (addElse)
+        @evaluateDirective directive.addElse?[0], frame, ruleName
+
+      when 'loop'
+        # TODO: Implement loop operations (addBody, addSource)
+        @evaluateDirective directive.addBody?[0], frame, ruleName
+
+      when 'prop'
+        # TODO: Implement property operations (set)
+        @evaluateDirective directive.set?.target, frame, ruleName
+
+      else
+        new nodes.Literal "/* TODO: $ops #{directive.$ops} */"
+
+  # Legacy dataToClass method (backward compatibility for non-frame calls)
+  dataToClass: (node) ->
+    return null unless node?
+    return node if typeof node in ['string', 'number', 'boolean']
+
     if Array.isArray node
       return node.map (item) => @dataToClass item
 
-    # Handle Solar directives DIRECTLY
-    if typeof node is 'object'
-      # Solar $ast directive - create nodes directly from directive (check first!)
-      if node.$ast?
-        return @createNodeFromSolarAST node
-
-      # Solar $use directive - simple values (only for standalone $use)
-      if node.$use?
-        return new nodes.Literal String(node.$use)
-
-      # Solar $ops directive - execute operations directly
-      if node.$ops?
-        return @executeSolarOps node
-
-      # Solar $ary directive - create arrays directly
-      if node.$ary?
-        return node.$ary.map (item) => @dataToClass item
-
-      # Solar $seq directive - execute sequences directly
-      if node.$seq?
-        return @executeSolarSequence node
-
-    # Only Solar directives supported - pure direct consumption!
-    return null
-
-  # Create CoffeeScript node directly from Solar $ast directive
-  createNodeFromSolarAST: (node) ->
-    nodeType = if node.$ast is '@' then 'Literal' else node.$ast
-
-    switch nodeType
-      when 'IdentifierLiteral'
-        value = @resolveSolarValue(node.value) if node.value
-        new nodes.IdentifierLiteral value
-
-      when 'Literal'
-        value = @resolveSolarValue(node.value) if node.value
-        new nodes.Literal value
-
-      when 'NumberLiteral'
-        value = @resolveSolarValue(node.value) if node.value
-        parsedValue = @resolveSolarValue(node.parsedValue) if node.parsedValue
-        new nodes.NumberLiteral value, parsedValue
-
+    # For legacy calls without frame, create minimal frame
+    if node? and typeof node is 'object'
+      if node.type?
+        # Already a normalized node - convert directly
+        return @solarNodeToClass node
       else
-        # Placeholder for unimplemented Solar AST types
-        new nodes.Literal "/* TODO: Solar $ast #{nodeType} */"
-
-  # Execute Solar $ops operations directly
-  executeSolarOps: (node) ->
-    new nodes.Literal "/* TODO: Solar $ops #{node.$ops} */"
-
-  # Execute Solar $seq sequences directly
-  executeSolarSequence: (node) ->
-    new nodes.Literal "/* TODO: Solar $seq */"
-
-  # Resolve Solar $use references and method/property calls
-  resolveSolarValue: (value) ->
-    return String(value) unless typeof value is 'object' and value?
-
-    if value.$use? and value.method?
-      # Method calls like {$use: "42", method: 'toString'}
-      base = value.$use
-      if typeof base is 'object' and base[value.method]
-        base[value.method]()  # Execute actual method: "42".toString()
-      else
-        String(base)
-    else if value.$use? and value.prop?
-      # Property access like {$use: "42", prop: 'parsedValue'}
-      base = value.$use
-      if typeof base is 'object' and base[value.prop] isnt undefined
-        base[value.prop]  # Get actual property: "42".parsedValue
-      else
-        String(base)
-    else if value.$use?
-      # Simple $use reference - already resolved to actual value
-      @resolveSolarValue value.$use
-    else
-      String(value)
+        # Solar directive without frame - limited support
+        mockFrame = rhs: [{value: node}]
+        return @evaluateDirective node, mockFrame
 
 module.exports = ES5Backend

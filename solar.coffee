@@ -160,6 +160,9 @@ class Generator
         # Add symbols to grammar
         addSymbol symbol for symbol in symbols
 
+        # Track current rule name for ReductionFrame generation
+        @currentType = type
+
         # Process semantic actions
         if action
           action = @_processGrammarAction action, symbols
@@ -207,7 +210,8 @@ class Generator
     else if @mode is 'traditional' and typeof action is 'string'
       @_generateClassAction(action, symbols)
     else if action is null or action is undefined
-      'return null;'  # Handle empty actions
+      # Default pass-through: for single-symbol rules, return $1; for ε, null
+      if symbols.length is 0 then 'return null;' else 'return $$[1];'
     else
       throw new Error "Invalid action type for mode #{@mode}: #{typeof action}"
 
@@ -244,11 +248,48 @@ class Generator
       .replace( /@(-?\d+)/g, (_, n) -> "_$[$0" +               (n - symbols.length || '') + "]") # Like @1
 
   _generateDataAction: (directive, symbols) ->
-    # CS3 mode: generate data object construction code
+    # CS3 mode: generate backend.reduce() call with ReductionFrame
     # Input: CS3 directive like {$ast: 'Value', val: 1}
-    # Output: JavaScript like "return {$ast: 'Value', val: $$[1]};"
+    # Output: JavaScript like "return backend.reduce(ruleName, directive, frame);"
 
-    "return #{@_objectToJS(directive, symbols)};"
+    # Generate ReductionFrame with RHS slots
+    frameSlots = []
+    len = symbols.length
+    for i in [1..len]
+      offset = len - i
+      frameSlots.push "{value: $$[$0-#{offset}], token: $$[$0-#{offset}], pos: _$[$0-#{offset}]}"
+
+    frameJS = "{ruleName: '#{@currentType}', rhs: [#{frameSlots.join(', ')}]}"
+    directiveJS = @_objectToJSUnresolved(directive)
+
+    "return yy.backend.reduce('#{@currentType}', #{directiveJS}, #{frameJS});"
+
+  # Generate directive object with unresolved position references
+  _objectToJSUnresolved: (obj) ->
+    return 'null' unless obj?
+
+    if typeof obj is 'number'
+      # Keep position reference as number (don't resolve to $$[N])
+      "#{obj}"
+    else if typeof obj is 'string'
+      JSON.stringify(obj)
+    else if typeof obj is 'boolean'
+      JSON.stringify(obj)
+    else if Array.isArray(obj)
+      items = (if typeof item is 'object' then @_objectToJSUnresolved(item) else JSON.stringify(item) for item in obj)
+      "[#{items.join(', ')}]"
+    else if typeof obj is 'object'
+      props = []
+      for key, value of obj
+        if typeof value is 'number'
+          props.push "#{JSON.stringify(key)}: #{value}"  # Keep as position number
+        else if typeof value is 'object' and value?
+          props.push "#{JSON.stringify(key)}: #{@_objectToJSUnresolved(value)}"
+        else
+          props.push "#{JSON.stringify(key)}: #{JSON.stringify(value)}"
+      "{#{props.join(', ')}}"
+    else
+      JSON.stringify(obj)
 
   _objectToJS: (obj, symbols) ->
     return 'null' unless obj?
@@ -672,9 +713,10 @@ class Generator
       #{module.commonCode}
       var parser = #{module.moduleCode};
       #{@moduleInclude}
-      function Parser () { this.yy = {}; }
+      function Parser () { this.yy = {}; this.backend = null; }
       Parser.prototype = parser;
       parser.Parser = Parser;
+      parser.setBackend = function(backend) { this.backend = backend; };
       return new Parser;
     })();
     """
@@ -856,7 +898,7 @@ class Generator
           yyval._$.range = [locFirst.range[0], locLast.range[1]] if ranges
 
           r = @performAction.apply yyval, [yytext, yyleng, yylineno, sharedState.yy, action[1], val, loc]
-          return r if r?
+          yyval.$ = r if r?
 
           if len
             stk.length -= len * 2
@@ -870,7 +912,7 @@ class Generator
           stk.push newState
 
         when 3 # accept
-          return true
+          return val[val.length - 1]
 
   trace: (msg) -> # Debug output (no-op by default)
     console.log msg if @options?.debug
