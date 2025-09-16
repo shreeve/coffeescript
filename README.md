@@ -6,10 +6,11 @@ CoffeeScript 3 (CS3) represents a **paradigm shift** in parser architecture: tra
 
 ### Key Achievements
 - **100x faster** parser generation with Solar (12+ seconds → 100ms)
-- **Direct Solar directive consumption** - no normalization layers needed
-- **Complete data-oriented grammar** - all 404 patterns transformed
-- **Working test framework** - `cake test:cs3` validates CS3 against full test suite
-- **Universal compilation** architecture ready for any target language
+- **ReductionFrame architecture** - backends evaluate Solar directives against per-reduction RHS frames
+- **Universal position resolution** - automatic `1` → `'x'` resolution through frame slots
+- **Complete Solar directive system** - all 404 patterns transformed to language-agnostic directives
+- **Working CS3 pipeline** - `'x'` → `IdentifierLiteral('x')` → `"x"` JavaScript
+- **Revolutionary backend interface** - any language can implement Solar directive evaluation
 
 ## The Solar Directive System
 
@@ -55,14 +56,17 @@ Class: [
 ## Architecture
 
 ```
-CoffeeScript Code → Solar Parser → Solar Directives → [Choose Your Backend!]
-                    (100ms gen)     (Universal)        ├── ES5 Generator ✅
-                                                       ├── Python Generator
-                                                       ├── WASM Generator
-                                                       └── Future Targets...
+CoffeeScript Code → Solar Parser → ReductionFrame → Solar Directive Evaluator → Target Code
+                    (100ms gen)     (Per-reduction   (Universal backend)       ├── JavaScript ✅
+                                    RHS frames)                               ├── Python
+                                                                              ├── WASM  
+                                                                              └── Any Language
 ```
 
-**Direct Solar Directive Consumption**: Backends consume Solar directives directly - no normalization layers needed!
+**ReductionFrame Innovation**: Backends evaluate Solar directives against **per-reduction RHS frames**, enabling:
+- **Universal position resolution** (`1` → actual token value)
+- **Language-agnostic evaluation** (any backend can implement Solar directive processing)
+- **Clean separation** (parser stays dumb, backends stay smart)
 
 ### Project Structure
 
@@ -92,17 +96,17 @@ The transformation has been **thoroughly validated**:
 ### ✅ Completed
 - **Solar Parser Generator** - 100x faster generation (100ms vs 12+ seconds)
 - **Complete Grammar Transformation** - All 404 patterns converted to Solar directives
-- **Direct Solar Directive Architecture** - Backends consume directives directly
-- **Working CS3 Pipeline** - Full compilation from CoffeeScript to JavaScript
+- **ReductionFrame Architecture** - Per-reduction RHS frames with universal position resolution
+- **Solar Directive Evaluator** - Backends evaluate directives against ReductionFrame
+- **Working CS3 Pipeline** - `'x'` → `IdentifierLiteral('x')` → `"x"` JavaScript
+- **Universal Backend Interface** - Any language can implement Solar directive evaluation
 - **Test Framework Integration** - `cake test:cs3` validates CS3 against full test suite
-- **ES5 Backend Implementation** - Direct Solar directive consumption
 - **JSX-free Grammar** - Cleaner, focused on core CoffeeScript features
-- **Semantic Property Names** - 86 generic properties converted to meaningful names
 
 ### 🚧 In Progress
-- **Assignment Parsing** - Debugging multi-token expression parsing
-- **Full Directive Support** - Implementing $ops, $seq, $ite in ES5 backend
-- **Test Compatibility** - Working toward 1470+ passing tests
+- **Assignment Parsing** - Debugging parser reduction timing for multi-token expressions
+- **Complete Directive Support** - Implementing $ops, $seq, $ite operations
+- **Test Suite Compatibility** - Working toward full CoffeeScript test compatibility
 
 ### 📋 TODO
 - Complete additional backend implementations (Python, WASM, LLVM)

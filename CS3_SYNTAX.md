@@ -2,21 +2,23 @@
 
 **Principle:** "Make the common case easy, and the rare case possible."
 
-## 🎯 Key Achievement: Universal Solar Directives!
+## 🎯 Key Achievement: ReductionFrame Architecture!
 
-CS3 achieves universal compilation through **Solar directives** - a language-agnostic system with just **6 main directives**:
-- **Universal format** → Any language can consume Solar directives directly
-- **No normalization** → Backends process directives without intermediate layers
-- **Parser agnostic** → Solar directives work with any grammar, any language
+CS3 achieves universal compilation through **ReductionFrame-based Solar directive evaluation**:
+- **Per-reduction RHS frames** → Backends evaluate directives against frame slots, not global parser stack
+- **Universal position resolution** → `1` → `frame.rhs[0].value` works for any language
+- **Language-agnostic evaluation** → Any backend can implement Solar directive evaluator
+- **Clean separation** → Parser generates frames, backends evaluate directives
 
 ## Overview
 
-CoffeeScript 3 (CS3) represents a paradigm shift to **Solar directive architecture**. This transformation enables:
+CoffeeScript 3 (CS3) represents a paradigm shift to **ReductionFrame-based Solar directive evaluation**. This transformation enables:
 
 - **Universal multi-target compilation** (ES5, Python, WASM, LLVM IR)
-- **Direct directive consumption** (no intermediate normalization)
-- **Language-agnostic parsing** (Solar directives work for any grammar)
-- **Minimal pipeline** (parse → directives → target language)
+- **Per-reduction frame evaluation** (backends evaluate against RHS frames, not global stack)
+- **Language-agnostic directive processing** (any backend can implement Solar evaluator)
+- **Revolutionary position resolution** (automatic `1` → actual token value)
+- **Clean architectural separation** (parser dumb, backends smart)
 - **100% backward compatible** with existing CoffeeScript
 
 ## The Solar Directive System
@@ -258,6 +260,59 @@ coffeescript/
 
 **Direct Consumption**: All backends consume Solar directives directly without normalization layers.
 
+## ReductionFrame Architecture
+
+### Revolutionary Backend Interface
+
+When Solar parser reduces a grammar rule, it calls the backend with a **ReductionFrame**:
+
+```javascript
+// Solar parser calls:
+yy.backend.reduce(ruleName, directive, frame)
+```
+
+### ReductionFrame Structure
+
+Each reduction gets its own **RHS frame** containing only the slots for that specific rule:
+
+```javascript
+// For rule: Expression '+' Expression
+{
+  ruleName: "Op",
+  rhs: [
+    { value: IdentifierLiteral('x'), pos: locationData },  // slot 1
+    { value: '+', token: '+', pos: locationData },         // slot 2
+    { value: NumberLiteral(42), pos: locationData }        // slot 3
+  ]
+}
+```
+
+### Universal Position Resolution
+
+Solar directives use **1-based position references** that resolve through frame slots:
+
+```coffee
+# Solar directive:
+{$ast: "Op", operator: 2, left: 1, right: 3}
+
+# Backend evaluation:
+operator = frame.rhs[2-1].value  # slot 2 → "+"
+left     = frame.rhs[1-1].value  # slot 1 → IdentifierLiteral('x')
+right    = frame.rhs[3-1].value  # slot 3 → NumberLiteral(42)
+```
+
+### Language-Agnostic Design
+
+**Any language** can implement a Solar directive evaluator:
+
+```typescript
+interface Backend {
+  reduce(ruleName: string, directive: SolarDirective, frame: ReductionFrame): any;
+}
+```
+
+This enables true **universal compilation** - the same Solar directives work for JavaScript, Python, WASM, or any target language.
+
 ## Validation Results
 
 The transformation has been **thoroughly validated**:
@@ -284,20 +339,21 @@ The transformation has been **thoroughly validated**:
 ## Implementation Status
 
 ### ✅ Completed
-- **Solar Directive System** - Universal 6-directive architecture
-- **Complete Grammar Transformation** - All 404 patterns converted to Solar directives
-- **Direct Consumption Architecture** - Backends process Solar directives without normalization
-- **Working CS3 Pipeline** - Full CoffeeScript 3.0.0 compilation system
+- **ReductionFrame Architecture** - Revolutionary per-reduction RHS frame evaluation
+- **Solar Directive Evaluator** - Universal position resolution and directive processing
+- **Universal Backend Interface** - `backend.reduce(ruleName, directive, frame)`
+- **Working CS3 Pipeline** - `'x'` → `IdentifierLiteral('x')` → `"x"` JavaScript
 - **Solar Parser Generator** - 100x faster parser generation (100ms)
+- **Complete Grammar Transformation** - All 404 patterns converted to Solar directives
+- **Position Resolution System** - Automatic `1` → actual token value through frame slots
 - **Test Framework Integration** - `cake test:cs3` validates against full test suite
-- **ES5 Backend** - Direct Solar directive consumption implementation
 - **JSX-free Grammar** - Clean, focused CoffeeScript feature set
-- **Semantic Property Names** - 86 generic properties → meaningful names
+- **Language-Agnostic Foundation** - Any language can implement Solar directive evaluation
 
 ### 🚧 In Progress
-- **Assignment Parsing** - Debugging multi-token expression parsing
-- **Complete Directive Support** - Implementing $ops, $seq, $ite operations
-- **Test Compatibility** - Working toward full test suite compatibility
+- **Assignment Parsing** - Debugging parser reduction timing for multi-token expressions
+- **Complete Directive Operations** - Implementing $ops, $seq, $ite in ES5 backend
+- **Full Test Compatibility** - Working toward complete CoffeeScript test suite compatibility
 
 ### 📋 TODO
 - Complete backend implementations
@@ -338,14 +394,22 @@ Rip will:
 
 ## Conclusion
 
-The CS3 transformation represents a fundamental breakthrough: **Solar directives as universal AST representation**. By creating language-agnostic directives that any backend can consume directly, we've achieved unprecedented simplicity and power.
+The CS3 transformation represents a fundamental breakthrough: **ReductionFrame-based Solar directive evaluation**. By creating a universal backend interface where any language can evaluate Solar directives against per-reduction frames, we've achieved unprecedented architectural elegance and power.
 
-The journey from CoffeeScript's function-based grammar through Solar's universal directives to multi-target compilation is not just an evolution—it's a revolution in parser generator architecture. **Solar directives work for any language, any grammar, any target.**
+The journey from CoffeeScript's function-based grammar through Solar's universal directives to ReductionFrame evaluation is not just an evolution—it's a revolution in parser architecture. **ReductionFrame + Solar directives work for any language, any grammar, any target.**
 
 ### The Universal Vision Realized
 
 ```
-Any Grammar → Solar Parser → Solar Directives → Any Backend → Any Language
+Any Grammar → Solar Parser → ReductionFrame → Solar Evaluator → Any Language
+              (Universal)     (Per-reduction  (Universal       (JavaScript,
+                              RHS frames)     backend API)     Python, WASM...)
 ```
+
+**ReductionFrame Architecture Enables:**
+- **Universal position resolution** (1 → actual value, any language)
+- **Language-agnostic evaluation** (same Solar evaluator pattern)
+- **Clean architectural separation** (parser dumb, backends smart)
+- **True multi-target compilation** (write once, compile anywhere)
 
 This is the foundation for **Rip** and the future of universal programming language compilation.
