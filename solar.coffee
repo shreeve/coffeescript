@@ -713,9 +713,9 @@ class Generator
       #{module.commonCode}
       var parser = #{module.moduleCode};
       #{@moduleInclude}
-      function Parser () { this.yy = {}; #{if @mode is 'cs3' then 'this.backend = null;' else ''}}
+      function Parser () { this.yy = {}; }
       Parser.prototype = parser;
-      parser.Parser = Parser;#{if @mode is 'cs3' then '\n  parser.setBackend = function(backend) { this.backend = backend; };' else ''}
+      parser.Parser = Parser;
       return new Parser;
     })();
     """
