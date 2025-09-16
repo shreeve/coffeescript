@@ -177,6 +177,46 @@ class CS3DebugBackend
       o={}; for k,v of d when not k.startsWith '$' then o[k]=@evaluate v, fr, rn; return o
     d
 
+# Format converters for AST output
+toYAML = (obj, indent = 0) ->
+  return 'null' if obj is null or obj is undefined
+  return String(obj) if typeof obj in ['string', 'number', 'boolean']
+
+  spaces = '  '.repeat(indent)
+
+  if Array.isArray(obj)
+    return '[]' if obj.length is 0
+    lines = []
+    for item in obj
+      itemStr = toYAML(item, indent + 1)
+      if itemStr.includes('\n') or typeof item is 'object'
+        lines.push "#{spaces}-"
+        lines.push toYAML(item, indent + 1).split('\n').map((l) -> "  #{l}").join('\n')
+      else
+        lines.push "#{spaces}- #{itemStr}"
+    return lines.join('\n')
+
+  if typeof obj is 'object'
+    keys = Object.keys(obj)
+    return '{}' if keys.length is 0
+    lines = []
+    for key in keys
+      value = obj[key]
+      if value is null or value is undefined
+        lines.push "#{spaces}#{key}: null"
+      else if typeof value is 'object'
+        lines.push "#{spaces}#{key}:"
+        lines.push toYAML(value, indent + 1).split('\n').map((l) -> "  #{l}").join('\n')
+      else if typeof value is 'string'
+        # Quote strings that might be ambiguous in YAML
+        escaped = value.replace(/"/g, '\\"')
+        lines.push "#{spaces}#{key}: \"#{escaped}\""
+      else
+        lines.push "#{spaces}#{key}: #{value}"
+    return lines.join('\n')
+
+  String(obj)
+
 tokensCS3 = (code, options={}) ->
   lexer = new Lexer()
   lexer.tokenize code, options
@@ -306,6 +346,7 @@ SWITCHES = [
   [      '--cs3-tokens',        'print CS3 lexer tokens (via cs3 lexer)']
   [      '--cs3-ast',           'print CS3 AST data nodes (Solar directives)']
   [      '--cs3-trace',         'enable debug tracing for CS3 parser reductions']
+  [      '--format [FORMAT]',   'output format for --cs3-ast (json, yaml)']
   [      '--cs3',               'compile with CS3 pipeline']
   ['-v', '--version',           'display the version number']
   ['-w', '--watch',             'watch scripts for changes and rerun commands']
@@ -464,8 +505,14 @@ compileScript = (file, input, base = null) ->
       tokens = tokensCS3 task.input, task.options
       printTokens tokens
     else if opts['cs3-ast']
-      dir = directivesCS3 task.input, task.options
-      printLine JSON.stringify(dir, null, 2)
+      ast = directivesCS3 task.input, task.options
+      # Format output based on --format option
+      output = switch opts.format?.toLowerCase()
+        when 'yaml', 'yml'
+          toYAML ast
+        else  # default to json
+          JSON.stringify ast, null, 2
+      printLine output
     else if opts['cs3']
       js = compileCS3 task.input, task.options
       task.output = js
