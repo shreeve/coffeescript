@@ -246,7 +246,7 @@ class ES5Backend
             quote = @evaluateDirective directive.quote, frame, ruleName
             # Strip the surrounding quotes from the value if present
             if value and typeof value is 'string' and value.length >= 2
-              if (value[0] is '"' and value[value.length - 1] is '"') or 
+              if (value[0] is '"' and value[value.length - 1] is '"') or
                  (value[0] is "'" and value[value.length - 1] is "'")
                 value = value.slice(1, -1)
             new nodes.StringLiteral value, {quote}
@@ -487,7 +487,7 @@ class ES5Backend
         value = solarNode.value
         # Strip the surrounding quotes from the value if present
         if value and typeof value is 'string' and value.length >= 2
-          if (value[0] is '"' and value[value.length - 1] is '"') or 
+          if (value[0] is '"' and value[value.length - 1] is '"') or
              (value[0] is "'" and value[value.length - 1] is "'")
             value = value.slice(1, -1)
         new nodes.StringLiteral value, {quote: solarNode.quote}
@@ -612,7 +612,7 @@ class ES5Backend
           target = @evaluateDirective directive.append[0], frame, ruleName
           # Ensure target is an array
           target = if Array.isArray(target) then target else []
-          
+
           for item in directive.append[1..]
             value = @evaluateDirective item, frame, ruleName
             # If value is already an array (from $ary), unwrap it
