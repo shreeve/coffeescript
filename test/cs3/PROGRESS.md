@@ -32,10 +32,18 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 13. **Destructuring with defaults**: Fixed `{x = 10}` by handling expression-only Assign nodes
 14. **Finally blocks**: Fixed Try nodes to properly convert ensure blocks to Block nodes
 
-## Current Status (After Major Fixes)
+## Current Status (156 Tests Passing)
 ### Working ✅
-- All literal types (numbers, strings, booleans, null, undefined)
-- All regex tests (Unicode, dotall, named groups, etc.)
+- Basic literals (numbers, strings, booleans, null, undefined)
+- Arrays and array operations
+- Object creation and destructuring
+- Destructuring with defaults
+- Functions and arrow functions
+- Try/catch/finally blocks
+- Switch statements
+- Spread/splat operations
+- Compound assignments (+=, -=, etc.)
+- Basic regex support
 - Basic operators (arithmetic, comparison, logical)
 - String operations and interpolation
 - Classes (basic)
@@ -50,20 +58,19 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - Loops (basic for loops work)
 - Conditionals (simple if/else works)
 
-### Not Working ❌ (Parser Limitations)
-- Shorthand object syntax (`{x, y}` instead of `{x: x, y: y}`)
+### Known Issues ❌
+**Parser Limitations:**
+- For-from loops (`for x from array`)
+- String interpolation (produces empty template literals)
+- Exclusive ranges ([1...4] produces [1,2,3,4] instead of [1,2,3])
+- Computed property names in objects
 - Implicit objects in certain contexts
-- For-from loops with index
-- Complex destructuring patterns
-- Many files fail with parse errors before backend is even involved
 
-### Not Working ❌ (Backend Issues)
-- Switch statements (makeReturn issues)
-- Complex control flow
-- Try/catch/finally blocks
-- Some operator precedence
-- Assignment operations
-- Advanced class features
+**Remaining Backend Issues:**
+- Prototype operator (::) code generation
+- Some complex destructuring patterns
+- Some edge cases in super calls
+- Some advanced operator precedence
 
 ## Next Steps
 The CS3 parser IS parsing correctly, but the ES5 backend needs significant work to properly convert the AST nodes. Common issues:
