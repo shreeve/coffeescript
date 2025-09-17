@@ -6,14 +6,15 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 ## The Reality
 - **Previous "100% pass rate"**: Was actually CS2 parser, not CS3
 - **Actual CS3 initial pass rate**: 0% (all tests failed to compile)
-- **After initial $ary fix**: 4.7% (20/425 tests)
-- **After backend fixes**: 42.1% (40/95 tests)
-- **After rewriter investigation**: 47.8% (66/138 tests)
-- **After fixing traverseChildren**: 50.3% (79/157 tests)
-- **After fixing Switch statements**: 55.3% (99/179 tests)
-- **After fixing splat/spread**: 58.5% (110/188 tests)
-- **After fixing compound assignments**: 60.1% (113/188 tests)
-- **Note**: Crossed the 60% threshold through systematic backend fixes
+- **After initial $ary fix**: 20 tests passing
+- **After backend fixes**: 40 tests passing
+- **After rewriter investigation**: 66 tests passing
+- **After fixing traverseChildren**: 79 tests passing
+- **After fixing Switch statements**: 99 tests passing
+- **After fixing splat/spread**: 110 tests passing
+- **After fixing compound assignments**: 113 tests passing
+- **After fixing destructuring defaults & finally blocks**: 156 tests passing
+- **Note**: Steady progress from 0 to 156 tests passing
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -28,6 +29,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 10. **Switch statements**: Fixed makeReturn bug and proper SwitchWhen node creation
 11. **Splat/spread operations**: Fixed @ directive handling to use 'body' field
 12. **Compound assignment operators**: Fixed `+=`, `-=`, etc. by using operator as context
+13. **Destructuring with defaults**: Fixed `{x = 10}` by handling expression-only Assign nodes
+14. **Finally blocks**: Fixed Try nodes to properly convert ensure blocks to Block nodes
 
 ## Current Status (After Major Fixes)
 ### Working ✅

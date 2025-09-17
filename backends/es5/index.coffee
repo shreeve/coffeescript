@@ -328,6 +328,12 @@ class ES5Backend
               value = @evaluateDirective directive.expression, frame, ruleName
               context = directive.context
               new nodes.Assign variable, value, context
+            else if directive.expression? and not directive.variable?
+              # Default value assignment (e.g., in destructuring {x = 10})
+              # Here 'value' is the variable name and 'expression' is the default value
+              variable = @evaluateDirective directive.value, frame, ruleName
+              value = @evaluateDirective directive.expression, frame, ruleName
+              new nodes.Assign variable, value, '='
             else
               # Regular assignment
               variable = @evaluateDirective directive.variable, frame, ruleName
@@ -501,15 +507,30 @@ class ES5Backend
             attempt = @evaluateDirective directive.attempt, frame, ruleName
             recovery = @evaluateDirective directive.recovery, frame, ruleName
             ensure = @evaluateDirective directive.ensure, frame, ruleName
+            
             # Ensure attempt is a proper block
             attemptNode = if Array.isArray(attempt)
               new nodes.Block @filterNodes(attempt)
-            else if attempt
+            else if attempt instanceof nodes.Block
               attempt
+            else if attempt
+              new nodes.Block [@ensureNode(attempt)]
             else
               new nodes.Block []
+            
+            # Ensure ensure is a proper block if present
+            ensureNode = if ensure
+              if Array.isArray(ensure)
+                new nodes.Block @filterNodes(ensure)
+              else if ensure instanceof nodes.Block
+                ensure
+              else
+                new nodes.Block [@ensureNode(ensure)]
+            else
+              null
+            
             # Try expects (attempt, recovery, ensure) where recovery and ensure are optional
-            new nodes.Try attemptNode, recovery, ensure
+            new nodes.Try attemptNode, recovery, ensureNode
 
           when 'Code'
             params = @evaluateDirective directive.params, frame, ruleName
@@ -939,6 +960,11 @@ class ES5Backend
         # Handle object property assignments differently
         if solarNode.context is 'object' and solarNode.expression?
           # In object context, 'value' is the property name, 'expression' is the value
+          variable = @solarNodeToClass solarNode.value if solarNode.value
+          value = @solarNodeToClass solarNode.expression if solarNode.expression
+        else if solarNode.expression? and not solarNode.variable?
+          # Default value assignment (e.g., in destructuring {x = 10})
+          # Here 'value' is the variable name and 'expression' is the default value
           variable = @solarNodeToClass solarNode.value if solarNode.value
           value = @solarNodeToClass solarNode.expression if solarNode.expression
         else
