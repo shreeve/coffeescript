@@ -64,7 +64,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 32. **Numeric separator underscores**: Strip underscores from numeric literals for older JS runtimes
 33. **Dynamic import() calls**: Added support for DynamicImport and DynamicImportCall AST nodes
 
-## Current Status (259 Tests Passing - 90.0%)
+## Current Status (270 Tests Passing - 90.0%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
