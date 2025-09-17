@@ -333,7 +333,12 @@ class ES5Backend
               variable = @evaluateDirective directive.variable, frame, ruleName
               value = @evaluateDirective directive.value, frame, ruleName
               context = @evaluateDirective directive.context, frame, ruleName
-              new nodes.Assign variable, value, context
+              options = {}
+              if directive.operator?
+                operator = @evaluateDirective directive.operator, frame, ruleName
+                options.operatorToken = {value: operator} if operator
+              # Create the Assign node with optional operator for compound assignments
+              new nodes.Assign variable, value, context, options
 
           when 'StringLiteral'
             value = @evaluateDirective directive.value, frame, ruleName
@@ -936,7 +941,15 @@ class ES5Backend
           # Regular assignment
           variable = @solarNodeToClass solarNode.variable if solarNode.variable
           value = @solarNodeToClass solarNode.value if solarNode.value
-        new nodes.Assign variable, value, solarNode.context
+        options = {}
+        # Handle compound assignment operators if present
+        if solarNode.operator
+          operator = if typeof solarNode.operator is 'string' 
+            solarNode.operator 
+          else if solarNode.operator?.toString?()
+            solarNode.operator.toString()
+          options.operatorToken = {value: operator} if operator
+        new nodes.Assign variable, value, solarNode.context, options
 
       when 'Arr'
         objects = (if solarNode.objects then solarNode.objects.map((o) => @solarNodeToClass o) else [])
