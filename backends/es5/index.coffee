@@ -227,15 +227,28 @@ class ES5Backend
             new nodes.Call (if vNode instanceof nodes.Value then vNode else new nodes.Value vNode), [templateArg]
 
           when 'Assign'
-            variable = @evaluateDirective directive.variable, frame, ruleName
-            value = @evaluateDirective directive.value, frame, ruleName
-            context = @evaluateDirective directive.context, frame, ruleName
-            new nodes.Assign variable, value, context
+            # Handle object property assignments differently
+            if directive.context is 'object' and directive.expression?
+              # In object context, 'value' is the property name, 'expression' is the value
+              variable = @evaluateDirective directive.value, frame, ruleName
+              value = @evaluateDirective directive.expression, frame, ruleName
+              context = directive.context
+              new nodes.Assign variable, value, context
+            else
+              # Regular assignment
+              variable = @evaluateDirective directive.variable, frame, ruleName
+              value = @evaluateDirective directive.value, frame, ruleName
+              context = @evaluateDirective directive.context, frame, ruleName
+              new nodes.Assign variable, value, context
 
           when 'StringLiteral'
             value = @evaluateDirective directive.value, frame, ruleName
             quote = @evaluateDirective directive.quote, frame, ruleName
-            # Debug: console.error "[ES5] Creating StringLiteral:", value, quote
+            # Strip the surrounding quotes from the value if present
+            if value and typeof value is 'string' and value.length >= 2
+              if (value[0] is '"' and value[value.length - 1] is '"') or 
+                 (value[0] is "'" and value[value.length - 1] is "'")
+                value = value.slice(1, -1)
             new nodes.StringLiteral value, {quote}
 
           when 'BooleanLiteral'
@@ -362,6 +375,64 @@ class ES5Backend
             expressions = @evaluateDirective directive.expressions, frame, ruleName
             new nodes.Block @filterNodes (if Array.isArray(expressions) then expressions else [])
 
+          when 'RegexLiteral', 'Regex'
+            value = @evaluateDirective directive.value, frame, ruleName
+            delimiter = @evaluateDirective directive.delimiter, frame, ruleName
+            # RegexLiteral expects the full regex string including delimiters
+            # If we have a value like "/test/gi", pass it directly
+            if value and typeof value is 'string' and value[0] is '/'
+              new nodes.RegexLiteral value, {delimiter: delimiter or '/'}
+            else
+              # Otherwise try to construct from pattern and flags
+              pattern = @evaluateDirective directive.pattern, frame, ruleName
+              flags = @evaluateDirective directive.flags, frame, ruleName
+              fullRegex = "/#{pattern or ''}/#{flags or ''}"
+              new nodes.RegexLiteral fullRegex, {delimiter: delimiter or '/'}
+
+          when 'Parens'
+            body = @evaluateDirective directive.body, frame, ruleName
+            new nodes.Parens body
+
+          when 'PassthroughLiteral'
+            value = @evaluateDirective directive.value, frame, ruleName
+            new nodes.PassthroughLiteral value, {here: directive.here, generated: directive.generated}
+
+          when 'Throw'
+            expression = @evaluateDirective directive.expression, frame, ruleName
+            new nodes.Throw expression
+
+          when 'Splat'
+            name = @evaluateDirective directive.name, frame, ruleName
+            new nodes.Splat name
+
+          when 'Expansion'
+            expression = @evaluateDirective directive.expression, frame, ruleName
+            new nodes.Expansion expression
+
+          when 'In'
+            object = @evaluateDirective directive.object, frame, ruleName
+            array = @evaluateDirective directive.array, frame, ruleName
+            new nodes.In object, array
+
+          when 'ImportDeclaration'
+            clause = @evaluateDirective directive.clause, frame, ruleName
+            source = @evaluateDirective directive.source, frame, ruleName
+            new nodes.ImportDeclaration clause, source
+
+          when 'ExportNamedDeclaration', 'ExportDeclaration'
+            clause = @evaluateDirective directive.clause, frame, ruleName
+            source = @evaluateDirective directive.source, frame, ruleName
+            new nodes.ExportNamedDeclaration clause, source
+
+          when 'Existence'
+            expression = @evaluateDirective directive.expression, frame, ruleName
+            new nodes.Existence expression
+
+          when 'Loop'
+            body = @evaluateDirective directive.body, frame, ruleName
+            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            new nodes.Loop bodyNode
+
           else
             # For unimplemented types, create placeholder
             new nodes.Literal "/* TODO: Solar #{nodeType} */"
@@ -413,7 +484,13 @@ class ES5Backend
         new nodes.NumberLiteral solarNode.value, solarNode.parsedValue
 
       when 'StringLiteral'
-        new nodes.StringLiteral solarNode.value, {quote: solarNode.quote}
+        value = solarNode.value
+        # Strip the surrounding quotes from the value if present
+        if value and typeof value is 'string' and value.length >= 2
+          if (value[0] is '"' and value[value.length - 1] is '"') or 
+             (value[0] is "'" and value[value.length - 1] is "'")
+            value = value.slice(1, -1)
+        new nodes.StringLiteral value, {quote: solarNode.quote}
 
       when 'BooleanLiteral'
         new nodes.BooleanLiteral solarNode.value
@@ -430,8 +507,15 @@ class ES5Backend
         new nodes.Op solarNode.operator, first, second, solarNode.flip
 
       when 'Assign'
-        variable = @solarNodeToClass solarNode.variable if solarNode.variable
-        value = @solarNodeToClass solarNode.value if solarNode.value
+        # Handle object property assignments differently
+        if solarNode.context is 'object' and solarNode.expression?
+          # In object context, 'value' is the property name, 'expression' is the value
+          variable = @solarNodeToClass solarNode.value if solarNode.value
+          value = @solarNodeToClass solarNode.expression if solarNode.expression
+        else
+          # Regular assignment
+          variable = @solarNodeToClass solarNode.variable if solarNode.variable
+          value = @solarNodeToClass solarNode.value if solarNode.value
         new nodes.Assign variable, value, solarNode.context
 
       when 'Arr'
@@ -446,6 +530,54 @@ class ES5Backend
         from = @solarNodeToClass solarNode.from if solarNode.from
         to = @solarNodeToClass solarNode.to if solarNode.to
         new nodes.Range from, to, solarNode.exclusive
+
+      when 'RegexLiteral', 'Regex'
+        # RegexLiteral expects the full regex string including delimiters
+        if solarNode.value and typeof solarNode.value is 'string' and solarNode.value[0] is '/'
+          new nodes.RegexLiteral solarNode.value, {delimiter: solarNode.delimiter or '/'}
+        else
+          # Otherwise try to construct from pattern and flags
+          pattern = solarNode.pattern or ''
+          flags = solarNode.flags or ''
+          fullRegex = "/#{pattern}/#{flags}"
+          new nodes.RegexLiteral fullRegex, {delimiter: solarNode.delimiter or '/'}
+
+      when 'Parens'
+        new nodes.Parens @solarNodeToClass solarNode.body
+
+      when 'PassthroughLiteral'
+        new nodes.PassthroughLiteral solarNode.value, {here: solarNode.here, generated: solarNode.generated}
+
+      when 'Throw'
+        new nodes.Throw @solarNodeToClass solarNode.expression if solarNode.expression
+
+      when 'Splat'
+        new nodes.Splat @solarNodeToClass solarNode.name if solarNode.name
+
+      when 'Expansion'
+        new nodes.Expansion @solarNodeToClass solarNode.expression if solarNode.expression
+
+      when 'In'
+        object = @solarNodeToClass solarNode.object if solarNode.object
+        array = @solarNodeToClass solarNode.array if solarNode.array
+        new nodes.In object, array
+
+      when 'ImportDeclaration'
+        clause = @solarNodeToClass solarNode.clause if solarNode.clause
+        source = @solarNodeToClass solarNode.source if solarNode.source
+        new nodes.ImportDeclaration clause, source
+
+      when 'ExportNamedDeclaration', 'ExportDeclaration'
+        clause = @solarNodeToClass solarNode.clause if solarNode.clause
+        source = @solarNodeToClass solarNode.source if solarNode.source
+        new nodes.ExportNamedDeclaration clause, source
+
+      when 'Existence'
+        new nodes.Existence @solarNodeToClass solarNode.expression if solarNode.expression
+
+      when 'Loop'
+        body = @solarNodeToClass solarNode.body if solarNode.body
+        new nodes.Loop body
 
       else
         # Placeholder for unimplemented node types
@@ -476,10 +608,18 @@ class ES5Backend
     switch directive.$ops
       when 'array'
         if directive.append?
+          # First element is the target array, rest are items to append
           target = @evaluateDirective directive.append[0], frame, ruleName
+          # Ensure target is an array
+          target = if Array.isArray(target) then target else []
+          
           for item in directive.append[1..]
             value = @evaluateDirective item, frame, ruleName
-            target.push value if value?
+            # If value is already an array (from $ary), unwrap it
+            if Array.isArray(value) and value.length == 1
+              target.push value[0] if value[0]?
+            else
+              target.push value if value?
           target
         else if directive.gather?
           result = []
