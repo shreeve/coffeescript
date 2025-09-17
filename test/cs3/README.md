@@ -11,7 +11,7 @@ The CS3 (CoffeeScript 3) test suite provides **comprehensive testing** of the da
 ./test/cs3/test.sh
 
 # Or directly with coffee
-./bin/coffee test/cs3/test-cs3.coffee
+./bin/coffee test/cs3/cs3-runner.coffee
 ```
 
 ## 📊 Test Results
@@ -108,8 +108,8 @@ CS3's test suite is **intentionally focused** on language features rather than i
 test/cs3/
 │
 ├── README.md              # 📖 This comprehensive guide
-├── test-cs3.coffee        # ⚙️ CS3 test runner (executable)
-├── test-cs2.coffee        # 🔄 CS2 parser runner (executable)
+├── cs3-runner.coffee        # ⚙️ CS3 test runner (executable)
+├── cs2-runner.coffee        # 🔄 CS2 parser runner (executable)
 │
 └── *.test.coffee          # 🧪 Test files (32 total)
     ├── Core (01-07)       # Language fundamentals
@@ -123,7 +123,7 @@ test/cs3/
 
 ### All Tests with CS3 Parser
 ```bash
-./test/cs3/test-cs3.coffee
+./test/cs3/cs3-runner.coffee
 ```
 
 ### Specific Test File
@@ -133,12 +133,12 @@ test/cs3/
 
 ### With Filtering
 ```bash
-./test/cs3/test-cs3.coffee | grep "classes"
+./test/cs3/cs3-runner.coffee | grep "classes"
 ```
 
 ### Test with CS2 Parser
 ```bash
-./test/cs3/test-cs2.coffee
+./test/cs3/cs2-runner.coffee
 ```
 This runs the CS3 test suite using the CS2 parser (CoffeeScript 2.x: grammar.coffee → parser.js) instead of the CS3/ES5 pipeline. Shows 100% compatibility!
 

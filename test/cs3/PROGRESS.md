@@ -1,7 +1,7 @@
 # CS3 Parser Progress Report
 
 ## The Discovery
-After extensive testing, we discovered that the test-cs3.coffee runner was NOT actually using the CS3 parser. Setting `options.cs3 = true` in `CoffeeScript.compile()` does nothing - the function always uses the CS2 parser.
+After extensive testing, we discovered that the cs3-runner.coffee runner was NOT actually using the CS3 parser. Setting `options.cs3 = true` in `CoffeeScript.compile()` does nothing - the function always uses the CS2 parser.
 
 ## The Reality
 - **Previous "100% pass rate"**: Was actually CS2 parser, not CS3
@@ -46,6 +46,6 @@ The CS3 parser IS parsing correctly, but the ES5 backend needs significant work 
 3. Missing implementations for complex features
 
 ## Files
-- `test-cs3.coffee`: Now uses actual CS3 parser (parser-cs3.js + ES5 backend)
-- `test-cs2.coffee`: Uses CS2 parser (the original that was getting 100%)
+- `cs3-runner.coffee`: Now uses actual CS3 parser (parser-cs3.js + ES5 backend)
+- `cs2-runner.coffee`: Uses CS2 parser (the original that was getting 100%)
 - `backends/es5/index.coffee`: The ES5 backend that needs fixing
