@@ -155,7 +155,7 @@ grammar =
 
   ObjAssignable: [
     o 'SimpleObjAssignable'
-    o '[ Expression ]'  , $ast: 'Value', value: {$ast: 'ComputedPropertyName'}
+    o '[ Expression ]'  , $ast: 'Value', value: {$ast: 'ComputedPropertyName', expression: 2}
     o '@ [ Expression ]', $ast: 'Value', val: {$ast: 'ThisLiteral', value: 1, $pos: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3, $pos: 3}], context: 'this'
     o 'AlphaNumeric'
   ]

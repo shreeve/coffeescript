@@ -68,8 +68,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 36. **unless statements**: Added proper handling for unless nodes in solarNodeToClass
 37. **if statements**: Added proper handling for if nodes in solarNodeToClass (including postfix)
 38. **Prototype access (::)**: Fixed array property handling in value operation for multiple accessors
+39. **Computed property names**: Fixed by passing expression to ComputedPropertyName in syntax.coffee
 
-## Current Status (323 Tests Passing - 94.4%)
+## Current Status (341 Tests Passing - 94.7%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations

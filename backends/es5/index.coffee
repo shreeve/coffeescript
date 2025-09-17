@@ -1449,19 +1449,19 @@ class ES5Backend
         if directive.add?
           targetRaw = @evaluateDirective directive.add[0], frame, ruleName
           propRaw = @evaluateDirective directive.add[1], frame, ruleName
-          
+
           targetNode = if targetRaw?.compileToFragments or targetRaw instanceof nodes.Base then targetRaw else @ensureNode targetRaw
-          
+
           # Handle array of properties
           propNodes = if Array.isArray(propRaw)
             propRaw.map (p) => if p?.compileToFragments or p instanceof nodes.Base then p else @ensureNode p
           else
             propNode = if propRaw?.compileToFragments or propRaw instanceof nodes.Base then propRaw else @ensureNode propRaw
             [propNode] if propNode?
-          
+
           # Ensure we have valid nodes before proceeding
           return null unless targetNode? and propNodes?.length > 0
-          
+
           if targetNode instanceof nodes.Value
             # Clone the Value node to avoid mutation issues
             clonedValue = Object.assign Object.create(Object.getPrototypeOf(targetNode)), targetNode
