@@ -1036,6 +1036,11 @@ class ES5Backend
             thisNode.locationData ?= @defaultLocationData()
             thisNode
 
+          when 'Elision'
+            # Elisions in array destructuring are placeholders for skipped elements
+            # CS2 has a special Elision class for this
+            new nodes.Elision()
+
           else
             # For unimplemented types, create placeholder
             new nodes.Literal "/* TODO: Solar #{nodeType} */"
@@ -1279,6 +1284,11 @@ class ES5Backend
               converted = if expr?.type then @solarNodeToClass(expr) else expr
               flatExpressions.push converted if converted?
         new nodes.Block @filterNodes flatExpressions
+
+      when 'Elision'
+        # Elisions in array destructuring are placeholders for skipped elements
+        # CS2 has a special Elision class for this
+        new nodes.Elision()
 
       else
         # Placeholder for unimplemented node types

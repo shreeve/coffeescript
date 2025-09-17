@@ -19,9 +19,9 @@
   nodes = require('../../coffeescript/nodes');
 
   ES5Backend = class ES5Backend {
-    constructor(options = {}) {
+    constructor(options1 = {}) {
       var ref1, ref2, ref3, ref4;
-      this.options = options;
+      this.options = options1;
       this.compileOptions = {
         bare: (ref1 = this.options.bare) != null ? ref1 : true,
         header: (ref2 = this.options.header) != null ? ref2 : false,
@@ -100,6 +100,14 @@
         }
         return node;
       }
+      // Try to convert objects that might be PropertyName-like
+      if ((value != null ? value.value : void 0) != null) {
+        node = new nodes.PropertyName(value.value);
+        if (node.locationData == null) {
+          node.locationData = this.defaultLocationData();
+        }
+        return node;
+      }
       return null;
     }
 
@@ -121,13 +129,13 @@
 
     // Helper to filter and ensure all items are nodes
     filterNodes(array) {
-      var i, item, len, node, result;
+      var item, j, len, node, result;
       if (array == null) {
         return [];
       }
       result = [];
-      for (i = 0, len = array.length; i < len; i++) {
-        item = array[i];
+      for (j = 0, len = array.length; j < len; j++) {
+        item = array[j];
         if (item == null) {
           // Skip null/undefined
           continue;
@@ -179,7 +187,7 @@
 
     // Core directive evaluator - evaluates Solar directives against RHS frame
     evaluateDirective(directive, frame, ruleName = null) {
-      var args, argsNode, array, attempt, attemptNode, body, bodyItem, bodyNode, bodyNodes, bound, cases, casesNode, clause, condition, conditions, conditionsNode, context, converted, delimiter, elseBody, elseNode, ensure, error, evaluated, exclusive, expr, expression, expressions, filteredBody, finalBody, flags, flatExpressions, flip, forNode, from, fullRegex, generated, guard, i, idx, index, inner, invertOperator, isLoop, item, itemCopy, j, k, key, l, left, len, len1, len2, len3, len4, len5, loopNode, m, n, name, nameNode, node, nodeType, object, objects, op, opts, originalOperator, otherwise, own, params, paramsNode, parent, parsedValue, pattern, prop, properties, quote, recovery, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, source, sourceObj, splat, step, subProp, subject, tail, templateArg, test, to, vNode, value, valueNode, variable, variableNode, whileNode;
+      var actualExpression, args, argsNode, arr, array, attempt, attemptNode, blockNode, body, bodyItem, bodyNode, bodyNodes, bound, cases, casesNode, catchDirective, clause, cond, condition, conditions, conditionsNode, context, converted, delimiter, elseBody, elseNode, ensure, ensureNode, ensured, error, errorNode, evaluated, exclusive, exclusiveVal, expr, exprDirective, expression, expressionNode, expressions, filteredBody, finalBody, fixedProps, flags, flatExpressions, flip, forNode, from, fromNode, fullRegex, funcGlyph, generated, guard, i, idx, index, inner, invert, invertOperator, isAwait, isLoop, item, itemCopy, j, k, key, l, leadingSpaces, left, len, len1, len2, len3, len4, len5, len6, len7, line, lines, loopNode, m, minIndent, n, name, nameDirective, nameNode, node, nodeType, obj, object, objects, op, operator, options, opts, originalOperator, otherwise, own, params, paramsNode, parent, parsedValue, pattern, postfix, processedConditions, prop, properties, q, quote, r, range, recovery, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, s, source, sourceObj, splat, step, subProp, subject, t, tag, tail, templateArg, test, thisNode, to, toNode, type, vNode, validProps, value, valueNode, variable, variableNode, whileNode;
       // Handle position references (1, 2, 3, ...) FIRST
       if (typeof directive === 'number') {
         return (ref1 = frame.rhs[directive - 1]) != null ? ref1.value : void 0; // 1-based → 0-based
@@ -197,7 +205,7 @@
       }
       // Handle Solar directives
       if ((directive != null) && typeof directive === 'object') {
-        // $use directive (with optional method/prop)
+        // $use directive (with optional method/prop/index)
         if (directive.$use != null) {
           ref = directive.$use;
           value = typeof ref === 'number' ? (ref3 = frame.rhs[ref - 1]) != null ? ref3.value : void 0 : ref; // Position reference // Direct value or temp variable
@@ -210,7 +218,20 @@
             return (value != null ? (ref5 = value[directive.method]) != null ? ref5.apply(value, args) : void 0 : void 0) || String(value);
           // Apply property access
           } else if (directive.prop != null) {
-            return (value != null ? value[directive.prop] : void 0) || String(value);
+            // Special handling for boolean properties to avoid the falsy trap
+            result = value != null ? value[directive.prop] : void 0;
+            if ((result != null) || ((value != null) && typeof value === 'object' && directive.prop in value)) {
+              return result;
+            } else {
+              return String(value);
+            }
+          // Apply array index access
+          } else if (directive.index != null) {
+            if (Array.isArray(value) || ((value != null ? value.length : void 0) != null)) {
+              return (value != null ? value[directive.index] : void 0) || void 0;
+            } else {
+              return void 0;
+            }
           } else {
             return value;
           }
@@ -237,7 +258,11 @@
             case 'NumberLiteral':
               value = this.evaluateDirective(directive.value, frame, ruleName);
               parsedValue = this.evaluateDirective(directive.parsedValue, frame, ruleName);
-              return new nodes.NumberLiteral(value, parsedValue);
+              node = new nodes.NumberLiteral(value, parsedValue);
+              if (node.locationData == null) {
+                node.locationData = this.defaultLocationData();
+              }
+              return node;
             case 'Value':
               inner = this.evaluateDirective((directive.val != null ? directive.val : directive.value), frame, ruleName);
               // Handle properties (accessors)
@@ -245,34 +270,45 @@
               if ((inner != null ? inner.compileToFragments : void 0) || inner instanceof nodes.Base) {
                 valueNode = inner instanceof nodes.Value ? inner : new nodes.Value(inner);
                 if (properties && Array.isArray(properties) && properties.length > 0) {
-                  for (i = 0, len = properties.length; i < len; i++) {
-                    prop = properties[i];
+                  validProps = [];
+                  for (j = 0, len = properties.length; j < len; j++) {
+                    prop = properties[j];
                     // Handle nested arrays of properties (e.g., from :: operator)
                     if (Array.isArray(prop)) {
-                      for (j = 0, len1 = prop.length; j < len1; j++) {
-                        subProp = prop[j];
+                      for (k = 0, len1 = prop.length; k < len1; k++) {
+                        subProp = prop[k];
                         if (subProp == null) {
                           continue; // Skip null/undefined
                         }
                         if (subProp instanceof nodes.Base) {
-                          valueNode.add(subProp);
+                          validProps.push(subProp);
                         } else if (subProp != null ? subProp.type : void 0) {
                           converted = this.solarNodeToClass(subProp);
                           if (converted instanceof nodes.Base) {
-                            valueNode.add(converted);
+                            validProps.push(converted);
                           }
                         }
                       }
                     } else if (prop != null) {
                       if (prop instanceof nodes.Base) {
-                        valueNode.add(prop);
+                        validProps.push(prop);
                       } else if (prop != null ? prop.type : void 0) {
                         converted = this.solarNodeToClass(prop);
                         if (converted instanceof nodes.Base) {
-                          valueNode.add(converted);
+                          validProps.push(converted);
+                        } else {
+                          // Try to convert plain objects
+                          ensured = this.ensureNode(prop);
+                          if (ensured instanceof nodes.Base) {
+                            validProps.push(ensured);
+                          }
                         }
                       } // Skip null/undefined
                     }
+                  }
+                  // Only add non-null properties
+                  if (validProps.length > 0) {
+                    valueNode.add(validProps);
                   }
                 }
                 return valueNode;
@@ -280,7 +316,7 @@
               return this.ensureNode(inner) || new nodes.Literal("/* TODO: Solar Value */");
             case 'Access':
               nameNode = this.evaluateDirective(directive.name, frame, ruleName);
-              // Ensure nameNode is not null
+              // Handle various forms of nameNode
               if (nameNode == null) {
                 // For shorthand (::), use "prototype" as the name
                 if (directive.shorthand) {
@@ -288,10 +324,25 @@
                 } else {
                   nameNode = new nodes.PropertyName('');
                 }
+              } else if (nameNode instanceof nodes.Base) {
+                // Already a proper node, use as-is
+                nameNode = nameNode;
               } else if (nameNode != null ? nameNode.type : void 0) {
+                // Has a type property, convert from solar node
                 nameNode = this.solarNodeToClass(nameNode);
-              } else if (!(nameNode instanceof nodes.Base)) {
-                nameNode = this.ensureNode(nameNode);
+              } else if (typeof nameNode === 'string') {
+                // Plain string, convert to PropertyName
+                nameNode = new nodes.PropertyName(nameNode);
+              } else if ((nameNode != null ? nameNode.value : void 0) != null) {
+                // Has a value property, convert to PropertyName
+                nameNode = new nodes.PropertyName(String(nameNode.value));
+              } else {
+                // Last resort, convert to empty PropertyName
+                nameNode = new nodes.PropertyName('');
+              }
+              // Final safety check - ensure nameNode is never null
+              if (nameNode == null) {
+                nameNode = new nodes.PropertyName('');
               }
               return new nodes.Access(nameNode, {
                 soak: directive.soak,
@@ -314,7 +365,30 @@
               flip = this.evaluateDirective((directive.flip != null ? directive.flip : (ref9 = directive.args) != null ? ref9[3] : void 0), frame, ruleName);
               originalOperator = this.evaluateDirective(directive.originalOperator, frame, ruleName);
               invertOperator = this.evaluateDirective(directive.invertOperator, frame, ruleName);
-              return new nodes.Op(op, left, right, flip, {originalOperator, invertOperator});
+              // Handle CoffeeScript's in/of/instanceof operators
+              // IMPORTANT: These work opposite to JavaScript!
+              // CoffeeScript 'of' checks properties/keys (like JS 'in')
+              // CoffeeScript 'in' checks values/elements (uses indexOf)
+              if (op === 'of') {
+                // 'x of obj' checks if x is a property/key/index
+                // Compiles to JavaScript's native 'in' operator
+                // MUST set originalOperator to null to prevent it defaulting to 'in'
+                // which would trigger the isInOperator() check and create an In node
+                return new nodes.Op('in', left, right, false, {
+                  originalOperator: null
+                });
+              } else if (op === 'in') {
+                // 'x in array' checks if x is in the values
+                // Compiles to indexOf check
+                return new nodes.In(left, right);
+              } else if (op === 'instanceof') {
+                // instanceof checks type
+                return new nodes.Op('instanceof', left, right);
+              } else {
+                // All other operators
+                return new nodes.Op(op, left, right, flip, {originalOperator, invertOperator});
+              }
+              break;
             case 'Arguments':
               args = this.evaluateDirective((directive.args != null ? directive.args : directive.$ary != null ? directive.$ary : directive), frame, ruleName);
               args = this.filterNodes((Array.isArray(args) ? args : []));
@@ -344,7 +418,12 @@
             case 'TaggedTemplateCall':
               vNode = this.evaluateDirective(directive.variable, frame, ruleName);
               templateArg = this.ensureNode(this.evaluateDirective(directive.template, frame, ruleName));
-              return new nodes.Call((vNode instanceof nodes.Value ? vNode : new nodes.Value(vNode)), [templateArg]);
+              // Convert StringLiteral to StringWithInterpolations for tagged templates
+              if (templateArg instanceof nodes.StringLiteral) {
+                templateArg = nodes.StringWithInterpolations.fromStringLiteral(templateArg);
+              }
+              // Tagged templates should never have soak (no typeof check)
+              return new nodes.TaggedTemplateCall((vNode instanceof nodes.Value ? vNode : new nodes.Value(vNode)), templateArg, false);
             case 'Assign':
               // Handle object property assignments differently
               if (directive.context === 'object' && (directive.expression != null)) {
@@ -353,12 +432,24 @@
                 value = this.evaluateDirective(directive.expression, frame, ruleName);
                 context = directive.context;
                 return new nodes.Assign(variable, value, context);
+              } else if ((directive.expression != null) && (directive.variable == null)) {
+                // Default value assignment (e.g., in destructuring {x = 10})
+                // Here 'value' is the variable name and 'expression' is the default value
+                variable = this.evaluateDirective(directive.value, frame, ruleName);
+                value = this.evaluateDirective(directive.expression, frame, ruleName);
+                return new nodes.Assign(variable, value, '=');
               } else {
                 // Regular assignment
                 variable = this.evaluateDirective(directive.variable, frame, ruleName);
                 value = this.evaluateDirective(directive.value, frame, ruleName);
-                context = this.evaluateDirective(directive.context, frame, ruleName);
-                return new nodes.Assign(variable, value, context);
+                // For compound assignments, use the operator as the context
+                context = directive.operator != null ? (operator = this.evaluateDirective(directive.operator, frame, ruleName), operator) : this.evaluateDirective(directive.context, frame, ruleName);
+                options = {};
+                if (directive.originalContext != null) {
+                  options.originalContext = this.evaluateDirective(directive.originalContext, frame, ruleName);
+                }
+                // Create the Assign node with the correct context for compound assignments
+                return new nodes.Assign(variable, value, context, options);
               }
               break;
             case 'StringLiteral':
@@ -370,10 +461,52 @@
                   value = value.slice(1, -1);
                 }
               }
-              return new nodes.StringLiteral(value, {quote});
+              // Handle triple-quoted strings (heredocs) - strip common leading whitespace
+              if (quote === '"""' || quote === "'''") {
+                lines = value.split('\n');
+                if (lines.length > 1) {
+                  // Find minimum indentation (excluding empty lines)
+                  minIndent = 2e308;
+                  ref10 = lines.slice(1);
+                  for (l = 0, len2 = ref10.length; l < len2; l++) {
+                    line = ref10[l];
+                    if (line.trim().length > 0) {
+                      leadingSpaces = line.match(/^[ \t]*/)[0].length;
+                      minIndent = Math.min(minIndent, leadingSpaces);
+                    }
+                  }
+                  // Strip common indentation from all lines except the first
+                  if (minIndent > 0 && minIndent < 2e308) {
+                    for (i = m = 1, ref11 = lines.length; (1 <= ref11 ? m < ref11 : m > ref11); i = 1 <= ref11 ? ++m : --m) {
+                      lines[i] = lines[i].slice(minIndent);
+                    }
+                    value = lines.join('\n');
+                  }
+                }
+              }
+              node = new nodes.StringLiteral(value, {quote});
+              if (node.locationData == null) {
+                node.locationData = this.defaultLocationData();
+              }
+              return node;
             case 'BooleanLiteral':
               value = this.evaluateDirective(directive.value, frame, ruleName);
               return new nodes.BooleanLiteral(value);
+            case 'StatementLiteral':
+              // Handle break, continue, debugger statements
+              value = this.evaluateDirective(directive.value, frame, ruleName);
+              switch (value) {
+                case 'break':
+                  return new nodes.StatementLiteral(value);
+                case 'continue':
+                  return new nodes.StatementLiteral(value);
+                case 'debugger':
+                  return new nodes.StatementLiteral(value);
+                default:
+                  // For other statements, create a basic literal
+                  return new nodes.Literal(value);
+              }
+              break;
             case 'NullLiteral':
               return new nodes.NullLiteral();
             case 'UndefinedLiteral':
@@ -381,32 +514,78 @@
             case 'Arr':
               objects = this.evaluateDirective(directive.objects, frame, ruleName);
               objects = this.filterNodes((Array.isArray(objects) ? objects : []));
-              return new nodes.Arr(objects);
+              arr = new nodes.Arr(objects);
+              if (arr.locationData == null) {
+                arr.locationData = this.defaultLocationData();
+              }
+              return arr;
             case 'Obj':
               properties = this.evaluateDirective(directive.properties, frame, ruleName);
               properties = this.filterNodes((Array.isArray(properties) ? properties : []));
               generated = this.evaluateDirective(directive.generated, frame, ruleName);
-              return new nodes.Obj(properties, generated);
+              // If object is generated (from braces) and has shorthand properties,
+              // convert them to proper key-value pairs
+              if (generated) {
+                fixedProps = [];
+                for (n = 0, len3 = properties.length; n < len3; n++) {
+                  prop = properties[n];
+                  if (prop instanceof nodes.Value && prop.base instanceof nodes.IdentifierLiteral && !((ref12 = prop.properties) != null ? ref12.length : void 0)) {
+                    // This is a shorthand property like 'x' in {x}
+                    // Convert to x: x
+                    key = new nodes.Value(prop.base);
+                    value = new nodes.Value(prop.base);
+                    fixedProps.push(new nodes.Assign(key, value, 'object'));
+                  } else {
+                    fixedProps.push(prop);
+                  }
+                }
+                properties = fixedProps;
+              }
+              obj = new nodes.Obj(properties, generated);
+              if (obj.locationData == null) {
+                obj.locationData = this.defaultLocationData();
+              }
+              return obj;
             case 'Range':
               from = this.evaluateDirective(directive.from, frame, ruleName);
               to = this.evaluateDirective(directive.to, frame, ruleName);
-              exclusive = directive.exclusive != null ? directive.exclusive : directive.equals === 'exclusive';
-              return new nodes.Range(from, to, exclusive);
+              // Evaluate the exclusive flag - it can be a directive or a boolean
+              exclusiveVal = this.evaluateDirective(directive.exclusive, frame, ruleName);
+              // The evaluateDirective should return the boolean value from {$use: 3, prop: 'exclusive'}
+              exclusive = typeof exclusiveVal === 'boolean' ? exclusiveVal : directive.equals != null ? this.evaluateDirective(directive.equals, frame, ruleName) === 'exclusive' : false;
+              // Ensure from and to are proper nodes
+              fromNode = from instanceof nodes.Base ? from : this.ensureNode(from);
+              toNode = to instanceof nodes.Base ? to : this.ensureNode(to);
+              // Pass 'exclusive' as the tag for exclusive ranges
+              tag = exclusive ? 'exclusive' : null;
+              return new nodes.Range(fromNode, toNode, tag);
             case 'If':
             case 'if':
               condition = this.evaluateDirective(directive.condition, frame, ruleName);
               body = this.evaluateDirective(directive.body, frame, ruleName);
               elseBody = this.evaluateDirective(directive.elseBody, frame, ruleName);
+              type = this.evaluateDirective(directive.type, frame, ruleName);
+              postfix = this.evaluateDirective(directive.postfix, frame, ruleName);
+              // The type will be the string 'unless' from the IF/POST_IF token for unless statements
               bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body;
               elseNode = elseBody ? Array.isArray(elseBody) ? new nodes.Block(this.filterNodes(elseBody)) : elseBody : null;
-              return new nodes.If(condition, bodyNode, {
+              // Pass the type to the If constructor - it handles 'unless' internally
+              opts = {
                 elseBody: elseNode
-              });
+              };
+              if (type) { // Will be 'unless' for unless statements
+                opts.type = type;
+              }
+              if (postfix) {
+                opts.postfix = postfix;
+              }
+              return new nodes.If(condition, bodyNode, opts);
             case 'While':
               condition = this.evaluateDirective(directive.condition, frame, ruleName);
               body = this.evaluateDirective(directive.body, frame, ruleName);
               guard = this.evaluateDirective(directive.guard, frame, ruleName);
               isLoop = this.evaluateDirective(directive.isLoop, frame, ruleName);
+              invert = this.evaluateDirective(directive.invert, frame, ruleName);
               // Handle body - convert from Solar node if needed
               if ((body != null ? body.type : void 0) === 'Body' || (body != null ? body.type : void 0) === 'Block') {
                 // Convert the Solar Body/Block node to CoffeeScript Block
@@ -428,6 +607,9 @@
               if (isLoop) {
                 opts.isLoop = isLoop;
               }
+              if (invert) { // Handle 'until' loops
+                opts.invert = invert;
+              }
               whileNode = new nodes.While(condition, opts);
               // Set the body - ensure it's never null
               finalBody = bodyNode || new nodes.Block([]);
@@ -445,6 +627,7 @@
               own = this.evaluateDirective(directive.own, frame, ruleName);
               object = this.evaluateDirective(directive.object, frame, ruleName);
               from = this.evaluateDirective(directive.from, frame, ruleName);
+              isAwait = this.evaluateDirective(directive.await, frame, ruleName);
               // Handle body
               if (body != null ? body.expressions : void 0) {
                 // Body node with expressions
@@ -476,14 +659,19 @@
               }
               // Build source object for For constructor
               sourceObj = {};
+              // Ensure source is a proper node
               if (source) {
-                sourceObj.source = source;
+                sourceObj.source = source instanceof nodes.Base ? source : this.ensureNode(source);
               }
               if (name) {
-                sourceObj.name = name;
+                sourceObj.name = name instanceof nodes.Base ? name : this.ensureNode(name);
               }
-              if (index) {
-                sourceObj.index = index;
+              // Only add index if it's actually defined (not undefined/null)
+              // This is important for for-await loops which may not have an index
+              // Also check if index is the string "index" which means the variable wasn't found
+              // console.error "[For] index value:", index, "typeof:", typeof index, "is null?:", index is null
+              if ((index != null) && index !== void 0 && index !== 'index') {
+                sourceObj.index = index instanceof nodes.Base ? index : this.ensureNode(index);
               }
               if (guard) {
                 sourceObj.guard = guard;
@@ -500,19 +688,36 @@
               if (from) {
                 sourceObj.from = from;
               }
+              if (isAwait) {
+                sourceObj.await = isAwait;
+              }
               // Create For node - constructor expects (body, source)
               forNode = new nodes.For(bodyNode, sourceObj);
+              if (forNode.locationData == null) {
+                forNode.locationData = this.defaultLocationData();
+              }
               return forNode;
             case 'Try':
               attempt = this.evaluateDirective(directive.attempt, frame, ruleName);
-              recovery = this.evaluateDirective(directive.recovery, frame, ruleName);
+              // CS3 uses 'catch' not 'recovery' for the catch clause
+              catchDirective = this.evaluateDirective(directive.catch, frame, ruleName);
               ensure = this.evaluateDirective(directive.ensure, frame, ruleName);
-              attemptNode = Array.isArray(attempt) ? new nodes.Block(this.filterNodes(attempt)) : attempt;
-              return new nodes.Try(attemptNode, recovery, ensure);
+              // Ensure attempt is a proper block
+              attemptNode = Array.isArray(attempt) ? new nodes.Block(this.filterNodes(attempt)) : attempt instanceof nodes.Block ? attempt : attempt ? new nodes.Block([this.ensureNode(attempt)]) : new nodes.Block([]);
+              // Process the catch clause - it should be a Catch node
+              // If catchDirective is not a Catch node, we may need to evaluate it
+              // It might be a directive that needs to be evaluated into a Catch node
+              recovery = catchDirective instanceof nodes.Catch ? catchDirective : catchDirective ? catchDirective : null;
+              // Ensure ensure is a proper block if present
+              ensureNode = ensure ? Array.isArray(ensure) ? new nodes.Block(this.filterNodes(ensure)) : ensure instanceof nodes.Block ? ensure : new nodes.Block([this.ensureNode(ensure)]) : null;
+              // Try expects (attempt, recovery, ensure) where recovery and ensure are optional
+              return new nodes.Try(attemptNode, recovery, ensureNode);
             case 'Code':
               params = this.evaluateDirective(directive.params, frame, ruleName);
               body = this.evaluateDirective(directive.body, frame, ruleName);
-              bound = this.evaluateDirective(directive.bound, frame, ruleName);
+              // Check if this is a bound function (fat arrow =>)
+              funcGlyph = this.evaluateDirective(directive.funcGlyph, frame, ruleName);
+              bound = (funcGlyph != null ? funcGlyph.glyph : void 0) === '=>' || this.evaluateDirective(directive.bound, frame, ruleName);
               // Ensure params are proper nodes
               if (Array.isArray(params)) {
                 paramsNode = params.map((p) => {
@@ -554,6 +759,27 @@
               name = this.evaluateDirective(directive.name, frame, ruleName);
               value = this.evaluateDirective(directive.value, frame, ruleName);
               splat = this.evaluateDirective(directive.splat, frame, ruleName);
+              // Param requires at least a name
+              if (!name) {
+                name = new nodes.IdentifierLiteral('param');
+              }
+              // Check if this is an @ parameter (like @x)
+              // Name will be a Value with base=ThisLiteral and properties containing the actual name
+              if (name instanceof nodes.Value && name.base instanceof nodes.ThisLiteral) {
+                // This is an @param - mark it with this=true so Param recognizes it
+                name.this = true;
+                if (name.locationData == null) {
+                  name.locationData = this.defaultLocationData();
+                }
+              } else if (name && !name.locationData) {
+                // Ensure name has locationData (needed for destructuring)
+                name.locationData = this.defaultLocationData();
+              }
+              // For destructured params with Obj, ensure it's not marked as generated
+              // to avoid operatorToken error check in Param constructor
+              if (name instanceof nodes.Obj) {
+                name.generated = false;
+              }
               return new nodes.Param(name, value, splat);
             case 'Return':
               expression = this.evaluateDirective(directive.expression, frame, ruleName);
@@ -568,10 +794,22 @@
               body = this.evaluateDirective(directive.body, frame, ruleName);
               bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body;
               return new nodes.Class(variable, parent, bodyNode);
+            case 'Slice':
+              // Handle array/string slicing operations
+              range = this.evaluateDirective(directive.range, frame, ruleName);
+              return new nodes.Slice(range);
             case 'Super':
+              // Create a Super node (this keyword for accessing parent methods)
+              return new nodes.Super();
+            case 'SuperCall':
+              // Handle super() calls in constructors and methods
               args = this.evaluateDirective(directive.args, frame, ruleName);
-              argsNode = this.filterNodes((Array.isArray(args) ? args : []));
-              return new nodes.SuperCall(argsNode);
+              argsNode = Array.isArray(args) ? args.map((arg) => {
+                return this.ensureNode(arg);
+              }) : args ? [this.ensureNode(args)] : [];
+              // Create a SuperCall node with the Super variable and arguments
+              variableNode = new nodes.Super();
+              return new nodes.Call(variableNode, argsNode, false);
             case 'StringWithInterpolations':
               body = this.evaluateDirective(directive.body, frame, ruleName);
               quote = this.evaluateDirective(directive.quote, frame, ruleName);
@@ -595,6 +833,13 @@
                 bodyNode = new nodes.Block([]);
               }
               return new nodes.StringWithInterpolations(bodyNode, {quote});
+            case 'Interpolation':
+              expression = this.evaluateDirective(directive.expression, frame, ruleName);
+              // Create Interpolation node with the evaluated expression
+              // Expression might be an array, so extract the first element
+              actualExpression = Array.isArray(expression) && expression.length > 0 ? expression[0] : expression;
+              expressionNode = actualExpression instanceof nodes.Base ? actualExpression : actualExpression ? this.ensureNode(actualExpression) : new nodes.Literal('undefined');
+              return new nodes.Interpolation(expressionNode);
             case 'TemplateElement':
               value = this.evaluateDirective(directive.value, frame, ruleName);
               tail = this.evaluateDirective(directive.tail, frame, ruleName);
@@ -607,11 +852,11 @@
               // Flatten nested arrays - expressions often come as [[expr1], [expr2]]
               flatExpressions = [];
               if (Array.isArray(expressions)) {
-                for (k = 0, len2 = expressions.length; k < len2; k++) {
-                  expr = expressions[k];
+                for (q = 0, len4 = expressions.length; q < len4; q++) {
+                  expr = expressions[q];
                   if (Array.isArray(expr)) {
-                    for (l = 0, len3 = expr.length; l < len3; l++) {
-                      item = expr[l];
+                    for (r = 0, len5 = expr.length; r < len5; r++) {
+                      item = expr[r];
                       flatExpressions.push(item);
                     }
                   } else {
@@ -675,13 +920,31 @@
               });
             case 'Throw':
               expression = this.evaluateDirective(directive.expression, frame, ruleName);
-              return new nodes.Throw(expression);
+              // Throw needs a valid expression
+              return new nodes.Throw(expression || new nodes.Literal('undefined'));
             case 'Splat':
-              name = this.evaluateDirective(directive.name, frame, ruleName);
-              return new nodes.Splat(name);
+              // Check for 'name' or 'body' field (@ directive uses 'body')
+              nameDirective = (ref13 = directive.name) != null ? ref13 : directive.body;
+              name = this.evaluateDirective(nameDirective, frame, ruleName);
+              // Splat requires a valid expression, not undefined
+              if (name) {
+                return new nodes.Splat(name);
+              } else {
+                // Create a placeholder if name is missing
+                return new nodes.Splat(new nodes.Literal('undefined'));
+              }
+              break;
             case 'Expansion':
-              expression = this.evaluateDirective(directive.expression, frame, ruleName);
-              return new nodes.Expansion(expression);
+              // Check for 'expression' or 'body' field (@ directive uses 'body')
+              exprDirective = (ref14 = directive.expression) != null ? ref14 : directive.body;
+              expression = this.evaluateDirective(exprDirective, frame, ruleName);
+              // Expansion needs a valid expression
+              if (expression) {
+                return new nodes.Expansion(expression);
+              } else {
+                return new nodes.Expansion(new nodes.Literal('undefined'));
+              }
+              break;
             case 'In':
               object = this.evaluateDirective(directive.object, frame, ruleName);
               array = this.evaluateDirective(directive.array, frame, ruleName);
@@ -721,24 +984,101 @@
               cases = this.evaluateDirective(directive.cases, frame, ruleName);
               otherwise = this.evaluateDirective(directive.otherwise, frame, ruleName);
               casesNode = this.filterNodes((Array.isArray(cases) ? cases : []));
+              // Ensure otherwise is a proper block or null
+              if (otherwise) {
+                if (Array.isArray(otherwise)) {
+                  otherwise = new nodes.Block(this.filterNodes(otherwise));
+                } else if (!(otherwise instanceof nodes.Base)) {
+                  otherwise = new nodes.Block([this.ensureNode(otherwise)]);
+                }
+              }
               return new nodes.Switch(subject, casesNode, otherwise);
             case 'When':
+            case 'SwitchWhen':
               conditions = this.evaluateDirective(directive.conditions, frame, ruleName);
               body = this.evaluateDirective(directive.body, frame, ruleName);
-              conditionsNode = this.filterNodes((Array.isArray(conditions) ? conditions : []));
-              bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body;
-              return new nodes.When(conditionsNode, bodyNode);
+              // Process conditions - make sure they are proper nodes
+              conditionsNode = (function() {
+                var len6, s;
+                if (Array.isArray(conditions)) {
+                  processedConditions = [];
+                  for (s = 0, len6 = conditions.length; s < len6; s++) {
+                    cond = conditions[s];
+                    if (cond instanceof nodes.Base) {
+                      processedConditions.push(cond);
+                    } else if (cond != null) {
+                      converted = this.ensureNode(cond);
+                      if (converted instanceof nodes.Base) {
+                        processedConditions.push(converted);
+                      }
+                    }
+                  }
+                  return processedConditions;
+                } else if (conditions instanceof nodes.Base) {
+                  return [conditions];
+                } else if (conditions != null) {
+                  converted = this.ensureNode(conditions);
+                  if (converted instanceof nodes.Base) {
+                    return [converted];
+                  } else {
+                    return [];
+                  }
+                } else {
+                  return [];
+                }
+              }).call(this);
+              // SwitchWhen expects 'block' not 'body'
+              blockNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body ? body instanceof nodes.Block ? body : new nodes.Block([body]) : new nodes.Block([]);
+              return new nodes.SwitchWhen(conditionsNode, blockNode);
             case 'Case':
+            case 'SwitchCase':
               conditions = this.evaluateDirective(directive.conditions, frame, ruleName);
               body = this.evaluateDirective(directive.body, frame, ruleName);
-              conditionsNode = this.filterNodes((Array.isArray(conditions) ? conditions : []));
-              bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body;
-              return new nodes.Case(conditionsNode, bodyNode);
+              // Process conditions - make sure they are proper nodes
+              conditionsNode = (function() {
+                var len6, s;
+                if (Array.isArray(conditions)) {
+                  processedConditions = [];
+                  for (s = 0, len6 = conditions.length; s < len6; s++) {
+                    cond = conditions[s];
+                    if (cond instanceof nodes.Base) {
+                      processedConditions.push(cond);
+                    } else if (cond != null) {
+                      converted = this.ensureNode(cond);
+                      if (converted instanceof nodes.Base) {
+                        processedConditions.push(converted);
+                      }
+                    }
+                  }
+                  return processedConditions;
+                } else if (conditions instanceof nodes.Base) {
+                  return [conditions];
+                } else if (conditions != null) {
+                  converted = this.ensureNode(conditions);
+                  if (converted instanceof nodes.Base) {
+                    return [converted];
+                  } else {
+                    return [];
+                  }
+                } else {
+                  return [];
+                }
+              }).call(this);
+              // SwitchCase expects 'block' not 'body'
+              blockNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body ? body instanceof nodes.Block ? body : new nodes.Block([body]) : new nodes.Block([]);
+              // Use SwitchWhen for both - SwitchCase has a different signature
+              return new nodes.SwitchWhen(conditionsNode, blockNode);
             case 'Catch':
-              body = this.evaluateDirective(directive.body, frame, ruleName);
-              error = this.evaluateDirective(directive.error, frame, ruleName);
-              bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body;
-              return new nodes.Catch(error, bodyNode);
+              // CS3 uses either 'recovery' or 'body' for the catch block
+              body = this.evaluateDirective(directive.recovery, frame, ruleName) || this.evaluateDirective(directive.body, frame, ruleName);
+              // CS3 uses 'variable' or 'errorVariable' for the error parameter
+              error = this.evaluateDirective(directive.variable, frame, ruleName) || this.evaluateDirective(directive.errorVariable, frame, ruleName);
+              // Ensure body is a proper Block
+              bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body instanceof nodes.Block ? body : body ? new nodes.Block([this.ensureNode(body)]) : new nodes.Block([]);
+              // Ensure error parameter is properly converted if present
+              errorNode = error ? this.ensureNode(error) : null;
+              // Catch constructor expects (recovery, errorVariable) not (errorVariable, recovery)!
+              return new nodes.Catch(bodyNode, errorNode);
             case 'Finally':
               body = this.evaluateDirective(directive.body, frame, ruleName);
               bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body;
@@ -749,6 +1089,18 @@
             case 'YieldFrom':
               expression = this.evaluateDirective(directive.expression, frame, ruleName);
               return new nodes.YieldFrom(expression);
+            case 'ThisLiteral':
+            case 'This':
+              // Create a This node
+              thisNode = new nodes.ThisLiteral();
+              if (thisNode.locationData == null) {
+                thisNode.locationData = this.defaultLocationData();
+              }
+              return thisNode;
+            case 'Elision':
+              // Elisions in array destructuring are placeholders for skipped elements
+              // CS2 has a special Elision class for this
+              return new nodes.Elision();
             default:
               // For unimplemented types, create placeholder
               return new nodes.Literal(`/* TODO: Solar ${nodeType} */`);
@@ -756,9 +1108,9 @@
         // $ary directive (array creation)
         } else if (directive.$ary != null) {
           result = [];
-          ref10 = directive.$ary;
-          for (m = 0, len4 = ref10.length; m < len4; m++) {
-            item = ref10[m];
+          ref15 = directive.$ary;
+          for (s = 0, len6 = ref15.length; s < len6; s++) {
+            item = ref15[s];
             // If item is a number, it's a position reference
             if (typeof item === 'number') {
               evaluated = this.evaluateDirective(item, frame, ruleName);
@@ -782,9 +1134,9 @@
         // $seq directive (sequences)
         } else if (directive.$seq != null) {
           result = null;
-          ref11 = directive.$seq;
-          for (n = 0, len5 = ref11.length; n < len5; n++) {
-            step = ref11[n];
+          ref16 = directive.$seq;
+          for (t = 0, len7 = ref16.length; t < len7; t++) {
+            step = ref16[t];
             result = this.evaluateDirective(step, frame, ruleName);
           }
           return result;
@@ -814,7 +1166,7 @@
 
     // Convert evaluated Solar node to CoffeeScript class (Phase A: Legacy adapter)
     solarNodeToClass(solarNode) {
-      var array, body, clause, converted, expr, expressions, first, flags, flatExpressions, from, fullRegex, i, item, j, len, len1, nameNode, object, objects, pattern, properties, ref1, ref2, second, source, to, value, variable;
+      var array, body, clause, context, converted, exclusive, expr, expressions, first, flags, flatExpressions, from, fullRegex, i, item, j, k, l, leadingSpaces, len, len1, len2, line, lines, m, minIndent, name, nameNode, node, object, objects, operator, options, pattern, properties, quote, range, ref1, ref2, ref3, ref4, ref5, second, source, to, value, variable;
       if (!(solarNode != null ? solarNode.type : void 0)) {
         return null;
       }
@@ -824,18 +1176,44 @@
         case 'Literal':
           return new nodes.Literal(solarNode.value);
         case 'NumberLiteral':
-          return new nodes.NumberLiteral(solarNode.value, solarNode.parsedValue);
+          node = new nodes.NumberLiteral(solarNode.value, solarNode.parsedValue);
+          node.locationData = solarNode.locationData || this.defaultLocationData();
+          return node;
         case 'StringLiteral':
           value = solarNode.value;
+          quote = solarNode.quote;
           // Strip the surrounding quotes from the value if present
           if (value && typeof value === 'string' && value.length >= 2) {
             if ((value[0] === '"' && value[value.length - 1] === '"') || (value[0] === "'" && value[value.length - 1] === "'")) {
               value = value.slice(1, -1);
             }
           }
-          return new nodes.StringLiteral(value, {
-            quote: solarNode.quote
-          });
+          // Handle triple-quoted strings (heredocs) - strip common leading whitespace
+          if (quote === '"""' || quote === "'''") {
+            lines = value.split('\n');
+            if (lines.length > 1) {
+              // Find minimum indentation (excluding empty lines)
+              minIndent = 2e308;
+              ref1 = lines.slice(1);
+              for (j = 0, len = ref1.length; j < len; j++) {
+                line = ref1[j];
+                if (line.trim().length > 0) {
+                  leadingSpaces = line.match(/^[ \t]*/)[0].length;
+                  minIndent = Math.min(minIndent, leadingSpaces);
+                }
+              }
+              // Strip common indentation from all lines except the first
+              if (minIndent > 0 && minIndent < 2e308) {
+                for (i = k = 1, ref2 = lines.length; (1 <= ref2 ? k < ref2 : k > ref2); i = 1 <= ref2 ? ++k : --k) {
+                  lines[i] = lines[i].slice(minIndent);
+                }
+                value = lines.join('\n');
+              }
+            }
+          }
+          node = new nodes.StringLiteral(value, {quote});
+          node.locationData = solarNode.locationData || this.defaultLocationData();
+          return node;
         case 'BooleanLiteral':
           return new nodes.BooleanLiteral(solarNode.value);
         case 'NullLiteral':
@@ -860,6 +1238,15 @@
             if (solarNode.expression) {
               value = this.solarNodeToClass(solarNode.expression);
             }
+          } else if ((solarNode.expression != null) && (solarNode.variable == null)) {
+            if (solarNode.value) {
+              // Default value assignment (e.g., in destructuring {x = 10})
+              // Here 'value' is the variable name and 'expression' is the default value
+              variable = this.solarNodeToClass(solarNode.value);
+            }
+            if (solarNode.expression) {
+              value = this.solarNodeToClass(solarNode.expression);
+            }
           } else {
             if (solarNode.variable) {
               // Regular assignment
@@ -869,7 +1256,13 @@
               value = this.solarNodeToClass(solarNode.value);
             }
           }
-          return new nodes.Assign(variable, value, solarNode.context);
+          // For compound assignments, use the operator as the context
+          context = solarNode.operator ? (operator = typeof solarNode.operator === 'string' ? solarNode.operator : ((ref3 = solarNode.operator) != null ? typeof ref3.toString === "function" ? ref3.toString() : void 0 : void 0) ? solarNode.operator.toString() : void 0, operator) : solarNode.context;
+          options = {};
+          if (solarNode.originalContext) {
+            options.originalContext = solarNode.originalContext;
+          }
+          return new nodes.Assign(variable, value, context, options);
         case 'Arr':
           objects = (solarNode.objects ? solarNode.objects.map((o) => {
             return this.solarNodeToClass(o);
@@ -887,7 +1280,9 @@
           if (solarNode.to) {
             to = this.solarNodeToClass(solarNode.to);
           }
-          return new nodes.Range(from, to, solarNode.exclusive);
+          // Fix for exclusive range - the 'equals' field determines exclusivity
+          exclusive = solarNode.exclusive || solarNode.equals === 'exclusive';
+          return new nodes.Range(from, to, exclusive);
         case 'RegexLiteral':
         case 'Regex':
           // RegexLiteral expects the full regex string including delimiters
@@ -913,20 +1308,19 @@
             generated: solarNode.generated
           });
         case 'Throw':
-          if (solarNode.expression) {
-            return new nodes.Throw(this.solarNodeToClass(solarNode.expression));
-          }
-          break;
+          expr = solarNode.expression ? this.solarNodeToClass(solarNode.expression) : null;
+          return new nodes.Throw(expr || new nodes.Literal('undefined'));
         case 'Splat':
-          if (solarNode.name) {
-            return new nodes.Splat(this.solarNodeToClass(solarNode.name));
-          }
-          break;
+          name = solarNode.name ? this.solarNodeToClass(solarNode.name) : null;
+          return new nodes.Splat(name || new nodes.Literal('undefined'));
         case 'Expansion':
-          if (solarNode.expression) {
-            return new nodes.Expansion(this.solarNodeToClass(solarNode.expression));
+          expr = solarNode.expression ? this.solarNodeToClass(solarNode.expression) : null;
+          return new nodes.Expansion(expr || new nodes.Literal('undefined'));
+        case 'Slice':
+          if (solarNode.range) {
+            range = this.solarNodeToClass(solarNode.range);
           }
-          break;
+          return new nodes.Slice(range);
         case 'In':
           if (solarNode.object) {
             object = this.solarNodeToClass(solarNode.object);
@@ -964,7 +1358,7 @@
           return new nodes.Loop(body);
         case 'Access':
           // For shorthand (::), default to "prototype"
-          nameNode = ((ref1 = solarNode.name) != null ? ref1.type : void 0) ? this.solarNodeToClass(solarNode.name) : ((ref2 = solarNode.name) != null ? ref2.value : void 0) != null ? new nodes.PropertyName(solarNode.name.value) : typeof solarNode.name === 'string' ? new nodes.PropertyName(solarNode.name) : new nodes.PropertyName((solarNode.shorthand ? 'prototype' : ''));
+          nameNode = ((ref4 = solarNode.name) != null ? ref4.type : void 0) ? this.solarNodeToClass(solarNode.name) : ((ref5 = solarNode.name) != null ? ref5.value : void 0) != null ? new nodes.PropertyName(solarNode.name.value) : typeof solarNode.name === 'string' ? new nodes.PropertyName(solarNode.name) : new nodes.PropertyName((solarNode.shorthand ? 'prototype' : ''));
           return new nodes.Access(nameNode, {
             soak: solarNode.soak,
             shorthand: solarNode.shorthand
@@ -979,11 +1373,11 @@
           expressions = solarNode.expressions || [];
           flatExpressions = [];
           if (Array.isArray(expressions)) {
-            for (i = 0, len = expressions.length; i < len; i++) {
-              expr = expressions[i];
+            for (l = 0, len1 = expressions.length; l < len1; l++) {
+              expr = expressions[l];
               if (Array.isArray(expr)) {
-                for (j = 0, len1 = expr.length; j < len1; j++) {
-                  item = expr[j];
+                for (m = 0, len2 = expr.length; m < len2; m++) {
+                  item = expr[m];
                   converted = (item != null ? item.type : void 0) ? this.solarNodeToClass(item) : item;
                   if (converted != null) {
                     flatExpressions.push(converted);
@@ -998,6 +1392,10 @@
             }
           }
           return new nodes.Block(this.filterNodes(flatExpressions));
+        case 'Elision':
+          // Elisions in array destructuring are placeholders for skipped elements
+          // CS2 has a special Elision class for this
+          return new nodes.Elision();
         default:
           // Placeholder for unimplemented node types
           return new nodes.Literal(`/* TODO: Solar node ${solarNode.type} */`);
@@ -1036,7 +1434,7 @@
 
     // Apply $ops operations
     applyOperation(directive, frame, ruleName) {
-      var bodyArg, bodyNode, evaluated, i, item, j, len, len1, loopNode, position, propNode, propRaw, ref1, ref2, ref3, ref4, ref5, ref6, ref7, result, sourceInfo, target, targetNode, targetRaw, value;
+      var bodyArg, bodyNode, elseBody, elseBodyNode, evaluated, ifNode, item, j, k, len, len1, loopNode, position, propNode, propRaw, ref1, ref2, ref3, ref4, ref5, result, sourceInfo, target, targetNode, targetRaw, value;
       switch (directive.$ops) {
         case 'array':
           if (directive.append != null) {
@@ -1045,8 +1443,8 @@
             // Ensure target is an array
             target = Array.isArray(target) ? target : [];
             ref1 = directive.append.slice(1);
-            for (i = 0, len = ref1.length; i < len; i++) {
-              item = ref1[i];
+            for (j = 0, len = ref1.length; j < len; j++) {
+              item = ref1[j];
               value = this.evaluateDirective(item, frame, ruleName);
               // If value is already an array (from $ary), unwrap it
               if (Array.isArray(value) && value.length === 1) {
@@ -1063,8 +1461,8 @@
           } else if (directive.gather != null) {
             result = [];
             ref2 = directive.gather;
-            for (j = 0, len1 = ref2.length; j < len1; j++) {
-              item = ref2[j];
+            for (k = 0, len1 = ref2.length; k < len1; k++) {
+              item = ref2[k];
               evaluated = this.evaluateDirective(item, frame, ruleName);
               if (Array.isArray(evaluated)) {
                 result = result.concat(evaluated);
@@ -1093,8 +1491,25 @@
           }
           return this.evaluateDirective((ref3 = directive.add) != null ? ref3[0] : void 0, frame, ruleName);
         case 'if':
-          // TODO: Implement if operations (addElse)
-          return this.evaluateDirective((ref4 = directive.addElse) != null ? ref4[0] : void 0, frame, ruleName);
+          // If operations for adding else clauses
+          if (directive.addElse != null) {
+            // addElse: [ifNode, elseBody] - add else clause to if statement
+            ifNode = this.evaluateDirective(directive.addElse[0], frame, ruleName);
+            elseBody = this.evaluateDirective(directive.addElse[1], frame, ruleName);
+            if (ifNode instanceof nodes.If) {
+              // Convert elseBody to proper node if needed
+              if (elseBody != null ? elseBody.type : void 0) {
+                elseBody = this.solarNodeToClass(elseBody);
+              }
+              // Set the else body (alternate property)
+              elseBodyNode = Array.isArray(elseBody) ? new nodes.Block(this.filterNodes(elseBody)) : elseBody instanceof nodes.Block ? elseBody : elseBody ? elseBody instanceof nodes.Base ? elseBody : new nodes.Block([this.ensureNode(elseBody)]) : null;
+              ifNode.elseBody = elseBodyNode;
+            }
+            return ifNode;
+          } else {
+            return null;
+          }
+          break;
         case 'loop':
           // Loop operations for For/While loops
           if (directive.addSource != null) {
@@ -1104,6 +1519,30 @@
             // Convert sourceInfo to proper node if needed
             if (sourceInfo != null ? sourceInfo.type : void 0) {
               sourceInfo = this.solarNodeToClass(sourceInfo);
+            }
+            // Ensure source has proper structure
+            if (sourceInfo) {
+              // For addSource, we might get an object with source, name, index, etc.
+              if (sourceInfo instanceof nodes.Base) {
+                // Already a node, ensure it has locationData
+                if (sourceInfo.locationData == null) {
+                  sourceInfo.locationData = this.defaultLocationData();
+                }
+              } else if (typeof sourceInfo === 'object' && !Array.isArray(sourceInfo)) {
+                // It's a source object with properties
+                if (sourceInfo.source && !(sourceInfo.source instanceof nodes.Base)) {
+                  sourceInfo.source = this.ensureNode(sourceInfo.source);
+                }
+                if (sourceInfo.name && !(sourceInfo.name instanceof nodes.Base)) {
+                  sourceInfo.name = this.ensureNode(sourceInfo.name);
+                }
+                if (sourceInfo.index && !(sourceInfo.index instanceof nodes.Base)) {
+                  sourceInfo.index = this.ensureNode(sourceInfo.index);
+                }
+              } else {
+                // Convert to node
+                sourceInfo = this.ensureNode(sourceInfo);
+              }
             }
             if (loopNode && sourceInfo) {
               loopNode.addSource(sourceInfo);
@@ -1124,21 +1563,42 @@
             if (bodyNode != null ? bodyNode.type : void 0) {
               bodyNode = this.solarNodeToClass(bodyNode);
             }
-            // Ensure body has locationData
-            if ((bodyNode != null ? (ref5 = bodyNode.constructor) != null ? ref5.name : void 0 : void 0) && !bodyNode.locationData) {
+            // Ensure body is a proper Block node with locationData
+            if (bodyNode) {
+              // Handle different body types
+              if (Array.isArray(bodyNode)) {
+                // If it's an array, create a Block with the array's contents
+                bodyNode = new nodes.Block(this.filterNodes(bodyNode));
+              } else if (bodyNode instanceof nodes.Block) {
+                // Already a Block, use as-is
+                bodyNode = bodyNode;
+              } else if (bodyNode instanceof nodes.Base) {
+                // Single node, wrap in Block
+                bodyNode = new nodes.Block([bodyNode]);
+              } else {
+                // Not a node yet, ensure it becomes one
+                bodyNode = new nodes.Block([this.ensureNode(bodyNode)]);
+              }
+              // Ensure locationData exists
+              if (bodyNode.locationData == null) {
+                bodyNode.locationData = this.defaultLocationData();
+              }
+            } else {
+              // Create empty block if no body
+              bodyNode = new nodes.Block([]);
               bodyNode.locationData = this.defaultLocationData();
             }
-            if (loopNode && bodyNode) {
+            if (loopNode) {
               loopNode.addBody(bodyNode);
             }
             return loopNode;
           } else {
-            return this.evaluateDirective((ref6 = directive.addBody) != null ? ref6[0] : void 0, frame, ruleName);
+            return this.evaluateDirective((ref4 = directive.addBody) != null ? ref4[0] : void 0, frame, ruleName);
           }
           break;
         case 'prop':
           // TODO: Implement property operations (set)
-          return this.evaluateDirective((ref7 = directive.set) != null ? ref7.target : void 0, frame, ruleName);
+          return this.evaluateDirective((ref5 = directive.set) != null ? ref5.target : void 0, frame, ruleName);
         default:
           return new nodes.Literal(`/* TODO: $ops ${directive.$ops} */`);
       }
