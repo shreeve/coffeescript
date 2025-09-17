@@ -9,7 +9,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After initial $ary fix**: 4.7% (20/425 tests)
 - **After backend fixes**: 42.1% (40/95 tests)
 - **After rewriter investigation**: 47.8% (66/138 tests)
-- **Note**: More tests now run after fixing shorthand objects and ThisLiteral
+- **After fixing traverseChildren**: 50.3% (79/157 tests)
+- **Note**: More tests now run as backend issues are resolved
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -20,6 +21,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 6. **Destructured parameters**: Fixed by setting generated=false on Param Obj nodes
 7. **Shorthand object syntax**: Fixed `{x, y}` to properly create `{x: x, y: y}`
 8. **ThisLiteral**: Added support for `this` keyword (was generating TODO comment)
+9. **traverseChildren errors**: Fixed Value.add() to filter out null properties
 
 ## Current Status (After Major Fixes)
 ### Working ✅

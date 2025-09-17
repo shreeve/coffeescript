@@ -1368,7 +1368,14 @@ exports.Value = class Value extends Base
 
   # Add a property (or *properties* ) `Access` to the list.
   add: (props) ->
-    @properties = @properties.concat props
+    # Filter out null/undefined properties to avoid traverseChildren errors
+    filteredProps = if Array.isArray(props) 
+      props.filter (p) -> p?
+    else if props?
+      [props]
+    else
+      []
+    @properties = @properties.concat filteredProps
     @forceUpdateLocation = yes
     this
 

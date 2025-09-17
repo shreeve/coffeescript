@@ -80,6 +80,11 @@ class ES5Backend
       node = new nodes.Literal String(value)
       node.locationData ?= @defaultLocationData()
       return node
+    # Try to convert objects that might be PropertyName-like
+    if value?.value?
+      node = new nodes.PropertyName value.value
+      node.locationData ?= @defaultLocationData()
+      return node
     null
 
   # CRITICAL: Enhanced null-safe node conversion
@@ -202,40 +207,66 @@ class ES5Backend
             if inner?.compileToFragments or inner instanceof nodes.Base
               valueNode = if inner instanceof nodes.Value then inner else new nodes.Value inner
               if properties and Array.isArray(properties) and properties.length > 0
+                validProps = []
                 for prop in properties
                   # Handle nested arrays of properties (e.g., from :: operator)
                   if Array.isArray(prop)
                     for subProp in prop
                       continue unless subProp?  # Skip null/undefined
                       if subProp instanceof nodes.Base
-                        valueNode.add subProp
+                        validProps.push subProp
                       else if subProp?.type
                         converted = @solarNodeToClass(subProp)
                         if converted instanceof nodes.Base
-                          valueNode.add converted
+                          validProps.push converted
                   else if prop?  # Skip null/undefined
                     if prop instanceof nodes.Base
-                      valueNode.add prop
+                      validProps.push prop
                     else if prop?.type
                       converted = @solarNodeToClass(prop)
                       if converted instanceof nodes.Base
-                        valueNode.add converted
+                        validProps.push converted
+                      else
+                        # Try to convert plain objects
+                        ensured = @ensureNode(prop)
+                        if ensured instanceof nodes.Base
+                          validProps.push ensured
+                # Only add non-null properties
+                if validProps.length > 0
+                  valueNode.add validProps
               return valueNode
             @ensureNode(inner) or new nodes.Literal "/* TODO: Solar Value */"
 
           when 'Access'
             nameNode = @evaluateDirective directive.name, frame, ruleName
-            # Ensure nameNode is not null
+
+            # Handle various forms of nameNode
             if not nameNode?
               # For shorthand (::), use "prototype" as the name
               if directive.shorthand
                 nameNode = new nodes.PropertyName 'prototype'
               else
                 nameNode = new nodes.PropertyName ''
+            else if nameNode instanceof nodes.Base
+              # Already a proper node, use as-is
+              nameNode = nameNode
             else if nameNode?.type
+              # Has a type property, convert from solar node
               nameNode = @solarNodeToClass(nameNode)
-            else if not (nameNode instanceof nodes.Base)
-              nameNode = @ensureNode(nameNode)
+            else if typeof nameNode is 'string'
+              # Plain string, convert to PropertyName
+              nameNode = new nodes.PropertyName nameNode
+            else if nameNode?.value?
+              # Has a value property, convert to PropertyName
+              nameNode = new nodes.PropertyName String(nameNode.value)
+            else
+              # Last resort, convert to empty PropertyName
+              nameNode = new nodes.PropertyName ''
+
+            # Final safety check - ensure nameNode is never null
+            if not nameNode?
+              nameNode = new nodes.PropertyName ''
+
             new nodes.Access nameNode, soak: directive.soak, shorthand: directive.shorthand
 
           when 'Index'
