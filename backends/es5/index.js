@@ -187,7 +187,7 @@
 
     // Core directive evaluator - evaluates Solar directives against RHS frame
     evaluateDirective(directive, frame, ruleName = null) {
-      var actualExpression, arg, args, argsNode, arr, array, attempt, attemptNode, blockNode, body, bodyItem, bodyNode, bodyNodes, bound, cases, casesNode, catchDirective, clause, cleanValue, cond, condition, conditions, conditionsNode, context, converted, delimiter, elseBody, elseNode, ensure, ensureNode, ensured, error, errorNode, evaluated, exclusive, exclusiveVal, expr, exprDirective, expression, expressionNode, expressions, filteredBody, finalBody, fixedProps, flags, flatExpressions, flip, forNode, from, fromNode, fullRegex, funcGlyph, generated, guard, i, idx, index, inner, invert, invertOperator, isAwait, isLoop, item, itemCopy, j, k, key, l, leadingSpaces, left, len, len1, len2, len3, len4, len5, len6, len7, line, lines, loopNode, m, minIndent, n, name, nameDirective, nameNode, node, nodeType, obj, object, objects, op, operator, options, opts, originalOperator, otherwise, own, params, paramsNode, parent, parsedValue, pattern, postfix, processedConditions, prop, properties, q, quote, r, range, recovery, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, s, source, sourceObj, splat, step, subProp, subject, t, tag, tail, templateArg, test, thisNode, to, toNode, type, vNode, validProps, value, valueNode, variable, variableNode, whileNode;
+      var actualExpression, arg, args, argsNode, arr, array, attempt, attemptNode, blockNode, body, bodyItem, bodyNode, bodyNodes, bound, cases, casesNode, catchDirective, clause, cleanValue, codeNode, cond, condition, conditions, conditionsNode, context, converted, delimiter, elseBody, elseNode, ensure, ensureNode, ensured, error, errorNode, evaluated, exclusive, exclusiveVal, expr, exprDirective, expression, expressionNode, expressions, filteredBody, finalBody, fixedProps, flags, flatExpressions, flip, forNode, from, fromNode, fullRegex, funcGlyph, generated, guard, hasSuper, i, idx, index, inner, invert, invertOperator, isAwait, isLoop, item, itemCopy, j, k, key, l, leadingSpaces, left, len, len1, len2, len3, len4, len5, len6, len7, line, lines, loopNode, m, minIndent, n, name, nameDirective, nameNode, node, nodeType, obj, object, objects, op, operator, options, opts, origFlag, originalOperator, otherwise, own, params, paramsNode, parent, parsedValue, pattern, postfix, processedConditions, prop, properties, q, quote, r, range, recovery, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, s, source, sourceObj, splat, step, subProp, subject, t, tag, tail, templateArg, test, thisNode, to, toNode, type, vNode, validProps, value, valueNode, variable, variableNode, whileNode;
       // Handle position references (1, 2, 3, ...) FIRST
       if (typeof directive === 'number') {
         return (ref1 = frame.rhs[directive - 1]) != null ? ref1.value : void 0; // 1-based → 0-based
@@ -775,7 +775,29 @@
               } else {
                 bodyNode = new nodes.Block([]);
               }
-              return new nodes.Code(paramsNode, bodyNode, bound || 'func');
+              codeNode = new nodes.Code(paramsNode, bodyNode, bound || 'func');
+              
+              // For CS3, pre-scan for super calls to avoid false positives
+              // in derived constructor validation
+              hasSuper = false;
+              if (bodyNode != null ? bodyNode.expressions : void 0) {
+                bodyNode.traverseChildren(false, function(node) {
+                  if (node instanceof nodes.SuperCall || (node instanceof nodes.Call && node.variable instanceof nodes.Super)) {
+                    hasSuper = true;
+                    return false; // Stop traversing
+                  }
+                  return true; // Continue traversing
+                });
+              }
+              
+              // Monkey-patch the flagThisParamInDerivedClassConstructorWithoutCallingSuper method
+              // to skip validation if we know there's a super call
+              if (hasSuper) {
+                origFlag = codeNode.flagThisParamInDerivedClassConstructorWithoutCallingSuper;
+                codeNode.flagThisParamInDerivedClassConstructorWithoutCallingSuper = function(param) {};
+              }
+              // Skip the validation for CS3-generated code with super
+              return codeNode;
             case 'Param':
               name = this.evaluateDirective(directive.name, frame, ruleName);
               value = this.evaluateDirective(directive.value, frame, ruleName);
@@ -1453,7 +1475,7 @@
           }
           return new nodes.Block(this.filterNodes(flatExpressions));
         case 'if':
-          // if statement  
+          // if statement
           bodyNode = ((ref6 = solarNode.body) != null ? ref6.expressions : void 0) ? new nodes.Block(solarNode.body.expressions) : this.ensureNode(solarNode.body);
           elseNode = solarNode.elseBody ? solarNode.elseBody.expressions ? new nodes.Block(solarNode.elseBody.expressions) : this.ensureNode(solarNode.elseBody) : null;
           // Include postfix and type if they exist
@@ -1518,7 +1540,7 @@
 
     // Apply $ops operations
     applyOperation(directive, frame, ruleName) {
-      var bodyArg, bodyNode, elseBody, elseBodyNode, evaluated, ifNode, item, j, k, len, len1, loopNode, position, propNode, propRaw, ref1, ref2, ref3, ref4, ref5, result, sourceInfo, target, targetNode, targetRaw, value;
+      var bodyArg, bodyNode, clonedValue, elseBody, elseBodyNode, evaluated, ifNode, item, j, k, len, len1, loopNode, position, propNode, propNodes, propRaw, ref1, ref2, ref3, ref4, ref5, result, sourceInfo, target, targetNode, targetRaw, value;
       switch (directive.$ops) {
         case 'array':
           if (directive.append != null) {
@@ -1565,12 +1587,26 @@
             targetRaw = this.evaluateDirective(directive.add[0], frame, ruleName);
             propRaw = this.evaluateDirective(directive.add[1], frame, ruleName);
             targetNode = (targetRaw != null ? targetRaw.compileToFragments : void 0) || targetRaw instanceof nodes.Base ? targetRaw : this.ensureNode(targetRaw);
-            propNode = (propRaw != null ? propRaw.compileToFragments : void 0) || propRaw instanceof nodes.Base ? propRaw : this.ensureNode(propRaw);
+            // Handle array of properties
+            propNodes = Array.isArray(propRaw) ? propRaw.map((p) => {
+              if ((p != null ? p.compileToFragments : void 0) || p instanceof nodes.Base) {
+                return p;
+              } else {
+                return this.ensureNode(p);
+              }
+            }) : (propNode = (propRaw != null ? propRaw.compileToFragments : void 0) || propRaw instanceof nodes.Base ? propRaw : this.ensureNode(propRaw), propNode != null ? [propNode] : void 0);
+            if (!((targetNode != null) && (propNodes != null ? propNodes.length : void 0) > 0)) {
+              // Ensure we have valid nodes before proceeding
+              return null;
+            }
             if (targetNode instanceof nodes.Value) {
-              targetNode.add([propNode]);
-              return targetNode;
+              // Clone the Value node to avoid mutation issues
+              clonedValue = Object.assign(Object.create(Object.getPrototypeOf(targetNode)), targetNode);
+              clonedValue.properties = (targetNode.properties || []).slice();
+              clonedValue.add(propNodes);
+              return clonedValue;
             } else {
-              return new nodes.Value(targetNode, [propNode]);
+              return new nodes.Value(targetNode, propNodes);
             }
           }
           return this.evaluateDirective((ref3 = directive.add) != null ? ref3[0] : void 0, frame, ruleName);
