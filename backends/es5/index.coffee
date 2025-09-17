@@ -1226,7 +1226,15 @@ class ES5Backend
 
       # $ops directive (operations)
       else if directive.$ops?
-        @applyOperation directive, frame, ruleName
+        result = @applyOperation directive, frame, ruleName
+        # If the operation returned a value, use it; otherwise evaluate the rest of the directive
+        if result?
+          result
+        else
+          # Try evaluating the directive without $ops (for combined directives)
+          directiveCopy = Object.assign {}, directive
+          delete directiveCopy.$ops
+          @evaluateDirective directiveCopy, frame, ruleName
 
       # $seq directive (sequences)
       else if directive.$seq?
@@ -1597,7 +1605,11 @@ class ES5Backend
             else
               null
 
-            ifNode.elseBody = elseBodyNode
+            # Directly set elseBody and isChain flag
+            if elseBodyNode?
+              ifNode.elseBody = elseBodyNode
+              # Set isChain flag if the elseBody is another If node  
+              ifNode.isChain = elseBodyNode instanceof nodes.If
           ifNode
         else
           null
