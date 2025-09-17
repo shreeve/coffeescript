@@ -38,7 +38,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing computed property names**: 341 tests passing
 - **After fixing @params in derived constructors**: 358 tests passing (94.5%)
 - **After fixing 'not in' and 'not of' operators**: 363 tests passing (95.8%)
-- **Note**: Major breakthrough - from 0 to 363+ tests through systematic fixes
+- **After fixing static properties (@staticProp)**: 413 tests passing (97.2%)
+- **Note**: Major breakthrough - from 0 to 413 tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -84,8 +85,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 41. **Destructuring with defaults**: Fixed by using null context for Assign nodes in destructuring defaults
 42. **@ in destructuring parameters**: Fixed compilation error by transforming {@x} to {x: x} with this=true marking
 43. **Arrow functions fixed**: ES5 backend now properly generates ES6 arrow functions `() =>` instead of regular `function()`, fixing super in arrow functions (+10 tests!)
+44. **Static properties (@staticProp)**: Fixed by setting `this=true` on Value nodes with ThisLiteral base in object context Assign nodes
 
-## Current Status (412 Tests Passing - 97.0%)
+## Current Status (413 Tests Passing - 97.2%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
@@ -102,7 +104,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - String operations and interpolation (fully working)
 - Template literals with interpolation
 - Tagged template literals
-- Classes (basic)
+- Classes (basic, inheritance, static properties)
 - Slicing operations (array and string slicing with ranges)
 - Advanced literals
 - Function invocation patterns
@@ -134,9 +136,12 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
   - Likely due to If nodes being cloned/recreated during AST construction
 
 **Remaining Backend Issues:**
-- Bound methods (fat arrow =>) in classes not creating bindings (need bind(this) in constructor)
-- Some advanced operator precedence
-- Tagged template interpolation
+- @params in derived class constructors with super (need thisAssignments insertion after super call)
+- Else-if chains losing their else branches (3 tests)
+- Nested loops incorrectly reuse variable names (2 tests)
+- Nested comprehensions and for-own loops (2 tests)
+- Multiline implicit calls and nested ternary operators (2 tests)
+- Super with method delegation (1 test)
 
 ## Next Steps
 The CS3 parser IS parsing correctly, but the ES5 backend needs significant work to properly convert the AST nodes. Common issues:

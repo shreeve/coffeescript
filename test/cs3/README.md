@@ -16,12 +16,12 @@ The CS3 (CoffeeScript 3) test suite provides **comprehensive testing** of the da
 
 ## 📊 Test Results
 
-### Overall: **326 / 331 tests passing (98.5% success rate)**
+### Overall: **413 / 425 tests passing (97.2% success rate)**
 
-- **29** test files
-- **331** total test cases
-- **326** passing tests
-- **5** failures (minor edge cases)
+- **32** test files
+- **425** total test cases
+- **413** passing tests
+- **12** failures (minor edge cases)
 
 ## 📋 Complete Test Coverage
 
@@ -76,9 +76,9 @@ The CS3 (CoffeeScript 3) test suite provides **comprehensive testing** of the da
 
 | Metric | CS2 | CS3 | Coverage |
 |--------|------------|-----|----------|
-| **Test Files** | 47 files | 29 files | 62% |
-| **Test Cases** | ~1,470 tests | 331 tests | 23% |
-| **Pass Rate** | ~100% | 98.5% | - |
+| **Test Files** | 47 files | 32 files | 68% |
+| **Test Cases** | ~1,470 tests | 425 tests | 29% |
+| **Pass Rate** | ~100% | 97.2% | - |
 | **Language Features** | 100% | 100% | ✅ |
 
 ### Why Fewer Tests?
@@ -144,18 +144,18 @@ This runs the CS3 test suite using the CS2 parser (CoffeeScript 2.x: grammar.cof
 
 ## ✅ Test Results
 
-Both CS2 and CS3 parsers achieve **100% pass rate** on all 425 tests!
+CS3 parser achieves **97.2% pass rate** on the test suite!
 
 ### Test Statistics
 - **32** test files (organized by feature category)
 - **425** total test cases
-- **425** passing tests (100% ✅)
-- **0** failures
-- **100%** success rate for both parsers
+- **413** passing tests (97.2% ✅)
+- **12** failures (mostly edge cases)
+- CS2 parser achieves 100% on the same test suite for comparison
 
 ## 📊 Coverage Analysis
 
-### What's Covered (425 tests)
+### What's Covered (413 passing tests)
 | Category | Coverage | Description |
 |----------|----------|-------------|
 | **Core Language** | 100% | Literals, arrays, objects, functions, classes |

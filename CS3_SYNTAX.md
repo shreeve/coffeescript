@@ -351,9 +351,10 @@ The transformation has been **thoroughly validated**:
 - **Language-Agnostic Foundation** - Any language can implement Solar directive evaluation
 
 ### 🚧 In Progress
-- **Assignment Parsing** - Debugging parser reduction timing for multi-token expressions
-- **Complete Directive Operations** - Implementing $ops, $seq, $ite in ES5 backend
-- **Full Test Compatibility** - Working toward complete CoffeeScript test suite compatibility
+- **@params in constructors** - Need to handle thisAssignments after super() calls
+- **Else-if chains** - Fixing else branches being lost in chained conditionals
+- **Nested loops** - Preventing variable name collisions in nested iterations
+- **Full Test Compatibility** - At 97.2% (413/425 tests passing)
 
 ### 📋 TODO
 - Complete backend implementations
