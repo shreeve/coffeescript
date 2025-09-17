@@ -45,7 +45,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - Switch statements
 - Spread/splat operations
 - Compound assignments (+=, -=, etc.)
-- Basic regex support  
+- Basic regex support
 - Basic operators (arithmetic, comparison, logical)
 - String operations and interpolation (fully working)
 - Template literals with interpolation
