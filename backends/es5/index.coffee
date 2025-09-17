@@ -1070,7 +1070,7 @@ class ES5Backend
               if arg? then [arg] else []
             else
               []
-            
+
             new nodes.Call variableNode, argsNode, false
 
           else
