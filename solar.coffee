@@ -71,7 +71,7 @@ class Generator
 
     # Detect grammar mode based on export structure
     if grammar.bnf?
-      @mode = 'traditional'  # Traditional grammar.coffee with string actions
+      @mode = 'cs2'  # CS2 grammar.coffee with string actions
     else if grammar.grammar?
       @mode = 'cs3'         # CS3 syntax.coffee with directive objects
     else
@@ -204,10 +204,10 @@ class Generator
       [symbols, null, null]
 
   _processGrammarAction: (action, symbols) ->
-    # Main dispatcher - handles both traditional and CS3 formats
+    # Main dispatcher - handles both CS2 and CS3 formats
     if @mode is 'cs3' and typeof action is 'object' and action?
       @_generateDataAction(action, symbols)
-    else if @mode is 'traditional' and typeof action is 'string'
+    else if @mode is 'cs2' and typeof action is 'string'
       @_generateClassAction(action, symbols)
     else if action is null or action is undefined
       # Default pass-through: for single-symbol rules, return $1; for ε, null
@@ -216,7 +216,7 @@ class Generator
       throw new Error "Invalid action type for mode #{@mode}: #{typeof action}"
 
   _generateClassAction: (action, symbols) ->
-    # Traditional mode: process string actions like "-> new Value $1"
+    # CS2 mode: process string actions like "-> new Value $1"
     # Process named semantic values
     if action.match(/[$@][a-zA-Z][a-zA-Z0-9_]*/)
       count = {}

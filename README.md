@@ -139,7 +139,7 @@ CoffeeScript 3 is a stepping stone toward **Rip**, a truly universal programming
 # Build the CS3 Solar parser
 cake build:parser-cs3
 
-# Test traditional CoffeeScript (1470/1473 tests passing)
+# Test CS2 CoffeeScript (1470/1473 tests passing)
 npm test
 
 # Test CS3 pipeline (0+ tests passing, actively improving)
