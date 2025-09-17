@@ -26,7 +26,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing if/else statements**: 217 tests passing
 - **After fixing for-from loops & $use index**: 240 tests passing!
 - **After fixing until loops**: 241 tests passing
-- **Note**: Major breakthrough - from 0 to 241 tests through systematic fixes
+- **After fixing unless statements**: 236 tests passing (some regressions)
+- **Note**: Major breakthrough - from 0 to 236+ tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -54,9 +55,10 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 23. **Exclusive ranges (...)**: Fixed $use directive property access to handle boolean false values correctly
 24. **If/else statements**: Implemented addElse operation to properly attach else clauses to If nodes
 25. **For-from loops & $use index access**: Added array index access support to $use directive, fixing ForVariables and numerous other features
-26. **Until loops**: Added invert flag handling to While directive for proper until loop negation
+26. **Until loops**: Added invert flag handling to While directive for proper until loop negation  
+27. **Unless statements**: Fixed by passing type field to If constructor - CS2 handles 'unless' type internally
 
-## Current Status (241 Tests Passing - 88.9%)
+## Current Status (236 Tests Passing - 87.1%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
