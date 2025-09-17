@@ -1322,8 +1322,34 @@ class ES5Backend
         @evaluateDirective directive.add?[0], frame, ruleName
 
       when 'if'
-        # TODO: Implement if operations (addElse)
-        @evaluateDirective directive.addElse?[0], frame, ruleName
+        # If operations for adding else clauses
+        if directive.addElse?
+          # addElse: [ifNode, elseBody] - add else clause to if statement
+          ifNode = @evaluateDirective directive.addElse[0], frame, ruleName
+          elseBody = @evaluateDirective directive.addElse[1], frame, ruleName
+          
+          if ifNode instanceof nodes.If
+            # Convert elseBody to proper node if needed
+            if elseBody?.type
+              elseBody = @solarNodeToClass elseBody
+            
+            # Set the else body (alternate property)
+            elseBodyNode = if Array.isArray(elseBody)
+              new nodes.Block @filterNodes(elseBody)
+            else if elseBody instanceof nodes.Block
+              elseBody
+            else if elseBody
+              if elseBody instanceof nodes.Base
+                elseBody
+              else
+                new nodes.Block [@ensureNode(elseBody)]
+            else
+              null
+            
+            ifNode.elseBody = elseBodyNode
+          ifNode
+        else
+          null
 
       when 'loop'
         # Loop operations for For/While loops

@@ -23,7 +23,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing class inheritance & super calls**: 209 tests passing
 - **After fixing heredoc indentation**: 210 tests passing
 - **After fixing exclusive ranges**: 214 tests passing
-- **Note**: Major breakthrough - from 0 to 214 tests through systematic fixes
+- **After fixing if/else statements**: 217 tests passing
+- **Note**: Major breakthrough - from 0 to 217 tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -47,10 +48,11 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 19. **Exception handling (try/catch/finally)**: Fixed Try directive to use 'catch' property, fixed Catch directive parameter mapping and order
 20. **Loop control flow (break/continue)**: Fixed loop body handling for arrays in frame, added StatementLiteral handler for break/continue/debugger
 21. **Class inheritance & super calls**: Added SuperCall handler for super() in constructors and methods
-22. **Heredoc indentation (triple-quoted strings)**: Strip common leading whitespace from multi-line strings
+22. **Heredoc indentation (triple-quoted strings)**: Strip common leading whitespace from multi-line strings  
 23. **Exclusive ranges (...)**: Fixed $use directive property access to handle boolean false values correctly
+24. **If/else statements**: Implemented addElse operation to properly attach else clauses to If nodes
 
-## Current Status (214 Tests Passing - 87.0%)
+## Current Status (217 Tests Passing - 88.2%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
