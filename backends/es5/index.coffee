@@ -77,7 +77,9 @@ class ES5Backend
     return value if value.compileToFragments or value instanceof nodes.Base
     # Only wrap primitives; drop unknown objects to avoid emitting debug strings.
     if typeof value in ['string', 'number', 'boolean']
-      return new nodes.Literal String(value)
+      node = new nodes.Literal String(value)
+      node.locationData ?= @defaultLocationData()
+      return node
     null
 
   # CRITICAL: Enhanced null-safe node conversion
@@ -165,7 +167,9 @@ class ES5Backend
 
           when 'IdentifierLiteral'
             value = @evaluateDirective directive.value, frame, ruleName
-            new nodes.IdentifierLiteral value
+            node = new nodes.IdentifierLiteral value
+            node.locationData ?= @defaultLocationData()
+            node
 
           when 'Literal'
             value = @evaluateDirective directive.value, frame, ruleName
@@ -292,26 +296,59 @@ class ES5Backend
           when 'While'
             condition = @evaluateDirective directive.condition, frame, ruleName
             body = @evaluateDirective directive.body, frame, ruleName
+            guard = @evaluateDirective directive.guard, frame, ruleName
             bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
-            new nodes.While condition, null, bodyNode
+            # While constructor expects (condition, opts) where opts has guard, invert, body
+            opts = {}
+            opts.guard = guard if guard
+            new nodes.While condition, opts, bodyNode
 
           when 'For'
+            # For loops are complex - they're built incrementally via $ops
             body = @evaluateDirective directive.body, frame, ruleName
             source = @evaluateDirective directive.source, frame, ruleName
             guard = @evaluateDirective directive.guard, frame, ruleName
             name = @evaluateDirective directive.name, frame, ruleName
             index = @evaluateDirective directive.index, frame, ruleName
-            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
-            # For node constructor expects (body, source)
-            forNode = new nodes.For bodyNode
-            if source
-              forNode.addSource source
-            if name
-              forNode.name = name
-            if index
-              forNode.index = index
-            if guard
-              forNode.guard = guard
+            step = @evaluateDirective directive.step, frame, ruleName
+            own = @evaluateDirective directive.own, frame, ruleName
+            object = @evaluateDirective directive.object, frame, ruleName
+            from = @evaluateDirective directive.from, frame, ruleName
+
+            # Handle body
+            if body?.expressions
+              # Body node with expressions
+              expressions = @filterNodes(if Array.isArray(body.expressions[0]) then body.expressions[0] else body.expressions)
+              bodyNode = new nodes.Block expressions
+            else if Array.isArray(body)
+              bodyNode = new nodes.Block @filterNodes(body)
+            else if body
+              bodyNode = body
+            else
+              bodyNode = new nodes.Block []
+
+            # Handle name/index - they often come as arrays
+            if Array.isArray(name) then name = name[0]
+            if Array.isArray(index) then index = index[0]
+
+            # Convert to proper nodes if needed
+            if name?.type then name = @solarNodeToClass name
+            if index?.type then index = @solarNodeToClass index
+            if source?.type then source = @solarNodeToClass source
+
+            # Build source object for For constructor
+            sourceObj = {}
+            sourceObj.source = source if source
+            sourceObj.name = name if name
+            sourceObj.index = index if index
+            sourceObj.guard = guard if guard
+            sourceObj.step = step if step
+            sourceObj.own = own if own
+            sourceObj.object = object if object
+            sourceObj.from = from if from
+
+            # Create For node - constructor expects (body, source)
+            forNode = new nodes.For bodyNode, sourceObj
             forNode
 
           when 'Try'
@@ -432,6 +469,46 @@ class ES5Backend
             body = @evaluateDirective directive.body, frame, ruleName
             bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
             new nodes.Loop bodyNode
+
+          when 'Switch'
+            subject = @evaluateDirective directive.subject, frame, ruleName
+            cases = @evaluateDirective directive.cases, frame, ruleName
+            otherwise = @evaluateDirective directive.otherwise, frame, ruleName
+            casesNode = @filterNodes (if Array.isArray(cases) then cases else [])
+            new nodes.Switch subject, casesNode, otherwise
+
+          when 'When'
+            conditions = @evaluateDirective directive.conditions, frame, ruleName
+            body = @evaluateDirective directive.body, frame, ruleName
+            conditionsNode = @filterNodes (if Array.isArray(conditions) then conditions else [])
+            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            new nodes.When conditionsNode, bodyNode
+
+          when 'Case'
+            conditions = @evaluateDirective directive.conditions, frame, ruleName
+            body = @evaluateDirective directive.body, frame, ruleName
+            conditionsNode = @filterNodes (if Array.isArray(conditions) then conditions else [])
+            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            new nodes.Case conditionsNode, bodyNode
+
+          when 'Catch'
+            body = @evaluateDirective directive.body, frame, ruleName
+            error = @evaluateDirective directive.error, frame, ruleName
+            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            new nodes.Catch error, bodyNode
+
+          when 'Finally'
+            body = @evaluateDirective directive.body, frame, ruleName
+            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            new nodes.Finally bodyNode
+
+          when 'Await'
+            expression = @evaluateDirective directive.expression, frame, ruleName
+            new nodes.Await expression
+
+          when 'YieldFrom'
+            expression = @evaluateDirective directive.expression, frame, ruleName
+            new nodes.YieldFrom expression
 
           else
             # For unimplemented types, create placeholder
@@ -650,8 +727,44 @@ class ES5Backend
         @evaluateDirective directive.addElse?[0], frame, ruleName
 
       when 'loop'
-        # TODO: Implement loop operations (addBody, addSource)
-        @evaluateDirective directive.addBody?[0], frame, ruleName
+        # Loop operations for For/While loops
+        if directive.addSource?
+          # addSource: [loop, source] - add source to loop
+          loopNode = @evaluateDirective directive.addSource[0], frame, ruleName
+          sourceInfo = @evaluateDirective directive.addSource[1], frame, ruleName
+
+          # Convert sourceInfo to proper node if needed
+          if sourceInfo?.type
+            sourceInfo = @solarNodeToClass sourceInfo
+
+          if loopNode and sourceInfo
+            loopNode.addSource sourceInfo
+          loopNode
+        else if directive.addBody?
+          # addBody: [loop, body] - add body to loop
+          loopNode = @evaluateDirective directive.addBody[0], frame, ruleName
+          bodyArg = directive.addBody[1]
+
+          # Handle "Body $N" placeholder
+          if typeof bodyArg is 'string' and bodyArg.startsWith('Body $')
+            position = parseInt(bodyArg.slice(6))
+            bodyNode = @evaluateDirective position, frame, ruleName
+          else
+            bodyNode = @evaluateDirective bodyArg, frame, ruleName
+
+          # Convert body to proper node if needed
+          if bodyNode?.type
+            bodyNode = @solarNodeToClass bodyNode
+
+          # Ensure body has locationData
+          if bodyNode?.constructor?.name and not bodyNode.locationData
+            bodyNode.locationData = @defaultLocationData()
+
+          if loopNode and bodyNode
+            loopNode.addBody bodyNode
+          loopNode
+        else
+          @evaluateDirective directive.addBody?[0], frame, ruleName
 
       when 'prop'
         # TODO: Implement property operations (set)
