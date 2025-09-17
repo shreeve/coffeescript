@@ -27,7 +27,17 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing for-from loops & $use index**: 240 tests passing!
 - **After fixing until loops**: 241 tests passing
 - **After fixing unless statements**: 236 tests passing (some regressions)
-- **Note**: Major breakthrough - from 0 to 236+ tests through systematic fixes
+- **After fixing 'of' operator**: 237 tests passing
+- **After fixing constructor @ parameters**: 238 tests passing
+- **After partial fix for for-await-from loops**: 239 tests passing
+- **After fixing array destructuring elisions**: 249 tests passing
+- **After fixing numeric separator underscores and dynamic imports**: 270 tests passing
+- **After fixing Infinity/NaN literals**: 294 tests passing
+- **After fixing if/unless postfix forms**: 303 tests passing
+- **After fixing prototype access (::)**: 323 tests passing
+- **After fixing computed property names**: 341 tests passing
+- **After fixing @params in derived constructors**: 358 tests passing (94.5%)
+- **Note**: Major breakthrough - from 0 to 358+ tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
