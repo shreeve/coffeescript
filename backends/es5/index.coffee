@@ -215,7 +215,9 @@ class ES5Backend
             node
 
           when 'Value'
-            inner = @evaluateDirective (if directive.val? then directive.val else directive.value), frame, ruleName
+            # directive.val or directive.value can be a position reference (number) or actual value
+            innerDirective = if directive.val? then directive.val else directive.value
+            inner = @evaluateDirective innerDirective, frame, ruleName
             # Handle properties (accessors)
             properties = @evaluateDirective directive.properties, frame, ruleName
             if inner?.compileToFragments or inner instanceof nodes.Base
@@ -305,19 +307,36 @@ class ES5Backend
             # IMPORTANT: These work opposite to JavaScript!
             # CoffeeScript 'of' checks properties/keys (like JS 'in')
             # CoffeeScript 'in' checks values/elements (uses indexOf)
+            
+            # Check if this is a negated operator (not in, not of)
+            negated = invertOperator is 'not' or invertOperator is true
+            
             if op is 'of'
               # 'x of obj' checks if x is a property/key/index
               # Compiles to JavaScript's native 'in' operator
               # MUST set originalOperator to null to prevent it defaulting to 'in'
               # which would trigger the isInOperator() check and create an In node
-              new nodes.Op 'in', left, right, false, {originalOperator: null}
+              opNode = new nodes.Op 'in', left, right, false, {originalOperator: null}
+              # If negated (not of), wrap in a Parens to ensure proper precedence
+              if negated
+                new nodes.Op '!', new nodes.Parens(opNode)
+              else
+                opNode
             else if op is 'in'
               # 'x in array' checks if x is in the values
-              # Compiles to indexOf check
-              new nodes.In left, right
+              # Op with originalOperator='in' will create an In node internally
+              # If negated, set invertOperator to trigger inversion
+              new nodes.Op 'in', left, right, false, {
+                originalOperator: 'in', 
+                invertOperator: if negated then '!' else null
+              }
             else if op is 'instanceof'
               # instanceof checks type
-              new nodes.Op 'instanceof', left, right
+              opNode = new nodes.Op 'instanceof', left, right
+              if negated
+                new nodes.Op '!', opNode
+              else
+                opNode
             else
               # All other operators
               new nodes.Op op, left, right, flip, {originalOperator, invertOperator}
@@ -702,7 +721,7 @@ class ES5Backend
               bodyNode = new nodes.Block []
 
             codeNode = new nodes.Code paramsNode, bodyNode, bound or 'func'
-            
+
             # For CS3, pre-scan for super calls to avoid false positives
             # in derived constructor validation
             hasSuper = false
@@ -712,7 +731,7 @@ class ES5Backend
                   hasSuper = true
                   return false  # Stop traversing
                 return true  # Continue traversing
-            
+
             # Monkey-patch the validation methods to skip validation if we know there's a super call
             if hasSuper
               # Skip validation for @params in derived constructors
@@ -720,7 +739,7 @@ class ES5Backend
               codeNode.flagThisParamInDerivedClassConstructorWithoutCallingSuper = (param) ->
                 # Skip the validation for CS3-generated code with super
                 return
-              
+
               # Also patch eachSuperCall to make it always find the super call
               origEachSuper = codeNode.eachSuperCall
               codeNode.eachSuperCall = (context, iterator) ->
@@ -732,7 +751,7 @@ class ES5Backend
                       iterator(expr)
                       break
                 return true  # Always return true to indicate super was found
-            
+
             codeNode
 
           when 'Param'

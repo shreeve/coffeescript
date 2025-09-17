@@ -37,7 +37,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing prototype access (::)**: 323 tests passing
 - **After fixing computed property names**: 341 tests passing
 - **After fixing @params in derived constructors**: 358 tests passing (94.5%)
-- **Note**: Major breakthrough - from 0 to 358+ tests through systematic fixes
+- **After fixing 'not in' and 'not of' operators**: 363 tests passing (95.8%)
+- **Note**: Major breakthrough - from 0 to 363+ tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
