@@ -19,7 +19,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing slicing operations**: 187 tests passing
 - **After fixing tagged templates**: 191 tests passing
 - **After fixing exception handling**: 197 tests passing
-- **Note**: Major breakthrough - from 0 to 197 tests through systematic fixes
+- **After fixing loop control flow**: 206 tests passing
+- **Note**: Major breakthrough - from 0 to 206 tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -41,8 +42,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 17. **Slicing operations**: Added Slice directive handler for array/string slicing with ranges
 18. **Tagged templates**: Fixed soak pattern issue - set soak=false in TaggedTemplateCall (one-line fix!)
 19. **Exception handling (try/catch/finally)**: Fixed Try directive to use 'catch' property, fixed Catch directive parameter mapping and order
+20. **Loop control flow (break/continue)**: Fixed loop body handling for arrays in frame, added StatementLiteral handler for break/continue/debugger
 
-## Current Status (197 Tests Passing - 80.1%)
+## Current Status (206 Tests Passing - 83.7%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
@@ -66,10 +68,12 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - Operator precedence
 - Exception handling (try/catch/finally/throw/rethrow)
 - typeof, existence, and soak operators
+- Loop control flow (break/continue statements)
+- Loops with comments and assignment
 
 ### Partially Working 🟡
 - Arrays (basic creation works, splats fixed)
-- Loops (basic for loops work)
+- Loops (for-in/for-of loops fully working)
 - Conditionals (simple if/else works)
 
 ### Known Issues ❌

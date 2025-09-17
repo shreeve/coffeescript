@@ -388,6 +388,20 @@ class ES5Backend
             value = @evaluateDirective directive.value, frame, ruleName
             new nodes.BooleanLiteral value
 
+          when 'StatementLiteral'
+            # Handle break, continue, debugger statements
+            value = @evaluateDirective directive.value, frame, ruleName
+            switch value
+              when 'break'
+                new nodes.StatementLiteral value
+              when 'continue'
+                new nodes.StatementLiteral value
+              when 'debugger'
+                new nodes.StatementLiteral value
+              else
+                # For other statements, create a basic literal
+                new nodes.Literal value
+
           when 'NullLiteral'
             new nodes.NullLiteral()
 
@@ -1291,8 +1305,18 @@ class ES5Backend
 
           # Ensure body is a proper Block node with locationData
           if bodyNode
-            # If it's not a nodes.Base, wrap it
-            unless bodyNode instanceof nodes.Base
+            # Handle different body types
+            if Array.isArray(bodyNode)
+              # If it's an array, create a Block with the array's contents
+              bodyNode = new nodes.Block @filterNodes(bodyNode)
+            else if bodyNode instanceof nodes.Block
+              # Already a Block, use as-is
+              bodyNode = bodyNode
+            else if bodyNode instanceof nodes.Base
+              # Single node, wrap in Block
+              bodyNode = new nodes.Block [bodyNode]
+            else
+              # Not a node yet, ensure it becomes one
               bodyNode = new nodes.Block [@ensureNode(bodyNode)]
             # Ensure locationData exists
             bodyNode.locationData ?= @defaultLocationData()
