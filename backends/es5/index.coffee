@@ -307,10 +307,10 @@ class ES5Backend
             # IMPORTANT: These work opposite to JavaScript!
             # CoffeeScript 'of' checks properties/keys (like JS 'in')
             # CoffeeScript 'in' checks values/elements (uses indexOf)
-            
+
             # Check if this is a negated operator (not in, not of)
             negated = invertOperator is 'not' or invertOperator is true
-            
+
             if op is 'of'
               # 'x of obj' checks if x is a property/key/index
               # Compiles to JavaScript's native 'in' operator
@@ -327,7 +327,7 @@ class ES5Backend
               # Op with originalOperator='in' will create an In node internally
               # If negated, set invertOperator to trigger inversion
               new nodes.Op 'in', left, right, false, {
-                originalOperator: 'in', 
+                originalOperator: 'in',
                 invertOperator: if negated then '!' else null
               }
             else if op is 'instanceof'
@@ -684,7 +684,7 @@ class ES5Backend
 
           when 'Code'
             params = @evaluateDirective directive.params, frame, ruleName
-            
+
             # For body, check if it's a position reference to an already-processed array or Block
             # This preserves modifications made by operations like addElse
             if typeof directive.body is 'number' and frame?.rhs?[directive.body - 1]
@@ -697,7 +697,7 @@ class ES5Backend
                 body = @evaluateDirective directive.body, frame, ruleName
             else
               body = @evaluateDirective directive.body, frame, ruleName
-            
+
             # Check if this is a bound function (fat arrow =>)
             funcGlyph = @evaluateDirective directive.funcGlyph, frame, ruleName
             bound = funcGlyph?.glyph is '=>' or @evaluateDirective directive.bound, frame, ruleName
