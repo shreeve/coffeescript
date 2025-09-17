@@ -15,16 +15,15 @@ Minimal test cases for basic CS3 features. Each file tests a single concept:
 - `ranges.coffee` - Range expressions
 - `strings.coffee` - String literals
 
-### `/tools/`
-Development and debugging tools for CS3 implementation:
-- `implement-node.sh` - Script to help implement new AST nodes
-- `node-implementation-template.coffee` - Template for new node implementations
-- `test-node-coverage.sh` - Script to check AST node coverage
-
-### Root Level Test Files
+### Test Files
 - `test-es5-nodes.coffee` - Tests for ES5 backend node implementations
 - `test-loops.coffee` - Tests for loop constructs (For/While)
 - `test-working-features.coffee` - Comprehensive test of all working CS3 features
+
+### Development Tools
+- `implement-node.sh` - Script to help implement new AST nodes
+- `node-implementation-template.coffee` - Template for new node implementations
+- `test-node-coverage.sh` - Script to check AST node coverage
 
 ## Running Tests
 
@@ -37,10 +36,13 @@ Development and debugging tools for CS3 implementation:
 
 # Check AST generation
 ./bin/coffee --cs3-ast test/cs3/simple/objects.coffee
+
+# Check node coverage
+./test/cs3/test-node-coverage.sh
 ```
 
 ## Test Status
 
-✅ **Working**: Basic literals, arrays, objects, operators, conditionals, functions
+✅ **Working**: Basic literals, arrays, objects, operators, conditionals, functions, parentheses
 🚧 **In Progress**: Loops, prototype operator (::)
 📋 **TODO**: Advanced features, edge cases
