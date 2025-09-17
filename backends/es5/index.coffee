@@ -685,11 +685,10 @@ class ES5Backend
               name = new nodes.IdentifierLiteral 'param'
 
             # Check if this is an @ parameter (like @x)
-            # Name will be a Value with this=true and properties containing the actual name
-            if name instanceof nodes.Value and name.this
-              # This is an @param - the actual parameter name should be the property name
-              # But the Param node's name should still be the full @ reference
-              # The Code node will handle the this assignment
+            # Name will be a Value with base=ThisLiteral and properties containing the actual name
+            if name instanceof nodes.Value and name.base instanceof nodes.ThisLiteral
+              # This is an @param - mark it with this=true so Param recognizes it
+              name.this = true
               name.locationData ?= @defaultLocationData()
             else if name and not name.locationData
               # Ensure name has locationData (needed for destructuring)

@@ -58,8 +58,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 26. **Until loops**: Added invert flag handling to While directive for proper until loop negation
 27. **Unless statements**: Fixed by passing type field to If constructor - CS2 handles 'unless' type internally
 28. **'of' operator**: Fixed by setting originalOperator to null to prevent triggering isInOperator() check
+29. **Constructor @ parameters**: Fixed by marking Value nodes with base=ThisLiteral as this=true
 
-## Current Status (237 Tests Passing - 87.5%)
+## Current Status (238 Tests Passing - 87.8%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
@@ -103,9 +104,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - Nested loops incorrectly reuse variable names (overwrites outer loop indices)
 
 **Remaining Backend Issues:**
-- Bound methods (fat arrow =>) not creating bindings
-- Constructor parameters with @ and defaults not working properly
-- Unless/postfix unless conditionals
+- Bound methods (fat arrow =>) in classes not creating bindings (need bind(this) in constructor)
 - Some advanced operator precedence
 - Tagged template interpolation
 
