@@ -79,7 +79,7 @@ runTestFile = (filepath) ->
     console.log "#{red}Compilation/Runtime Error: #{e.message}#{reset}"
 
 # Main
-console.log "#{bold}CS3/ES5 Test Suite#{reset}\n"
+console.log "#{bold}CS3 Test Suite - Running with CS3 Parser#{reset}\n"
 
 # Find all test files in the current directory (test/cs3/)
 testDir = __dirname
@@ -102,5 +102,18 @@ if failed > 0
     console.log "  #{red}#{name}:#{reset} #{error}"
 else
   console.log "#{green}All tests passed!#{reset}"
+
+# Parser info
+successRate = if passed + failed > 0
+  (passed / (passed + failed) * 100).toFixed(1)
+else
+  "0.0"
+
+console.log "\n#{bold}========================================#{reset}"
+console.log "#{bold}CS3 Parser Summary:#{reset}"
+console.log "#{bold}========================================#{reset}\n"
+console.log "Parser:       CS3 (syntax.coffee -> Solar -> ES5 backend)"
+console.log "Tests Run:    CS3 test suite (test/cs3/*.test.coffee)"
+console.log "Pass Rate:    #{successRate}%"
 
 process.exit(if failed > 0 then 1 else 0)

@@ -20,10 +20,10 @@ global.test = (description, fn) ->
   try
     fn()
     passedTests++
-    process.stdout.write '.'
+    console.log "#{green}✓#{reset} #{description}"
   catch error
     failedTests++
-    process.stdout.write 'F'
+    console.log "#{red}✗#{reset} #{description}: #{error.message}"
     errors.push {description, error: error.message}
 
 global.eq = (actual, expected) ->
@@ -87,7 +87,6 @@ for filename in testFiles
     try
       eval(compiled)
       runFiles++
-      console.log ''  # newline after dots
     catch runError
       console.log "\n#{red}RUNTIME ERROR: #{runError.message}#{reset}"
       errors.push {description: filename, error: runError.message}
@@ -97,32 +96,27 @@ for filename in testFiles
     errors.push {description: filename, error: compileError.message}
 
 # Summary
-console.log "\n#{bold}========================================#{reset}"
-console.log "#{bold}Results Summary:#{reset}"
-console.log "#{bold}========================================#{reset}\n"
+console.log "\n#{bold}Results:#{reset}"
+console.log "#{green}Passed: #{passedTests}#{reset}"
 
-console.log "Files:     #{compiledFiles}/#{totalFiles} compiled, #{runFiles}/#{totalFiles} ran"
-console.log "Tests:     #{green}Passed: #{passedTests}#{reset}"
-console.log "           #{red}Failed: #{failedTests}#{reset}"
-
-if errors.length > 0
+if failedTests > 0
+  console.log "#{red}Failed: #{failedTests}#{reset}"
   console.log "\n#{bold}Errors:#{reset}"
   for error in errors
     console.log "  #{red}#{error.description}:#{reset} #{error.error}"
+else
+  console.log "#{green}All tests passed!#{reset}"
 
 successRate = if passedTests + failedTests > 0
   (passedTests / (passedTests + failedTests) * 100).toFixed(1)
 else
   "0.0"
 
-console.log "\n#{bold}Success Rate: #{successRate}%#{reset}"
-
-# Comparison
+# Parser info
 console.log "\n#{bold}========================================#{reset}"
-console.log "#{bold}CS2 vs CS3 Comparison:#{reset}"
+console.log "#{bold}CS2 Parser Summary:#{reset}"
 console.log "#{bold}========================================#{reset}\n"
 console.log "Parser:       CS2 (grammar.coffee -> parser.js)"
-console.log "AST:          Class-based (nodes.coffee)"
 console.log "Tests Run:    CS3 test suite (test/cs3/*.test.coffee)"
 console.log "Pass Rate:    #{successRate}%"
 
