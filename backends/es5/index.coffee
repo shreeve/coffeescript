@@ -683,7 +683,20 @@ class ES5Backend
 
           when 'Code'
             params = @evaluateDirective directive.params, frame, ruleName
-            body = @evaluateDirective directive.body, frame, ruleName
+            
+            # For body, check if it's a position reference to an already-processed array or Block
+            # This preserves modifications made by operations like addElse
+            if typeof directive.body is 'number' and frame?.rhs?[directive.body - 1]
+              frameValue = frame.rhs[directive.body - 1].value
+              # If it's already a Block or an array of nodes, use it directly
+              # This preserves any modifications made by operations
+              if frameValue instanceof nodes.Block or (Array.isArray(frameValue) and frameValue.some((v) -> v instanceof nodes.Base))
+                body = frameValue
+              else
+                body = @evaluateDirective directive.body, frame, ruleName
+            else
+              body = @evaluateDirective directive.body, frame, ruleName
+            
             # Check if this is a bound function (fat arrow =>)
             funcGlyph = @evaluateDirective directive.funcGlyph, frame, ruleName
             bound = funcGlyph?.glyph is '=>' or @evaluateDirective directive.bound, frame, ruleName
@@ -704,10 +717,11 @@ class ES5Backend
             # Ensure body is a proper Block with converted nodes
             if Array.isArray(body)
               bodyNodes = body.map (b) =>
-                if b?.type
-                  @solarNodeToClass(b)
-                else if b instanceof nodes.Base
+                # Check for nodes.Base FIRST to avoid re-processing existing nodes
+                if b instanceof nodes.Base
                   b
+                else if b?.type
+                  @solarNodeToClass(b)
                 else
                   @ensureNode(b)
               bodyNode = new nodes.Block @filterNodes(bodyNodes)
