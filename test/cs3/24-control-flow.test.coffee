@@ -61,7 +61,7 @@ test "switch with range-like conditions", ->
       when x >= 1 and x <= 3 then 'small'
       when x >= 4 and x <= 6 then 'medium'
       else 'other'
-  
+
   eq fn(2), 'small'
   eq fn(5), 'medium'
 

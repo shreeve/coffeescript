@@ -8,10 +8,10 @@ The CS3 (CoffeeScript 3) test suite provides **comprehensive testing** of the da
 
 ```bash
 # Run all tests (from project root)
-./test/cs3/run.sh
+./test/cs3/test.sh
 
 # Or directly with coffee
-./bin/coffee test/cs3/runner.coffee
+./bin/coffee test/cs3/test-cs3.coffee
 ```
 
 ## 📊 Test Results
@@ -108,8 +108,9 @@ CS3's test suite is **intentionally focused** on language features rather than i
 test/cs3/
 │
 ├── README.md              # 📖 This comprehensive guide
-├── run.sh                 # 🏃 Quick test runner
-├── runner.coffee          # ⚙️ Test infrastructure
+├── test-cs3.coffee        # ⚙️ CS3 test runner (executable)
+├── test-traditional.coffee # 🔄 Traditional parser runner (executable)
+├── test-compare.sh        # 🔀 Parser comparison tool
 │
 └── *.test.coffee          # 🧪 Test files (29 total)
     ├── Core (01-07)       # Language fundamentals
@@ -120,9 +121,9 @@ test/cs3/
 
 ## 💻 Running Tests
 
-### All Tests
+### All Tests with CS3 Parser
 ```bash
-./test/cs3/run.sh
+./test/cs3/test-cs3.coffee
 ```
 
 ### Specific Test File
@@ -132,8 +133,20 @@ test/cs3/
 
 ### With Filtering
 ```bash
-./test/cs3/run.sh | grep "classes"
+./test/cs3/test-cs3.coffee | grep "classes"
 ```
+
+### Test with Traditional Parser
+```bash
+./bin/coffee test/cs3/test-traditional.coffee
+```
+This runs the CS3 test suite using the traditional CoffeeScript parser (grammar.coffee → parser.js) instead of the CS3/ES5 pipeline. Shows 99.2% compatibility!
+
+### Compare Both Parsers
+```bash
+./test/cs3/test-compare.sh
+```
+Runs the test suite on both parsers side-by-side and shows a comparison of results.
 
 ## 🔍 Known Issues
 

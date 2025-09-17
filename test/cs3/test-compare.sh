@@ -11,13 +11,13 @@ echo ""
 # Run with CS3 parser
 echo "1. CS3/ES5 Pipeline:"
 echo "--------------------"
-./test/cs3/run.sh 2>&1 | grep -E "(Passed|Failed):" | head -2
+./test/cs3/test-cs3.coffee 2>&1 | grep -E "(Passed|Failed):" | head -2
 echo ""
 
-# Run with Traditional parser  
+# Run with Traditional parser
 echo "2. Traditional Parser:"
 echo "----------------------"
-coffee test/cs3/run-with-traditional.coffee 2>&1 | grep -E "(Passed|Failed):" | sed 's/\x1b\[[0-9;]*m//g' | head -2
+coffee test/cs3/test-traditional.coffee 2>&1 | grep -E "(Passed|Failed):" | sed 's/\x1b\[[0-9;]*m//g' | head -2
 echo ""
 
 echo "=========================================="

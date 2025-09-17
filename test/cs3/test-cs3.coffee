@@ -4,7 +4,7 @@
 CS3/ES5 Test Runner
 ===================
 Executes all test files in the test/cs3 directory
-Usage: ./bin/coffee test/cs3/runner.coffee
+Usage: ./bin/coffee test/cs3/test-cs3.coffee
 ###
 
 fs = require 'fs'
@@ -48,6 +48,14 @@ global.throws = (fn, message) ->
     throw new Error "Expected error: #{message}"
   catch e
     throw e if e.message is "Expected error: #{message}"
+
+global.arrayEq = (actual, expected) ->
+  throw new Error "Arrays have different lengths" unless actual.length is expected.length
+  for val, i in expected
+    throw new Error "Arrays differ at index #{i}" unless actual[i] is val
+
+global.deepEqual = (actual, expected) ->
+  JSON.stringify(actual) is JSON.stringify(expected)
 
 # Compile with CS3
 compileCS3 = (code, options = {}) ->
