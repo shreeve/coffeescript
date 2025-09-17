@@ -3,13 +3,26 @@
 ###
 CS3/ES5 Test Runner
 ===================
-Executes all test files in the test/cs3 directory
-Usage: ./bin/coffee test/cs3/test-cs3.coffee
+Uses the actual CS3 parser (parser-cs3.js) with ES5 backend
 ###
 
 fs = require 'fs'
 path = require 'path'
 CoffeeScript = require '../../lib/coffeescript'
+{Lexer} = require '../../lib/coffeescript/lexer'
+
+# Load CS3 parser and ES5 backend
+try
+  parserCS3 = require '../../lib/coffeescript/parser-cs3'
+catch err
+  console.error "CS3 parser not available: #{err.message}"
+  process.exit 1
+
+try
+  ES5Backend = require '../../lib/backends/es5'
+catch err
+  console.error "ES5 backend not available: #{err.message}"
+  process.exit 1
 
 # ANSI colors
 green = '\x1B[0;32m'
@@ -57,10 +70,43 @@ global.arrayEq = (actual, expected) ->
 global.deepEqual = (actual, expected) ->
   JSON.stringify(actual) is JSON.stringify(expected)
 
-# Compile with CS3
-compileCS3 = (code, options = {}) ->
-  options.cs3 = true
-  CoffeeScript.compile code, options
+# ACTUAL CS3 compilation using parser-cs3 and ES5 backend
+compileCS3Real = (code, options = {}) ->
+  # Tokenize using CS3 lexer
+  lexer = new Lexer()
+  tokens = lexer.tokenize code, options
+
+  # Create lexer interface for Solar parser
+  i = 0
+  lexIface =
+    lex: ->
+      return 1 if i >= tokens.length
+      t = tokens[i++]
+      @yytext = t[1]
+      @yylloc = t[2]
+      @yylineno = if t[2] then t[2].first_line else 0
+      @yyleng = String(@yytext).length
+      parserCS3.parser.symbolIds[t[0]] or parserCS3.parser.symbolIds[t[1]]
+    setInput: -> i = 0
+    upcomingInput: -> ''
+
+  # Set up parser with ES5 backend
+  backend = new ES5Backend(options)
+  parserCS3.parser.lexer = lexIface
+  parserCS3.parser.yy = { backend }
+
+  # Parse with CS3 parser
+  ast = parserCS3.parse()
+
+  # Generate JavaScript from AST
+  result = if ast?.compile
+    ast.compile(backend.compileOptions)
+  else if backend?.generate
+    backend.generate ast
+  else
+    ''
+
+  result or ''
 
 # Run a test file
 runTestFile = (filepath) ->
@@ -68,8 +114,8 @@ runTestFile = (filepath) ->
   code = fs.readFileSync(filepath, 'utf8')
 
   try
-    # Compile with CS3
-    js = compileCS3(code, bare: true, filename: filepath)
+    # Compile with REAL CS3 parser
+    js = compileCS3Real(code, bare: true, filename: filepath)
 
     # Run the compiled code
     eval(js)
@@ -81,11 +127,11 @@ runTestFile = (filepath) ->
 # Main
 console.log "#{bold}CS3 Test Suite - Running with CS3 Parser#{reset}\n"
 
-# Find all test files in the current directory (test/cs3/)
+# Find all test files
 testDir = __dirname
 testFiles = fs.readdirSync(testDir)
   .filter (f) -> f.endsWith('.test.coffee')
-  .sort()  # Ensure tests run in order
+  .sort()
   .map (f) -> path.join(testDir, f)
 
 # Run each test file
@@ -112,7 +158,8 @@ else
 console.log "\n#{bold}========================================#{reset}"
 console.log "#{bold}CS3 Parser Summary:#{reset}"
 console.log "#{bold}========================================#{reset}\n"
-console.log "Parser:       CS3 (syntax.coffee -> Solar -> ES5 backend)"
+console.log "Parser:       CS3 (parser-cs3.js - Solar parser)"
+console.log "Backend:      ES5 (backends/es5/)"
 console.log "Tests Run:    CS3 test suite (test/cs3/*.test.coffee)"
 console.log "Pass Rate:    #{successRate}%"
 
