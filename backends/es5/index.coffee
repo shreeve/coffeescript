@@ -207,7 +207,10 @@ class ES5Backend
           when 'NumberLiteral'
             value = @evaluateDirective directive.value, frame, ruleName
             parsedValue = @evaluateDirective directive.parsedValue, frame, ruleName
-            node = new nodes.NumberLiteral value, parsedValue
+            # Strip underscores from numeric literals for compatibility
+            # Modern JS supports them but older runtimes and some contexts don't
+            cleanValue = if typeof value is 'string' then value.replace(/_/g, '') else value
+            node = new nodes.NumberLiteral cleanValue, parsedValue
             node.locationData ?= @defaultLocationData()
             node
 
@@ -1101,7 +1104,10 @@ class ES5Backend
         new nodes.Literal solarNode.value
 
       when 'NumberLiteral'
-        node = new nodes.NumberLiteral solarNode.value, solarNode.parsedValue
+        # Strip underscores from numeric literals for compatibility
+        value = solarNode.value
+        cleanValue = if typeof value is 'string' then value.replace(/_/g, '') else value
+        node = new nodes.NumberLiteral cleanValue, solarNode.parsedValue
         node.locationData = solarNode.locationData or @defaultLocationData()
         node
 
