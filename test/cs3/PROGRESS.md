@@ -61,8 +61,10 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 29. **Constructor @ parameters**: Fixed by marking Value nodes with base=ThisLiteral as this=true
 30. **Partial fix for for-await-from loops**: Fixed the "cannot use index" error, but variable extraction still needs work
 31. **Array destructuring elisions**: Fixed by implementing proper `nodes.Elision()` support
+32. **Numeric separator underscores**: Strip underscores from numeric literals for older JS runtimes
+33. **Dynamic import() calls**: Added support for DynamicImport and DynamicImportCall AST nodes
 
-## Current Status (249 Tests Passing - 89.3%)
+## Current Status (259 Tests Passing - 90.0%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations

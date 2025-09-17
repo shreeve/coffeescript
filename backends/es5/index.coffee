@@ -1052,13 +1052,13 @@ class ES5Backend
             # Dynamic import: import('./module')
             variable = @evaluateDirective directive.variable, frame, ruleName
             args = @evaluateDirective directive.args, frame, ruleName
-            
+
             # Ensure variable is the import identifier
             variableNode = if variable instanceof nodes.Base
               variable
             else
               new nodes.IdentifierLiteral 'import'
-            
+
             # Process arguments
             argsNode = if Array.isArray(args)
               args.map (arg) => @ensureNode(arg)
@@ -1066,7 +1066,7 @@ class ES5Backend
               [@ensureNode(args)]
             else
               []
-            
+
             new nodes.Call variableNode, argsNode, false
 
           else
