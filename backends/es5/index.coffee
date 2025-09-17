@@ -553,6 +553,7 @@ class ES5Backend
             own = @evaluateDirective directive.own, frame, ruleName
             object = @evaluateDirective directive.object, frame, ruleName
             from = @evaluateDirective directive.from, frame, ruleName
+            isAwait = @evaluateDirective directive.await, frame, ruleName
 
             # Handle body
             if body?.expressions
@@ -582,13 +583,18 @@ class ES5Backend
               sourceObj.source = if source instanceof nodes.Base then source else @ensureNode(source)
             if name
               sourceObj.name = if name instanceof nodes.Base then name else @ensureNode(name)
-            if index
+            # Only add index if it's actually defined (not undefined/null)
+            # This is important for for-await loops which may not have an index
+            # Also check if index is the string "index" which means the variable wasn't found
+            # console.error "[For] index value:", index, "typeof:", typeof index, "is null?:", index is null
+            if index? and index isnt undefined and index isnt 'index'
               sourceObj.index = if index instanceof nodes.Base then index else @ensureNode(index)
             sourceObj.guard = guard if guard
             sourceObj.step = step if step
             sourceObj.own = own if own
             sourceObj.object = object if object
             sourceObj.from = from if from
+            sourceObj.await = isAwait if isAwait
 
             # Create For node - constructor expects (body, source)
             forNode = new nodes.For bodyNode, sourceObj

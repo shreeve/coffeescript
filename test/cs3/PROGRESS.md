@@ -59,8 +59,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 27. **Unless statements**: Fixed by passing type field to If constructor - CS2 handles 'unless' type internally
 28. **'of' operator**: Fixed by setting originalOperator to null to prevent triggering isInOperator() check
 29. **Constructor @ parameters**: Fixed by marking Value nodes with base=ThisLiteral as this=true
+30. **Partial fix for for-await-from loops**: Fixed the "cannot use index" error, but variable extraction still needs work
 
-## Current Status (238 Tests Passing - 87.8%)
+## Current Status (239 Tests Passing - 88.5%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
