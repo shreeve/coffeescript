@@ -947,8 +947,8 @@ class ES5Backend
           value = @solarNodeToClass solarNode.value if solarNode.value
         # For compound assignments, use the operator as the context
         context = if solarNode.operator
-          operator = if typeof solarNode.operator is 'string' 
-            solarNode.operator 
+          operator = if typeof solarNode.operator is 'string'
+            solarNode.operator
           else if solarNode.operator?.toString?()
             solarNode.operator.toString()
           operator
