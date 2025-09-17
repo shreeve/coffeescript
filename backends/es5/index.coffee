@@ -332,12 +332,16 @@ class ES5Backend
               # Regular assignment
               variable = @evaluateDirective directive.variable, frame, ruleName
               value = @evaluateDirective directive.value, frame, ruleName
-              context = @evaluateDirective directive.context, frame, ruleName
-              options = {}
-              if directive.operator?
+              # For compound assignments, use the operator as the context
+              context = if directive.operator?
                 operator = @evaluateDirective directive.operator, frame, ruleName
-                options.operatorToken = {value: operator} if operator
-              # Create the Assign node with optional operator for compound assignments
+                operator
+              else
+                @evaluateDirective directive.context, frame, ruleName
+              options = {}
+              if directive.originalContext?
+                options.originalContext = @evaluateDirective directive.originalContext, frame, ruleName
+              # Create the Assign node with the correct context for compound assignments
               new nodes.Assign variable, value, context, options
 
           when 'StringLiteral'
@@ -941,15 +945,19 @@ class ES5Backend
           # Regular assignment
           variable = @solarNodeToClass solarNode.variable if solarNode.variable
           value = @solarNodeToClass solarNode.value if solarNode.value
-        options = {}
-        # Handle compound assignment operators if present
-        if solarNode.operator
+        # For compound assignments, use the operator as the context
+        context = if solarNode.operator
           operator = if typeof solarNode.operator is 'string' 
             solarNode.operator 
           else if solarNode.operator?.toString?()
             solarNode.operator.toString()
-          options.operatorToken = {value: operator} if operator
-        new nodes.Assign variable, value, solarNode.context, options
+          operator
+        else
+          solarNode.context
+        options = {}
+        if solarNode.originalContext
+          options.originalContext = solarNode.originalContext
+        new nodes.Assign variable, value, context, options
 
       when 'Arr'
         objects = (if solarNode.objects then solarNode.objects.map((o) => @solarNodeToClass o) else [])

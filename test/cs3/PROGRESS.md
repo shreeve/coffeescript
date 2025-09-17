@@ -12,7 +12,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing traverseChildren**: 50.3% (79/157 tests)
 - **After fixing Switch statements**: 55.3% (99/179 tests)
 - **After fixing splat/spread**: 58.5% (110/188 tests)
-- **Note**: Approaching 60% pass rate through systematic backend fixes
+- **After fixing compound assignments**: 60.1% (113/188 tests)
+- **Note**: Crossed the 60% threshold through systematic backend fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -26,6 +27,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 9. **traverseChildren errors**: Fixed Value.add() to filter out null properties
 10. **Switch statements**: Fixed makeReturn bug and proper SwitchWhen node creation
 11. **Splat/spread operations**: Fixed @ directive handling to use 'body' field
+12. **Compound assignment operators**: Fixed `+=`, `-=`, etc. by using operator as context
 
 ## Current Status (After Major Fixes)
 ### Working ✅
