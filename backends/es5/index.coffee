@@ -738,9 +738,11 @@ class ES5Backend
             # Handle super() calls in constructors and methods
             args = @evaluateDirective directive.args, frame, ruleName
             argsNode = if Array.isArray(args)
-              args.map (arg) => @ensureNode(arg)
+              # Filter out nulls that ensureNode might return
+              args.map((arg) => @ensureNode(arg)).filter((arg) => arg?)
             else if args
-              [@ensureNode(args)]
+              arg = @ensureNode(args)
+              if arg? then [arg] else []
             else
               []
 
@@ -1061,12 +1063,14 @@ class ES5Backend
 
             # Process arguments
             argsNode = if Array.isArray(args)
-              args.map (arg) => @ensureNode(arg)
+              # Filter out nulls that ensureNode might return
+              args.map((arg) => @ensureNode(arg)).filter((arg) => arg?)
             else if args
-              [@ensureNode(args)]
+              arg = @ensureNode(args)
+              if arg? then [arg] else []
             else
               []
-
+            
             new nodes.Call variableNode, argsNode, false
 
           else
