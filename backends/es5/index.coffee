@@ -305,7 +305,9 @@ class ES5Backend
             if op is 'of'
               # 'x of obj' checks if x is a property/key/index
               # Compiles to JavaScript's native 'in' operator
-              new nodes.Op 'in', left, right
+              # MUST set originalOperator to null to prevent it defaulting to 'in'
+              # which would trigger the isInOperator() check and create an In node
+              new nodes.Op 'in', left, right, false, {originalOperator: null}
             else if op is 'in'
               # 'x in array' checks if x is in the values
               # Compiles to indexOf check
