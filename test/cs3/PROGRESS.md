@@ -47,7 +47,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 19. **Exception handling (try/catch/finally)**: Fixed Try directive to use 'catch' property, fixed Catch directive parameter mapping and order
 20. **Loop control flow (break/continue)**: Fixed loop body handling for arrays in frame, added StatementLiteral handler for break/continue/debugger
 21. **Class inheritance & super calls**: Added SuperCall handler for super() in constructors and methods
-22. **Heredoc indentation (triple-quoted strings)**: Strip common leading whitespace from multi-line strings  
+22. **Heredoc indentation (triple-quoted strings)**: Strip common leading whitespace from multi-line strings
 23. **Exclusive ranges (...)**: Fixed $use directive property access to handle boolean false values correctly
 
 ## Current Status (214 Tests Passing - 87.0%)
