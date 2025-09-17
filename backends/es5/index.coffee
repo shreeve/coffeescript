@@ -613,10 +613,16 @@ class ES5Backend
             bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
             new nodes.Class variable, parent, bodyNode
 
-          when 'Super'
+          when 'SuperCall'
+            # Handle SuperCall directive - create Super node and args
             args = @evaluateDirective directive.args, frame, ruleName
             argsNode = @filterNodes (if Array.isArray(args) then args else [])
+            # SuperCall constructor expects (args) not (super, args) in CS2
             new nodes.SuperCall argsNode
+
+          when 'Super'
+            # Create a Super node (this keyword for accessing parent methods)
+            new nodes.Super()
 
           when 'StringWithInterpolations'
             body = @evaluateDirective directive.body, frame, ruleName

@@ -14,7 +14,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing splat/spread**: 110 tests passing
 - **After fixing compound assignments**: 113 tests passing
 - **After fixing destructuring defaults & finally blocks**: 156 tests passing
-- **Note**: Steady progress from 0 to 156 tests passing
+- **After fixing string interpolation**: 171 tests passing
+- **Note**: Major breakthrough - from 0 to 171 tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -31,8 +32,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 12. **Compound assignment operators**: Fixed `+=`, `-=`, etc. by using operator as context
 13. **Destructuring with defaults**: Fixed `{x = 10}` by handling expression-only Assign nodes
 14. **Finally blocks**: Fixed Try nodes to properly convert ensure blocks to Block nodes
+15. **String interpolation**: Fixed `"Hello #{name}"` by properly handling Interpolation directives
 
-## Current Status (156 Tests Passing)
+## Current Status (171 Tests Passing)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
@@ -43,9 +45,10 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - Switch statements
 - Spread/splat operations
 - Compound assignments (+=, -=, etc.)
-- Basic regex support
+- Basic regex support  
 - Basic operators (arithmetic, comparison, logical)
-- String operations and interpolation
+- String operations and interpolation (fully working)
+- Template literals with interpolation
 - Classes (basic)
 - Slicing operations
 - Advanced literals
@@ -61,7 +64,6 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 ### Known Issues ❌
 **Parser Limitations:**
 - For-from loops (`for x from array`)
-- String interpolation (produces empty template literals)
 - Exclusive ranges ([1...4] produces [1,2,3,4] instead of [1,2,3])
 - Computed property names in objects
 - Implicit objects in certain contexts
