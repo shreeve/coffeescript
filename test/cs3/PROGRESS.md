@@ -37,6 +37,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 15. **String interpolation**: Fixed `"Hello #{name}"` by properly handling Interpolation directives
 16. **Core operators (in/of/instanceof)**: Fixed to match CoffeeScript semantics - `of` checks keys, `in` checks values
 17. **Slicing operations**: Added Slice directive handler for array/string slicing with ranges
+18. **Tagged templates (partial)**: Identified parser issue - CS3 treats tag"string" as implicit call
 
 ## Current Status (187 Tests Passing - 76.0%)
 ### Working ✅
@@ -74,10 +75,13 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - Implicit objects in certain contexts
 
 **Remaining Backend Issues:**
+- Tagged template literals (CS3 parser treats as implicit call)
 - Prototype operator (::) code generation
 - Some complex destructuring patterns
 - Some edge cases in super calls
 - Some advanced operator precedence
+- Unless/postfix unless conditionals
+- Exception handling (throw/catch/rethrow)
 
 ## Next Steps
 The CS3 parser IS parsing correctly, but the ES5 backend needs significant work to properly convert the AST nodes. Common issues:
