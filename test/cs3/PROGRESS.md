@@ -23,7 +23,7 @@ else
 ### Working ✅
 - Number literals
 - Basic operators (arithmetic, comparison, logical)
-- String concatenation  
+- String concatenation
 - Regex (all regex tests passing!)
 - typeof operator
 - Existence and soak operators
