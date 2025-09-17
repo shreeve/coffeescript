@@ -67,8 +67,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 35. **Infinity/NaN literals**: Added support for special numeric values
 36. **unless statements**: Added proper handling for unless nodes in solarNodeToClass
 37. **if statements**: Added proper handling for if nodes in solarNodeToClass (including postfix)
+38. **Prototype access (::)**: Fixed array property handling in value operation for multiple accessors
 
-## Current Status (303 Tests Passing - 93.5%)
+## Current Status (323 Tests Passing - 94.4%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
