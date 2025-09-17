@@ -15,7 +15,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing compound assignments**: 113 tests passing
 - **After fixing destructuring defaults & finally blocks**: 156 tests passing
 - **After fixing string interpolation**: 171 tests passing
-- **Note**: Major breakthrough - from 0 to 171 tests through systematic fixes
+- **After fixing core operators (in/of/instanceof)**: 177 tests passing
+- **Note**: Major breakthrough - from 0 to 177 tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references

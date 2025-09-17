@@ -286,7 +286,25 @@ class ES5Backend
             flip  = @evaluateDirective (if directive.flip? then directive.flip else directive.args?[3]), frame, ruleName
             originalOperator = @evaluateDirective directive.originalOperator, frame, ruleName
             invertOperator   = @evaluateDirective directive.invertOperator, frame, ruleName
-            new nodes.Op op, left, right, flip, {originalOperator, invertOperator}
+            
+            # Handle CoffeeScript's in/of/instanceof operators
+            # IMPORTANT: These work opposite to JavaScript!
+            # CoffeeScript 'of' checks properties/keys (like JS 'in')
+            # CoffeeScript 'in' checks values/elements (uses indexOf)
+            if op is 'of'
+              # 'x of obj' checks if x is a property/key/index
+              # Compiles to JavaScript's native 'in' operator
+              new nodes.Op 'in', left, right
+            else if op is 'in'
+              # 'x in array' checks if x is in the values
+              # Compiles to indexOf check
+              new nodes.In left, right
+            else if op is 'instanceof'
+              # instanceof checks type
+              new nodes.Op 'instanceof', left, right
+            else
+              # All other operators
+              new nodes.Op op, left, right, flip, {originalOperator, invertOperator}
 
           when 'Arguments'
             args = @evaluateDirective (if directive.args? then directive.args else if directive.$ary? then directive.$ary else directive), frame, ruleName
