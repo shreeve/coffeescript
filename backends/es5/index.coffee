@@ -592,7 +592,9 @@ class ES5Backend
           when 'Code'
             params = @evaluateDirective directive.params, frame, ruleName
             body = @evaluateDirective directive.body, frame, ruleName
-            bound = @evaluateDirective directive.bound, frame, ruleName
+            # Check if this is a bound function (fat arrow =>)
+            funcGlyph = @evaluateDirective directive.funcGlyph, frame, ruleName
+            bound = funcGlyph?.glyph is '=>' or @evaluateDirective directive.bound, frame, ruleName
 
             # Ensure params are proper nodes
             if Array.isArray(params)
@@ -635,9 +637,18 @@ class ES5Backend
             # Param requires at least a name
             if not name
               name = new nodes.IdentifierLiteral 'param'
-            # Ensure name has locationData (needed for destructuring)
-            if name and not name.locationData
+            
+            # Check if this is an @ parameter (like @x)
+            # Name will be a Value with this=true and properties containing the actual name
+            if name instanceof nodes.Value and name.this
+              # This is an @param - the actual parameter name should be the property name
+              # But the Param node's name should still be the full @ reference
+              # The Code node will handle the this assignment
+              name.locationData ?= @defaultLocationData()
+            else if name and not name.locationData
+              # Ensure name has locationData (needed for destructuring)
               name.locationData = @defaultLocationData()
+            
             # For destructured params with Obj, ensure it's not marked as generated
             # to avoid operatorToken error check in Param constructor
             if name instanceof nodes.Obj
@@ -668,6 +679,20 @@ class ES5Backend
           when 'Super'
             # Create a Super node (this keyword for accessing parent methods)
             new nodes.Super()
+
+          when 'SuperCall'
+            # Handle super() calls in constructors and methods
+            args = @evaluateDirective directive.args, frame, ruleName
+            argsNode = if Array.isArray(args)
+              args.map (arg) => @ensureNode(arg)
+            else if args
+              [@ensureNode(args)]
+            else
+              []
+            
+            # Create a SuperCall node with the Super variable and arguments
+            variableNode = new nodes.Super()
+            new nodes.Call variableNode, argsNode, false
 
           when 'StringWithInterpolations'
             body = @evaluateDirective directive.body, frame, ruleName
