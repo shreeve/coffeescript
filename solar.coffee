@@ -73,7 +73,7 @@ class Generator
     if grammar.bnf?
       @mode = 'cs2'  # CS2 grammar.coffee with string actions
     else if grammar.grammar?
-      @mode = 'cs3'         # CS3 syntax.coffee with directive objects
+      @mode = 'cs3'  # CS3 syntax.coffee with directive objects
     else
       throw new Error "Unknown grammar format: expected 'bnf' or 'grammar' property"
 
