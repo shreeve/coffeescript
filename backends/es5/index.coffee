@@ -337,6 +337,22 @@ class ES5Backend
             properties = @evaluateDirective directive.properties, frame, ruleName
             properties = @filterNodes (if Array.isArray(properties) then properties else [])
             generated = @evaluateDirective directive.generated, frame, ruleName
+
+            # If object is generated (from braces) and has shorthand properties,
+            # convert them to proper key-value pairs
+            if generated
+              fixedProps = []
+              for prop in properties
+                if prop instanceof nodes.Value and prop.base instanceof nodes.IdentifierLiteral and not prop.properties?.length
+                  # This is a shorthand property like 'x' in {x}
+                  # Convert to x: x
+                  key = new nodes.Value prop.base
+                  value = new nodes.Value prop.base
+                  fixedProps.push new nodes.Assign key, value, 'object'
+                else
+                  fixedProps.push prop
+              properties = fixedProps
+
             obj = new nodes.Obj properties, generated
             obj.locationData ?= @defaultLocationData()
             obj
@@ -734,6 +750,12 @@ class ES5Backend
           when 'YieldFrom'
             expression = @evaluateDirective directive.expression, frame, ruleName
             new nodes.YieldFrom expression
+
+          when 'ThisLiteral', 'This'
+            # Create a This node
+            thisNode = new nodes.ThisLiteral()
+            thisNode.locationData ?= @defaultLocationData()
+            thisNode
 
           else
             # For unimplemented types, create placeholder

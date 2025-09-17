@@ -7,8 +7,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **Previous "100% pass rate"**: Was actually CS2 parser, not CS3
 - **Actual CS3 initial pass rate**: 0% (all tests failed to compile)
 - **After initial $ary fix**: 4.7% (20/425 tests)
-- **After backend fixes**: 42.1% (40/95 tests that actually run)
-- **Note**: Only 95 tests run because most files fail to compile due to parser limitations
+- **After backend fixes**: 42.1% (40/95 tests)
+- **After rewriter investigation**: 47.8% (66/138 tests)
+- **Note**: More tests now run after fixing shorthand objects and ThisLiteral
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -17,6 +18,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 4. **Splat/Expansion/Throw**: Fixed nodes requiring non-null expressions
 5. **Literal nodes**: Added proper locationData to String, Number, Identifier literals
 6. **Destructured parameters**: Fixed by setting generated=false on Param Obj nodes
+7. **Shorthand object syntax**: Fixed `{x, y}` to properly create `{x: x, y: y}`
+8. **ThisLiteral**: Added support for `this` keyword (was generating TODO comment)
 
 ## Current Status (After Major Fixes)
 ### Working ✅
