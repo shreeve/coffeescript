@@ -175,7 +175,8 @@ class ES5Backend
           when 'Root'
             body = @evaluateDirective directive.body, frame, ruleName
             body = if Array.isArray(body) then body else (if body? then [body] else [])
-            new nodes.Root new nodes.Block @filterNodes body
+            filteredBody = @filterNodes body
+            new nodes.Root new nodes.Block filteredBody
 
           when 'IdentifierLiteral'
             value = @evaluateDirective directive.value, frame, ruleName
@@ -200,7 +201,7 @@ class ES5Backend
               valueNode = if inner instanceof nodes.Value then inner else new nodes.Value inner
               if properties and Array.isArray(properties) and properties.length > 0
                 for prop in properties
-                  # Handle nested arrays of properties
+                  # Handle nested arrays of properties (e.g., from :: operator)
                   if Array.isArray(prop)
                     for subProp in prop
                       continue unless subProp?  # Skip null/undefined
@@ -210,14 +211,13 @@ class ES5Backend
                         converted = @solarNodeToClass(subProp)
                         if converted instanceof nodes.Base
                           valueNode.add converted
-                        else if converted?
-                          console.error "Warning: solarNodeToClass returned non-node:", converted
                   else if prop?  # Skip null/undefined
                     if prop instanceof nodes.Base
                       valueNode.add prop
                     else if prop?.type
                       converted = @solarNodeToClass(prop)
-                      valueNode.add converted if converted?
+                      if converted instanceof nodes.Base
+                        valueNode.add converted
               return valueNode
             @ensureNode(inner) or new nodes.Literal "/* TODO: Solar Value */"
 
@@ -225,7 +225,11 @@ class ES5Backend
             nameNode = @evaluateDirective directive.name, frame, ruleName
             # Ensure nameNode is not null
             if not nameNode?
-              nameNode = new nodes.PropertyName ''
+              # For shorthand (::), use "prototype" as the name
+              if directive.shorthand
+                nameNode = new nodes.PropertyName 'prototype'
+              else
+                nameNode = new nodes.PropertyName ''
             else if nameNode?.type
               nameNode = @solarNodeToClass(nameNode)
             else if not (nameNode instanceof nodes.Base)
@@ -670,7 +674,15 @@ class ES5Backend
 
       # $ary directive (array creation)
       else if directive.$ary?
-        directive.$ary.map (item) => @evaluateDirective item, frame, ruleName
+        result = []
+        for item in directive.$ary
+          # Each item might have a $pos directive - evaluate without it
+          itemCopy = Object.assign {}, item
+          delete itemCopy.$pos if itemCopy.$pos?
+          evaluated = @evaluateDirective itemCopy, frame, ruleName
+          # Skip null/undefined items
+          result.push evaluated if evaluated?
+        result
 
       # $ops directive (operations)
       else if directive.$ops?
@@ -813,10 +825,13 @@ class ES5Backend
       when 'Access'
         nameNode = if solarNode.name?.type
           @solarNodeToClass solarNode.name
-        else if solarNode.name
+        else if solarNode.name?.value?
+          new nodes.PropertyName solarNode.name.value
+        else if typeof solarNode.name is 'string'
           new nodes.PropertyName solarNode.name
         else
-          new nodes.PropertyName ''
+          # For shorthand (::), default to "prototype"
+          new nodes.PropertyName (if solarNode.shorthand then 'prototype' else '')
         new nodes.Access nameNode, {soak: solarNode.soak, shorthand: solarNode.shorthand}
 
       when 'PropertyName'
