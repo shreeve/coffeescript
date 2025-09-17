@@ -22,7 +22,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing loop control flow**: 206 tests passing
 - **After fixing class inheritance & super calls**: 209 tests passing
 - **After fixing heredoc indentation**: 210 tests passing
-- **Note**: Major breakthrough - from 0 to 210 tests through systematic fixes
+- **After fixing exclusive ranges**: 214 tests passing
+- **Note**: Major breakthrough - from 0 to 214 tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -46,9 +47,10 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 19. **Exception handling (try/catch/finally)**: Fixed Try directive to use 'catch' property, fixed Catch directive parameter mapping and order
 20. **Loop control flow (break/continue)**: Fixed loop body handling for arrays in frame, added StatementLiteral handler for break/continue/debugger
 21. **Class inheritance & super calls**: Added SuperCall handler for super() in constructors and methods
-22. **Heredoc indentation (triple-quoted strings)**: Strip common leading whitespace from multi-line strings
+22. **Heredoc indentation (triple-quoted strings)**: Strip common leading whitespace from multi-line strings  
+23. **Exclusive ranges (...)**: Fixed $use directive property access to handle boolean false values correctly
 
-## Current Status (210 Tests Passing - 85.4%)
+## Current Status (214 Tests Passing - 87.0%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
@@ -75,6 +77,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - Loop control flow (break/continue statements)
 - Loops with comments and assignment
 - Class inheritance and super calls in constructors/methods
+- Exclusive ranges (...) and inclusive ranges (..)
 
 ### Partially Working 🟡
 - Arrays (basic creation works, splats fixed)
@@ -84,7 +87,6 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 ### Known Issues ❌
 **Parser Limitations (CS3 Solar parser issues):**
 - For-from loops (`for x from array`)
-- Exclusive ranges ([1...4] produces [1,2,3,4] instead of [1,2,3])
 - Computed property names in objects
 - Implicit objects in certain contexts
 

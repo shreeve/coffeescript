@@ -167,7 +167,12 @@ class ES5Backend
           value?[directive.method]?.apply(value, args) or String(value)
         # Apply property access
         else if directive.prop?
-          value?[directive.prop] or String(value)
+          # Special handling for boolean properties to avoid the falsy trap
+          result = value?[directive.prop]
+          if result? or (value? and typeof value is 'object' and directive.prop of value)
+            result
+          else
+            String(value)
         else
           value
 
@@ -380,7 +385,7 @@ class ES5Backend
               if (value[0] is '"' and value[value.length - 1] is '"') or
                  (value[0] is "'" and value[value.length - 1] is "'")
                 value = value.slice(1, -1)
-            
+
             # Handle triple-quoted strings (heredocs) - strip common leading whitespace
             if quote is '"""' or quote is "'''"
               lines = value.split('\n')
@@ -391,13 +396,13 @@ class ES5Backend
                   if line.trim().length > 0
                     leadingSpaces = line.match(/^[ \t]*/)[0].length
                     minIndent = Math.min(minIndent, leadingSpaces)
-                
+
                 # Strip common indentation from all lines except the first
                 if minIndent > 0 and minIndent < Infinity
                   for i in [1...lines.length]
                     lines[i] = lines[i].slice(minIndent)
                   value = lines.join('\n')
-            
+
             node = new nodes.StringLiteral value, {quote}
             node.locationData ?= @defaultLocationData()
             node
@@ -460,9 +465,10 @@ class ES5Backend
           when 'Range'
             from = @evaluateDirective directive.from, frame, ruleName
             to = @evaluateDirective directive.to, frame, ruleName
-            # Evaluate the exclusive flag if it's a directive
+            # Evaluate the exclusive flag - it can be a directive or a boolean
             exclusiveVal = @evaluateDirective directive.exclusive, frame, ruleName
-            exclusive = if exclusiveVal?
+            # The evaluateDirective should return the boolean value from {$use: 3, prop: 'exclusive'}
+            exclusive = if typeof exclusiveVal is 'boolean'
               exclusiveVal
             else if directive.equals?
               @evaluateDirective(directive.equals, frame, ruleName) is 'exclusive'
@@ -471,7 +477,9 @@ class ES5Backend
             # Ensure from and to are proper nodes
             fromNode = if from instanceof nodes.Base then from else @ensureNode(from)
             toNode = if to instanceof nodes.Base then to else @ensureNode(to)
-            new nodes.Range fromNode, toNode, exclusive
+            # Pass 'exclusive' as the tag for exclusive ranges
+            tag = if exclusive then 'exclusive' else null
+            new nodes.Range fromNode, toNode, tag
 
           when 'If', 'if'
             condition = @evaluateDirective directive.condition, frame, ruleName
@@ -655,7 +663,7 @@ class ES5Backend
             # Param requires at least a name
             if not name
               name = new nodes.IdentifierLiteral 'param'
-            
+
             # Check if this is an @ parameter (like @x)
             # Name will be a Value with this=true and properties containing the actual name
             if name instanceof nodes.Value and name.this
@@ -666,7 +674,7 @@ class ES5Backend
             else if name and not name.locationData
               # Ensure name has locationData (needed for destructuring)
               name.locationData = @defaultLocationData()
-            
+
             # For destructured params with Obj, ensure it's not marked as generated
             # to avoid operatorToken error check in Param constructor
             if name instanceof nodes.Obj
@@ -707,7 +715,7 @@ class ES5Backend
               [@ensureNode(args)]
             else
               []
-            
+
             # Create a SuperCall node with the Super variable and arguments
             variableNode = new nodes.Super()
             new nodes.Call variableNode, argsNode, false
@@ -1075,7 +1083,7 @@ class ES5Backend
           if (value[0] is '"' and value[value.length - 1] is '"') or
              (value[0] is "'" and value[value.length - 1] is "'")
             value = value.slice(1, -1)
-        
+
         # Handle triple-quoted strings (heredocs) - strip common leading whitespace
         if quote is '"""' or quote is "'''"
           lines = value.split('\n')
@@ -1086,13 +1094,13 @@ class ES5Backend
               if line.trim().length > 0
                 leadingSpaces = line.match(/^[ \t]*/)[0].length
                 minIndent = Math.min(minIndent, leadingSpaces)
-            
+
             # Strip common indentation from all lines except the first
             if minIndent > 0 and minIndent < Infinity
               for i in [1...lines.length]
                 lines[i] = lines[i].slice(minIndent)
               value = lines.join('\n')
-        
+
         node = new nodes.StringLiteral value, {quote}
         node.locationData = solarNode.locationData or @defaultLocationData()
         node
