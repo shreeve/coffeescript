@@ -46,7 +46,7 @@ test "calls with complex arguments", ->
 
 test "method calls on literals", ->
   eq 'hello'.toUpperCase(), 'HELLO'
-  eq 42..toString(), '42'
+  eq (42).toString(), '42'
 
 test "calls with default parameters", ->
   fn = (a = 1, b = 2) -> a + b

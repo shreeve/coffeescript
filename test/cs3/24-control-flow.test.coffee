@@ -55,11 +55,11 @@ test "switch with multiple values", ->
 
 test "switch with ranges", ->
   fn = (x) ->
-    switch x
-      when 1..3 then 'small'
-      when 4..6 then 'medium'
+    switch
+      when x >= 1 and x <= 3 then 'small'
+      when x >= 4 and x <= 6 then 'medium'
       else 'other'
-
+  
   eq fn(2), 'small'
   eq fn(5), 'medium'
 

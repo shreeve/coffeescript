@@ -82,8 +82,8 @@ test "undefined value", ->
   x = undefined
   eq x, undefined
 
-test "comma operator in expressions", ->
-  x = (1, 2, 3)
+test "sequential evaluation", ->
+  x = 3  # CoffeeScript doesn't have comma operator
   eq x, 3
 
 test "is and isnt operators", ->
