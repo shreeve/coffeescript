@@ -686,10 +686,14 @@ class ES5Backend
       else if directive.$ary?
         result = []
         for item in directive.$ary
-          # Each item might have a $pos directive - evaluate without it
-          itemCopy = Object.assign {}, item
-          delete itemCopy.$pos if itemCopy.$pos?
-          evaluated = @evaluateDirective itemCopy, frame, ruleName
+          # If item is a number, it's a position reference
+          if typeof item is 'number'
+            evaluated = @evaluateDirective item, frame, ruleName
+          else
+            # Item is an object, might have a $pos directive - evaluate without it
+            itemCopy = Object.assign {}, item
+            delete itemCopy.$pos if itemCopy.$pos?
+            evaluated = @evaluateDirective itemCopy, frame, ruleName
           # Skip null/undefined items
           result.push evaluated if evaluated?
         result
