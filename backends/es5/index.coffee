@@ -758,7 +758,9 @@ class ES5Backend
             else
               bodyNode = new nodes.Block []
 
-            codeNode = new nodes.Code paramsNode, bodyNode, bound or 'func'
+            # Create proper FuncGlyph for bound/unbound functions
+            funcGlyph = if bound then new nodes.FuncGlyph('=>') else new nodes.FuncGlyph('->')
+            codeNode = new nodes.Code paramsNode, bodyNode, funcGlyph
 
             # For CS3, pre-scan for super calls to avoid false positives
             # in derived constructor validation
@@ -1196,6 +1198,11 @@ class ES5Backend
               []
 
             new nodes.Call variableNode, argsNode, false
+
+          when 'FuncGlyph'
+            # FuncGlyph for -> or => functions
+            glyph = @evaluateDirective directive.glyph, frame, ruleName
+            new nodes.FuncGlyph(glyph)
 
           else
             # For unimplemented types, create placeholder
