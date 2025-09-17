@@ -34,8 +34,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 13. **Destructuring with defaults**: Fixed `{x = 10}` by handling expression-only Assign nodes
 14. **Finally blocks**: Fixed Try nodes to properly convert ensure blocks to Block nodes
 15. **String interpolation**: Fixed `"Hello #{name}"` by properly handling Interpolation directives
+16. **Core operators (in/of/instanceof)**: Fixed to match CoffeeScript semantics - `of` checks keys, `in` checks values
 
-## Current Status (171 Tests Passing)
+## Current Status (177 Tests Passing - 72.0%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
@@ -48,6 +49,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - Compound assignments (+=, -=, etc.)
 - Basic regex support
 - Basic operators (arithmetic, comparison, logical)
+- Core operators: `in` (value membership), `of` (key/property check), `instanceof`
 - String operations and interpolation (fully working)
 - Template literals with interpolation
 - Classes (basic)
