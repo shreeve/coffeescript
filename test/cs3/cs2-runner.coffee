@@ -95,15 +95,17 @@ for filename in testFiles
     console.log "#{red}COMPILATION ERROR: #{compileError.message}#{reset}"
     errors.push {description: filename, error: compileError.message}
 
+if failedTests > 0
+  console.log "\n#{bold}Errors:#{reset}"
+  for error in errors
+    console.log "  #{red}#{error.description}:#{reset} #{error.error}"
+
 # Summary
 console.log "\n#{bold}Results:#{reset}"
 console.log "#{green}Passed: #{passedTests}#{reset}"
 
 if failedTests > 0
   console.log "#{red}Failed: #{failedTests}#{reset}"
-  console.log "\n#{bold}Errors:#{reset}"
-  for error in errors
-    console.log "  #{red}#{error.description}:#{reset} #{error.error}"
 else
   console.log "#{green}All tests passed!#{reset}"
 

@@ -329,13 +329,17 @@ class ES5Backend
           when 'Arr'
             objects = @evaluateDirective directive.objects, frame, ruleName
             objects = @filterNodes (if Array.isArray(objects) then objects else [])
-            new nodes.Arr objects
+            arr = new nodes.Arr objects
+            arr.locationData ?= @defaultLocationData()
+            arr
 
           when 'Obj'
             properties = @evaluateDirective directive.properties, frame, ruleName
             properties = @filterNodes (if Array.isArray(properties) then properties else [])
             generated = @evaluateDirective directive.generated, frame, ruleName
-            new nodes.Obj properties, generated
+            obj = new nodes.Obj properties, generated
+            obj.locationData ?= @defaultLocationData()
+            obj
 
           when 'Range'
             from = @evaluateDirective directive.from, frame, ruleName
@@ -441,7 +445,14 @@ class ES5Backend
             attempt = @evaluateDirective directive.attempt, frame, ruleName
             recovery = @evaluateDirective directive.recovery, frame, ruleName
             ensure = @evaluateDirective directive.ensure, frame, ruleName
-            attemptNode = if Array.isArray(attempt) then new nodes.Block @filterNodes(attempt) else attempt
+            # Ensure attempt is a proper block
+            attemptNode = if Array.isArray(attempt)
+              new nodes.Block @filterNodes(attempt)
+            else if attempt
+              attempt
+            else
+              new nodes.Block []
+            # Try expects (attempt, recovery, ensure) where recovery and ensure are optional
             new nodes.Try attemptNode, recovery, ensure
 
           when 'Code'
@@ -487,6 +498,16 @@ class ES5Backend
             name = @evaluateDirective directive.name, frame, ruleName
             value = @evaluateDirective directive.value, frame, ruleName
             splat = @evaluateDirective directive.splat, frame, ruleName
+            # Param requires at least a name
+            if not name
+              name = new nodes.IdentifierLiteral 'param'
+            # Ensure name has locationData (needed for destructuring)
+            if name and not name.locationData
+              name.locationData = @defaultLocationData()
+            # For destructured params with Obj, ensure it's not marked as generated
+            # to avoid operatorToken error check in Param constructor
+            if name instanceof nodes.Obj
+              name.generated = false
             new nodes.Param name, value, splat
 
           when 'Return'
@@ -662,26 +683,43 @@ class ES5Backend
             cases = @evaluateDirective directive.cases, frame, ruleName
             otherwise = @evaluateDirective directive.otherwise, frame, ruleName
             casesNode = @filterNodes (if Array.isArray(cases) then cases else [])
+            # Ensure otherwise is a proper block or null
+            if otherwise
+              if Array.isArray(otherwise)
+                otherwise = new nodes.Block @filterNodes(otherwise)
+              else if not (otherwise instanceof nodes.Base)
+                otherwise = new nodes.Block [@ensureNode(otherwise)]
             new nodes.Switch subject, casesNode, otherwise
 
           when 'When'
             conditions = @evaluateDirective directive.conditions, frame, ruleName
             body = @evaluateDirective directive.body, frame, ruleName
             conditionsNode = @filterNodes (if Array.isArray(conditions) then conditions else [])
-            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            bodyNode = if Array.isArray(body)
+              new nodes.Block @filterNodes(body)
+            else if body
+              body
+            else
+              new nodes.Block []
             new nodes.When conditionsNode, bodyNode
 
           when 'Case'
             conditions = @evaluateDirective directive.conditions, frame, ruleName
             body = @evaluateDirective directive.body, frame, ruleName
             conditionsNode = @filterNodes (if Array.isArray(conditions) then conditions else [])
-            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            bodyNode = if Array.isArray(body)
+              new nodes.Block @filterNodes(body)
+            else if body
+              body
+            else
+              new nodes.Block []
             new nodes.Case conditionsNode, bodyNode
 
           when 'Catch'
             body = @evaluateDirective directive.body, frame, ruleName
             error = @evaluateDirective directive.error, frame, ruleName
             bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            # Catch can have an optional error parameter
             new nodes.Catch error, bodyNode
 
           when 'Finally'
@@ -979,7 +1017,7 @@ class ES5Backend
           # Convert sourceInfo to proper node if needed
           if sourceInfo?.type
             sourceInfo = @solarNodeToClass sourceInfo
-          
+
           # Ensure source has proper structure
           if sourceInfo
             # For addSource, we might get an object with source, name, index, etc.
@@ -1016,7 +1054,7 @@ class ES5Backend
           # Convert body to proper node if needed
           if bodyNode?.type
             bodyNode = @solarNodeToClass bodyNode
-          
+
           # Ensure body is a proper Block node with locationData
           if bodyNode
             # If it's not a nodes.Base, wrap it

@@ -138,14 +138,17 @@ testFiles = fs.readdirSync(testDir)
 for file in testFiles
   runTestFile(file)
 
+# Errors
+if failed > 0
+  console.log "\n#{bold}Errors:#{reset}"
+  for {name, error} in errors
+    console.log "  #{red}#{name}:#{reset} #{error}"
+
 # Summary
 console.log "\n#{bold}Results:#{reset}"
 console.log "#{green}Passed: #{passed}#{reset}"
 if failed > 0
   console.log "#{red}Failed: #{failed}#{reset}"
-  console.log "\n#{bold}Errors:#{reset}"
-  for {name, error} in errors
-    console.log "  #{red}#{name}:#{reset} #{error}"
 else
   console.log "#{green}All tests passed!#{reset}"
 
