@@ -16,7 +16,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing destructuring defaults & finally blocks**: 156 tests passing
 - **After fixing string interpolation**: 171 tests passing
 - **After fixing core operators (in/of/instanceof)**: 177 tests passing
-- **Note**: Major breakthrough - from 0 to 177 tests through systematic fixes
+- **After fixing slicing operations**: 187 tests passing
+- **Note**: Major breakthrough - from 0 to 187 tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -35,8 +36,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 14. **Finally blocks**: Fixed Try nodes to properly convert ensure blocks to Block nodes
 15. **String interpolation**: Fixed `"Hello #{name}"` by properly handling Interpolation directives
 16. **Core operators (in/of/instanceof)**: Fixed to match CoffeeScript semantics - `of` checks keys, `in` checks values
+17. **Slicing operations**: Added Slice directive handler for array/string slicing with ranges
 
-## Current Status (177 Tests Passing - 72.0%)
+## Current Status (187 Tests Passing - 76.0%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
@@ -53,7 +55,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - String operations and interpolation (fully working)
 - Template literals with interpolation
 - Classes (basic)
-- Slicing operations
+- Slicing operations (array and string slicing with ranges)
 - Advanced literals
 - Function invocation patterns
 - Operator precedence
