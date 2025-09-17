@@ -507,7 +507,7 @@ class ES5Backend
             attempt = @evaluateDirective directive.attempt, frame, ruleName
             recovery = @evaluateDirective directive.recovery, frame, ruleName
             ensure = @evaluateDirective directive.ensure, frame, ruleName
-            
+
             # Ensure attempt is a proper block
             attemptNode = if Array.isArray(attempt)
               new nodes.Block @filterNodes(attempt)
@@ -517,7 +517,7 @@ class ES5Backend
               new nodes.Block [@ensureNode(attempt)]
             else
               new nodes.Block []
-            
+
             # Ensure ensure is a proper block if present
             ensureNode = if ensure
               if Array.isArray(ensure)
@@ -528,7 +528,7 @@ class ES5Backend
                 new nodes.Block [@ensureNode(ensure)]
             else
               null
-            
+
             # Try expects (attempt, recovery, ensure) where recovery and ensure are optional
             new nodes.Try attemptNode, recovery, ensureNode
 
