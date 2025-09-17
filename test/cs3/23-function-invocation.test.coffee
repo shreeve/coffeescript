@@ -3,7 +3,7 @@
 test "basic function calls", ->
   fn = (x) -> x * 2
   eq fn(5), 10
-  eq fn 5, 10  # without parens
+  eq (fn 5), 10  # without parens - needs parens for correct parsing
 
 test "implicit calls", ->
   fn = (x) -> x + 1

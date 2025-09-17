@@ -21,9 +21,11 @@ test "object comprehension", ->
 
 test "nested comprehension", ->
   matrix = ([i, j] for i in [1, 2] for j in [3, 4])
-  eq matrix.length, 4
-  eq matrix[0][0], 1
-  eq matrix[0][1], 3
+  eq matrix.length, 2  # Correct: produces nested structure
+  eq matrix[0][0][0], 1
+  eq matrix[0][0][1], 3
+  eq matrix[1][0][0], 1
+  eq matrix[1][0][1], 4
 
 test "comprehension with index", ->
   indexed = ("#{i}:#{v}" for v, i in ['a', 'b', 'c'])
@@ -67,9 +69,11 @@ test "comprehension with continue", ->
   result = for x in [1..5]
     continue if x is 3
     x * 2
-  eq result.length, 5
-  eq result[2], undefined
-  eq result[3], 8
+  eq result.length, 4  # Correct: continue skips iteration entirely
+  eq result[0], 2  # x=1: 1*2 = 2
+  eq result[1], 4  # x=2: 2*2 = 4
+  eq result[2], 8  # x=4: 4*2 = 8 (x=3 was skipped)
+  eq result[3], 10 # x=5: 5*2 = 10
 
 test "comprehension with own", ->
   class Parent
