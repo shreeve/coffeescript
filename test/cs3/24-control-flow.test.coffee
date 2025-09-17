@@ -53,7 +53,9 @@ test "switch with multiple values", ->
   eq fn(5), 'medium'
   eq fn(10), 'other'
 
-test "switch with ranges", ->
+test "switch with range-like conditions", ->
+  # Note: Direct ranges in when clauses (when 1..3) are not supported
+  # Use conditionals instead
   fn = (x) ->
     switch
       when x >= 1 and x <= 3 then 'small'
