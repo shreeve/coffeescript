@@ -1327,12 +1327,12 @@ class ES5Backend
           # addElse: [ifNode, elseBody] - add else clause to if statement
           ifNode = @evaluateDirective directive.addElse[0], frame, ruleName
           elseBody = @evaluateDirective directive.addElse[1], frame, ruleName
-          
+
           if ifNode instanceof nodes.If
             # Convert elseBody to proper node if needed
             if elseBody?.type
               elseBody = @solarNodeToClass elseBody
-            
+
             # Set the else body (alternate property)
             elseBodyNode = if Array.isArray(elseBody)
               new nodes.Block @filterNodes(elseBody)
@@ -1345,7 +1345,7 @@ class ES5Backend
                 new nodes.Block [@ensureNode(elseBody)]
             else
               null
-            
+
             ifNode.elseBody = elseBodyNode
           ifNode
         else
