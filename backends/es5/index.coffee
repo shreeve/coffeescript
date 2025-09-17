@@ -513,6 +513,24 @@ class ES5Backend
             opts.postfix = postfix if postfix
             new nodes.If condition, bodyNode, opts
 
+          when 'Unless', 'unless'
+            # Unless is an inverted If
+            condition = @evaluateDirective directive.condition, frame, ruleName
+            body = @evaluateDirective directive.body, frame, ruleName
+            elseBody = @evaluateDirective directive.elseBody, frame, ruleName
+            postfix = @evaluateDirective directive.postfix, frame, ruleName
+
+            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            elseNode = if elseBody
+              if Array.isArray(elseBody) then new nodes.Block @filterNodes(elseBody) else elseBody
+            else
+              null
+
+            # Create an If node with type: 'unless' for unless
+            opts = {elseBody: elseNode, type: 'unless'}
+            opts.postfix = postfix if postfix
+            new nodes.If condition, bodyNode, opts
+
           when 'While'
             condition = @evaluateDirective directive.condition, frame, ruleName
             body = @evaluateDirective directive.body, frame, ruleName
@@ -1336,6 +1354,43 @@ class ES5Backend
               converted = if expr?.type then @solarNodeToClass(expr) else expr
               flatExpressions.push converted if converted?
         new nodes.Block @filterNodes flatExpressions
+
+      when 'if'
+        # if statement  
+        bodyNode = if solarNode.body?.expressions
+          new nodes.Block solarNode.body.expressions
+        else
+          @ensureNode(solarNode.body)
+        elseNode = if solarNode.elseBody
+          if solarNode.elseBody.expressions
+            new nodes.Block solarNode.elseBody.expressions
+          else
+            @ensureNode(solarNode.elseBody)
+        else
+          null
+        # Include postfix and type if they exist
+        opts = {elseBody: elseNode}
+        opts.postfix = solarNode.postfix if solarNode.postfix?
+        opts.type = solarNode.type if solarNode.type?
+        new nodes.If @ensureNode(solarNode.condition), bodyNode, opts
+
+      when 'unless'
+        # unless is an inverted if statement
+        bodyNode = if solarNode.body?.expressions
+          new nodes.Block solarNode.body.expressions
+        else
+          @ensureNode(solarNode.body)
+        elseNode = if solarNode.elseBody
+          if solarNode.elseBody.expressions
+            new nodes.Block solarNode.elseBody.expressions
+          else
+            @ensureNode(solarNode.elseBody)
+        else
+          null
+        # Pass type: 'unless' for unless statements
+        opts = {elseBody: elseNode, type: 'unless'}
+        opts.postfix = solarNode.postfix if solarNode.postfix?
+        new nodes.If @ensureNode(solarNode.condition), bodyNode, opts
 
       else
         # Placeholder for unimplemented node types

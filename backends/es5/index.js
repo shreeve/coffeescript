@@ -583,6 +583,24 @@
                 opts.postfix = postfix;
               }
               return new nodes.If(condition, bodyNode, opts);
+            case 'Unless':
+            case 'unless':
+              // Unless is an inverted If
+              condition = this.evaluateDirective(directive.condition, frame, ruleName);
+              body = this.evaluateDirective(directive.body, frame, ruleName);
+              elseBody = this.evaluateDirective(directive.elseBody, frame, ruleName);
+              postfix = this.evaluateDirective(directive.postfix, frame, ruleName);
+              bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body;
+              elseNode = elseBody ? Array.isArray(elseBody) ? new nodes.Block(this.filterNodes(elseBody)) : elseBody : null;
+              // Create an If node with type: 'unless' for unless
+              opts = {
+                elseBody: elseNode,
+                type: 'unless'
+              };
+              if (postfix) {
+                opts.postfix = postfix;
+              }
+              return new nodes.If(condition, bodyNode, opts);
             case 'While':
               condition = this.evaluateDirective(directive.condition, frame, ruleName);
               body = this.evaluateDirective(directive.body, frame, ruleName);
@@ -1107,6 +1125,22 @@
               // Elisions in array destructuring are placeholders for skipped elements
               // CS2 has a special Elision class for this
               return new nodes.Elision();
+            case 'InfinityLiteral':
+              // Infinity is a special numeric value
+              return new nodes.Literal('Infinity');
+            case 'NaNLiteral':
+              // NaN is a special numeric value
+              return new nodes.Literal('NaN');
+            case 'ComputedPropertyName':
+              // Computed property names like ["dynamic" + key]: value
+              expression = this.evaluateDirective(directive.expression, frame, ruleName);
+              // Return a bracket notation access node
+              if (expression instanceof nodes.Base) {
+                return expression;
+              } else {
+                return this.ensureNode(expression);
+              }
+              break;
             case 'DynamicImport':
               // Dynamic import is just the 'import' keyword itself
               return new nodes.IdentifierLiteral('import');
@@ -1189,7 +1223,7 @@
 
     // Convert evaluated Solar node to CoffeeScript class (Phase A: Legacy adapter)
     solarNodeToClass(solarNode) {
-      var array, body, clause, cleanValue, context, converted, exclusive, expr, expressions, first, flags, flatExpressions, from, fullRegex, i, item, j, k, l, leadingSpaces, len, len1, len2, line, lines, m, minIndent, name, nameNode, node, object, objects, operator, options, pattern, properties, quote, range, ref1, ref2, ref3, ref4, ref5, second, source, to, value, variable;
+      var array, body, bodyNode, clause, cleanValue, context, converted, elseNode, exclusive, expr, expressions, first, flags, flatExpressions, from, fullRegex, i, item, j, k, l, leadingSpaces, len, len1, len2, line, lines, m, minIndent, name, nameNode, node, object, objects, operator, options, opts, pattern, properties, quote, range, ref1, ref2, ref3, ref4, ref5, ref6, ref7, second, source, to, value, variable;
       if (!(solarNode != null ? solarNode.type : void 0)) {
         return null;
       }
@@ -1418,6 +1452,34 @@
             }
           }
           return new nodes.Block(this.filterNodes(flatExpressions));
+        case 'if':
+          // if statement  
+          bodyNode = ((ref6 = solarNode.body) != null ? ref6.expressions : void 0) ? new nodes.Block(solarNode.body.expressions) : this.ensureNode(solarNode.body);
+          elseNode = solarNode.elseBody ? solarNode.elseBody.expressions ? new nodes.Block(solarNode.elseBody.expressions) : this.ensureNode(solarNode.elseBody) : null;
+          // Include postfix and type if they exist
+          opts = {
+            elseBody: elseNode
+          };
+          if (solarNode.postfix != null) {
+            opts.postfix = solarNode.postfix;
+          }
+          if (solarNode.type != null) {
+            opts.type = solarNode.type;
+          }
+          return new nodes.If(this.ensureNode(solarNode.condition), bodyNode, opts);
+        case 'unless':
+          // unless is an inverted if statement
+          bodyNode = ((ref7 = solarNode.body) != null ? ref7.expressions : void 0) ? new nodes.Block(solarNode.body.expressions) : this.ensureNode(solarNode.body);
+          elseNode = solarNode.elseBody ? solarNode.elseBody.expressions ? new nodes.Block(solarNode.elseBody.expressions) : this.ensureNode(solarNode.elseBody) : null;
+          // Pass type: 'unless' for unless statements
+          opts = {
+            elseBody: elseNode,
+            type: 'unless'
+          };
+          if (solarNode.postfix != null) {
+            opts.postfix = solarNode.postfix;
+          }
+          return new nodes.If(this.ensureNode(solarNode.condition), bodyNode, opts);
         default:
           // Placeholder for unimplemented node types
           return new nodes.Literal(`/* TODO: Solar node ${solarNode.type} */`);
