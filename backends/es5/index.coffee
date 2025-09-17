@@ -493,15 +493,15 @@ class ES5Backend
             elseBody = @evaluateDirective directive.elseBody, frame, ruleName
             type = @evaluateDirective directive.type, frame, ruleName
             postfix = @evaluateDirective directive.postfix, frame, ruleName
-            
+
             # The type will be the string 'unless' from the IF/POST_IF token for unless statements
-            
+
             bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
             elseNode = if elseBody
               if Array.isArray(elseBody) then new nodes.Block @filterNodes(elseBody) else elseBody
             else
               null
-            
+
             # Pass the type to the If constructor - it handles 'unless' internally
             opts = {elseBody: elseNode}
             opts.type = type if type  # Will be 'unless' for unless statements
