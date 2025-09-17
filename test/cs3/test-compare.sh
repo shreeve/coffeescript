@@ -14,10 +14,10 @@ echo "--------------------"
 ./test/cs3/test-cs3.coffee 2>&1 | grep -E "(Passed|Failed):" | head -2
 echo ""
 
-# Run with Traditional parser
-echo "2. Traditional Parser:"
-echo "----------------------"
-coffee test/cs3/test-traditional.coffee 2>&1 | grep -E "(Passed|Failed):" | sed 's/\x1b\[[0-9;]*m//g' | head -2
+# Run with CS2 parser
+echo "2. CS2 Parser:"
+echo "--------------"
+coffee test/cs3/test-cs2.coffee 2>&1 | grep -E "(Passed|Failed):" | sed 's/\x1b\[[0-9;]*m//g' | head -2
 echo ""
 
 echo "=========================================="
@@ -26,7 +26,7 @@ echo "=========================================="
 echo ""
 echo "The CS3 test suite runs successfully on BOTH:"
 echo "✅ CS3/ES5 Pipeline (syntax.coffee -> Solar directives -> ES5 backend)"
-echo "✅ Traditional Parser (grammar.coffee -> parser.js -> AST classes)"
+echo "✅ CS2 Parser (grammar.coffee -> parser.js -> AST classes)"
 echo ""
 echo "This proves that our test suite is:"
 echo "• Written in valid CoffeeScript syntax"

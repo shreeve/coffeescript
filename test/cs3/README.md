@@ -72,9 +72,9 @@ The CS3 (CoffeeScript 3) test suite provides **comprehensive testing** of the da
 
 ## 🎯 Coverage Comparison
 
-### CS3 vs Traditional Test Suite
+### CS3 vs CS2 Test Suite
 
-| Metric | Traditional | CS3 | Coverage |
+| Metric | CS2 | CS3 | Coverage |
 |--------|------------|-----|----------|
 | **Test Files** | 47 files | 29 files | 62% |
 | **Test Cases** | ~1,470 tests | 331 tests | 23% |
@@ -109,7 +109,7 @@ test/cs3/
 │
 ├── README.md              # 📖 This comprehensive guide
 ├── test-cs3.coffee        # ⚙️ CS3 test runner (executable)
-├── test-traditional.coffee # 🔄 Traditional parser runner (executable)
+├── test-cs2.coffee         # 🔄 CS2 parser runner (executable)
 ├── test-compare.sh        # 🔀 Parser comparison tool
 │
 └── *.test.coffee          # 🧪 Test files (29 total)
@@ -136,11 +136,11 @@ test/cs3/
 ./test/cs3/test-cs3.coffee | grep "classes"
 ```
 
-### Test with Traditional Parser
+### Test with CS2 Parser
 ```bash
-./bin/coffee test/cs3/test-traditional.coffee
+./bin/coffee test/cs3/test-cs2.coffee
 ```
-This runs the CS3 test suite using the traditional CoffeeScript parser (grammar.coffee → parser.js) instead of the CS3/ES5 pipeline. Shows 99.2% compatibility!
+This runs the CS3 test suite using the CS2 parser (CoffeeScript 2.x: grammar.coffee → parser.js) instead of the CS3/ES5 pipeline. Shows 99.2% compatibility!
 
 ### Compare Both Parsers
 ```bash
@@ -178,7 +178,7 @@ With **98.5% test success rate** across **331 comprehensive tests**, CS3 correct
 
 ## 🎉 Conclusion
 
-The CS3/ES5 pipeline is **production-ready** for real-world CoffeeScript applications. While our test suite has fewer tests than the traditional suite (331 vs ~1,470), it achieves **comprehensive coverage** of all language features that matter for actual development.
+The CS3/ES5 pipeline is **production-ready** for real-world CoffeeScript applications. While our test suite has fewer tests than the CS2 suite (331 vs ~1,470), it achieves **comprehensive coverage** of all language features that matter for actual development.
 
 **CS3 is ready to power your CoffeeScript projects! 🚀**
 
@@ -186,4 +186,4 @@ The CS3/ES5 pipeline is **production-ready** for real-world CoffeeScript applica
 
 *For implementation details, see `/backends/es5/index.coffee`*
 *For CS3 parser syntax, see `/src/syntax.coffee`*
-*For traditional parser, see `/src/grammar.coffee`*
+*For CS2 parser, see `/src/grammar.coffee`*

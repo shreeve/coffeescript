@@ -1,10 +1,10 @@
 #!/usr/bin/env coffee
 
 ###
-Run CS3 Test Suite with Traditional CoffeeScript
-=================================================
-This runs our CS3 test files using the traditional parser/compiler
-instead of the CS3/ES5 pipeline, to verify compatibility.
+Run CS3 Test Suite with CS2 Parser
+===================================
+This runs our CS3 test files using the CS2 parser/compiler
+(CoffeeScript 2.x) instead of the CS3/ES5 pipeline, to verify compatibility.
 ###
 
 fs = require 'fs'
@@ -55,7 +55,7 @@ yellow = '\x1b[0;33m'
 bold = '\x1b[0;1m'
 reset = '\x1b[0m'
 
-console.log "#{bold}CS3 Test Suite - Running with Traditional Parser#{reset}\n"
+console.log "#{bold}CS3 Test Suite - Running with CS2 Parser#{reset}\n"
 
 # Get all test files
 testDir = __dirname
@@ -75,11 +75,11 @@ for filename in testFiles
     # Read the test file
     code = fs.readFileSync(filepath, 'utf8')
 
-    # Compile with TRADITIONAL parser (cs3: false or undefined)
+    # Compile with CS2 parser (cs3: false or undefined)
     compiled = CoffeeScript.compile code,
       filename: filename
       bare: true
-      cs3: false  # Explicitly use traditional parser
+      cs3: false  # Explicitly use CS2 parser
 
     compiledFiles++
 
@@ -119,9 +119,9 @@ console.log "\n#{bold}Success Rate: #{successRate}%#{reset}"
 
 # Comparison
 console.log "\n#{bold}========================================#{reset}"
-console.log "#{bold}Traditional vs CS3 Comparison:#{reset}"
+console.log "#{bold}CS2 vs CS3 Comparison:#{reset}"
 console.log "#{bold}========================================#{reset}\n"
-console.log "Parser:       Traditional (grammar.coffee -> parser.js)"
+console.log "Parser:       CS2 (grammar.coffee -> parser.js)"
 console.log "AST:          Class-based (nodes.coffee)"
 console.log "Tests Run:    CS3 test suite (test/cs3/*.test.coffee)"
 console.log "Pass Rate:    #{successRate}%"
