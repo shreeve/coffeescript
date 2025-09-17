@@ -82,8 +82,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 39. **Computed property names**: Fixed by passing expression to ComputedPropertyName in syntax.coffee
 40. **if-else in functions**: Fixed Code directive to preserve elseBody by checking instanceof nodes.Base before b?.type
 41. **Destructuring with defaults**: Fixed by using null context for Assign nodes in destructuring defaults
+42. **@ in destructuring parameters**: Fixed compilation error by transforming {@x} to {x: x} with this=true marking
 
-## Current Status (366 Tests Passing - 96.5%)
+## Current Status (402 Tests Passing - 96.6%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations

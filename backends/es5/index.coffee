@@ -485,6 +485,29 @@ class ES5Backend
                   key = new nodes.Value prop.base
                   value = new nodes.Value prop.base
                   fixedProps.push new nodes.Assign key, value, 'object'
+                else if prop instanceof nodes.Value and prop.base instanceof nodes.ThisLiteral
+                  # This is an @ property like {@x} - extract the property name
+                  # and mark the Value node with this=true for Param.eachName to handle correctly
+                  if prop.properties?[0] instanceof nodes.Access
+                    # Get the property name from the Access node
+                    propName = prop.properties[0].name
+                    if propName instanceof nodes.PropertyName
+                      # PropertyName has a 'value' property with the actual name
+                      propNameStr = propName.value
+                      propName = new nodes.IdentifierLiteral propNameStr
+                    else if typeof propName is 'string'
+                      propName = new nodes.IdentifierLiteral propName
+                    else if not (propName instanceof nodes.Base)
+                      propName = @ensureNode propName
+                    
+                    # Create the property assignment for object pattern
+                    # The value should be a Value node marked with this=true
+                    key = new nodes.Value propName
+                    value = new nodes.Value propName
+                    value.this = true  # Mark as @ parameter
+                    fixedProps.push new nodes.Assign key, value, 'object'
+                  else
+                    fixedProps.push prop
                 else
                   fixedProps.push prop
               properties = fixedProps
