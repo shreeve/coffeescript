@@ -339,7 +339,8 @@ class ES5Backend
             # Convert StringLiteral to StringWithInterpolations for tagged templates
             if templateArg instanceof nodes.StringLiteral
               templateArg = nodes.StringWithInterpolations.fromStringLiteral templateArg
-            new nodes.TaggedTemplateCall (if vNode instanceof nodes.Value then vNode else new nodes.Value vNode), templateArg, @evaluateDirective(directive.soak, frame, ruleName)
+            # Tagged templates should never have soak (no typeof check)
+            new nodes.TaggedTemplateCall (if vNode instanceof nodes.Value then vNode else new nodes.Value vNode), templateArg, false
 
           when 'Assign'
             # Handle object property assignments differently
