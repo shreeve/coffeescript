@@ -631,6 +631,11 @@ class ES5Backend
             bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
             new nodes.Class variable, parent, bodyNode
 
+          when 'Slice'
+            # Handle array/string slicing operations
+            range = @evaluateDirective directive.range, frame, ruleName
+            new nodes.Slice range
+
           when 'Super'
             # Create a Super node (this keyword for accessing parent methods)
             new nodes.Super()
@@ -1072,6 +1077,10 @@ class ES5Backend
       when 'Expansion'
         expr = if solarNode.expression then @solarNodeToClass solarNode.expression else null
         new nodes.Expansion (expr or new nodes.Literal 'undefined')
+
+      when 'Slice'
+        range = @solarNodeToClass solarNode.range if solarNode.range
+        new nodes.Slice range
 
       when 'In'
         object = @solarNodeToClass solarNode.object if solarNode.object
