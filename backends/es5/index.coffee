@@ -297,11 +297,31 @@ class ES5Backend
             condition = @evaluateDirective directive.condition, frame, ruleName
             body = @evaluateDirective directive.body, frame, ruleName
             guard = @evaluateDirective directive.guard, frame, ruleName
-            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
-            # While constructor expects (condition, opts) where opts has guard, invert, body
+            isLoop = @evaluateDirective directive.isLoop, frame, ruleName
+            
+            # Handle body - convert from Solar node if needed
+            if body?.type is 'Body' or body?.type is 'Block'
+              # Convert the Solar Body/Block node to CoffeeScript Block
+              bodyNode = @solarNodeToClass body
+            else if Array.isArray(body)
+              bodyNode = new nodes.Block @filterNodes(body)
+            else if body instanceof nodes.Block
+              bodyNode = body
+            else if body
+              bodyNode = new nodes.Block [@ensureNode(body)]
+            else
+              bodyNode = new nodes.Block []
+            
+            # While constructor expects (condition, opts)
             opts = {}
             opts.guard = guard if guard
-            new nodes.While condition, opts, bodyNode
+            opts.isLoop = isLoop if isLoop
+            whileNode = new nodes.While condition, opts
+            # Set the body - ensure it's never null
+            finalBody = bodyNode or new nodes.Block []
+            # Debug: console.error "[While] body type:", finalBody?.constructor?.name, "has isEmpty:", typeof finalBody?.isEmpty
+            whileNode.body = finalBody
+            whileNode
 
           when 'For'
             # For loops are complex - they're built incrementally via $ops
@@ -467,8 +487,19 @@ class ES5Backend
 
           when 'Loop'
             body = @evaluateDirective directive.body, frame, ruleName
-            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
-            new nodes.Loop bodyNode
+            # Ensure body is a proper Block
+            if Array.isArray(body)
+              bodyNode = new nodes.Block @filterNodes(body)
+            else if body instanceof nodes.Block
+              bodyNode = body
+            else if body
+              bodyNode = new nodes.Block [body]
+            else
+              bodyNode = new nodes.Block []
+            # Loop is a While with true condition
+            loopNode = new nodes.While new nodes.BooleanLiteral('true'), {isLoop: true}
+            loopNode.body = bodyNode
+            loopNode
 
           when 'Switch'
             subject = @evaluateDirective directive.subject, frame, ruleName
