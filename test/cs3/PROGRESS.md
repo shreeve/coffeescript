@@ -55,7 +55,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 23. **Exclusive ranges (...)**: Fixed $use directive property access to handle boolean false values correctly
 24. **If/else statements**: Implemented addElse operation to properly attach else clauses to If nodes
 25. **For-from loops & $use index access**: Added array index access support to $use directive, fixing ForVariables and numerous other features
-26. **Until loops**: Added invert flag handling to While directive for proper until loop negation  
+26. **Until loops**: Added invert flag handling to While directive for proper until loop negation
 27. **Unless statements**: Fixed by passing type field to If constructor - CS2 handles 'unless' type internally
 
 ## Current Status (236 Tests Passing - 87.1%)
