@@ -738,29 +738,74 @@ class ES5Backend
                 otherwise = new nodes.Block [@ensureNode(otherwise)]
             new nodes.Switch subject, casesNode, otherwise
 
-          when 'When'
+          when 'When', 'SwitchWhen'
             conditions = @evaluateDirective directive.conditions, frame, ruleName
             body = @evaluateDirective directive.body, frame, ruleName
-            conditionsNode = @filterNodes (if Array.isArray(conditions) then conditions else [])
-            bodyNode = if Array.isArray(body)
+            
+            # Process conditions - make sure they are proper nodes
+            conditionsNode = if Array.isArray(conditions)
+              processedConditions = []
+              for cond in conditions
+                if cond instanceof nodes.Base
+                  processedConditions.push cond
+                else if cond?
+                  converted = @ensureNode(cond)
+                  processedConditions.push converted if converted instanceof nodes.Base
+              processedConditions
+            else if conditions instanceof nodes.Base
+              [conditions]
+            else if conditions?
+              converted = @ensureNode(conditions)
+              if converted instanceof nodes.Base then [converted] else []
+            else
+              []
+              
+            # SwitchWhen expects 'block' not 'body'
+            blockNode = if Array.isArray(body)
               new nodes.Block @filterNodes(body)
             else if body
-              body
+              if body instanceof nodes.Block
+                body
+              else
+                new nodes.Block [body]
             else
               new nodes.Block []
-            new nodes.When conditionsNode, bodyNode
+            new nodes.SwitchWhen conditionsNode, blockNode
 
-          when 'Case'
+          when 'Case', 'SwitchCase'
             conditions = @evaluateDirective directive.conditions, frame, ruleName
             body = @evaluateDirective directive.body, frame, ruleName
-            conditionsNode = @filterNodes (if Array.isArray(conditions) then conditions else [])
-            bodyNode = if Array.isArray(body)
+            
+            # Process conditions - make sure they are proper nodes
+            conditionsNode = if Array.isArray(conditions)
+              processedConditions = []
+              for cond in conditions
+                if cond instanceof nodes.Base
+                  processedConditions.push cond
+                else if cond?
+                  converted = @ensureNode(cond)
+                  processedConditions.push converted if converted instanceof nodes.Base
+              processedConditions
+            else if conditions instanceof nodes.Base
+              [conditions]
+            else if conditions?
+              converted = @ensureNode(conditions)
+              if converted instanceof nodes.Base then [converted] else []
+            else
+              []
+              
+            # SwitchCase expects 'block' not 'body'
+            blockNode = if Array.isArray(body)
               new nodes.Block @filterNodes(body)
             else if body
-              body
+              if body instanceof nodes.Block
+                body
+              else
+                new nodes.Block [body]
             else
               new nodes.Block []
-            new nodes.Case conditionsNode, bodyNode
+            # Use SwitchWhen for both - SwitchCase has a different signature
+            new nodes.SwitchWhen conditionsNode, blockNode
 
           when 'Catch'
             body = @evaluateDirective directive.body, frame, ruleName

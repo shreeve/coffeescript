@@ -5549,7 +5549,8 @@ exports.Switch = class Switch extends Base
       break if i is @cases.length - 1 and not @otherwise
       expr = @lastNode block.expressions
       continue if expr instanceof Return or expr instanceof Throw or (expr instanceof Literal and expr.jumps() and expr.value isnt 'debugger')
-      fragments.push cond.makeCode(idt2 + 'break;\n')
+      # Only add break if there was at least one condition
+      fragments.push cond.makeCode(idt2 + 'break;\n') if cond?
     if @otherwise and @otherwise.expressions.length
       fragments.push @makeCode(idt1 + "default:\n"), (@otherwise.compileToFragments o, LEVEL_TOP)..., @makeCode("\n")
     fragments.push @makeCode @tab + '}'
