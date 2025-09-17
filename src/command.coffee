@@ -300,10 +300,18 @@ compileCS3 = (code, options={}) ->
       parserCS3.parser.symbolIds[t[0]] or parserCS3.parser.symbolIds[t[1]]
     setInput: -> i = 0
     upcomingInput: -> ''
+  backend = new ES5Backend(options)
   parserCS3.parser.lexer = lexIface
-  parserCS3.parser.yy = { backend: new ES5Backend(options) }
+  parserCS3.parser.yy = { backend }
   ast = parserCS3.parse()
-  if ast?.compile then ast.compile(parserCS3.parser.yy.backend.compileOptions) else (new ES5Backend(options)).generate ast
+  # Generate JavaScript code from the AST
+  result = if ast?.compile
+    ast.compile(backend.compileOptions)
+  else if backend?.generate
+    backend.generate ast
+  else
+    ''
+  result or ''
 
 useWinPathSep  = path.sep is '\\'
 
@@ -522,6 +530,7 @@ compileScript = (file, input, base = null) ->
       else if opts.compile or opts.map
         saveTo = if opts.outputFilename and sources.length is 1 then path.join opts.outputPath, opts.outputFilename else options.jsPath
         writeJs base, task.file, task.output, saveTo, null
+      return  # Ensure we don't fall through to other conditions
     else if opts.tokens
       printTokens CoffeeScript.tokens task.input, task.options
     else if opts.nodes

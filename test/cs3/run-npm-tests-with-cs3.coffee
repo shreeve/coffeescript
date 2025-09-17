@@ -92,13 +92,8 @@ for file in files when helpers.isCoffee file
 
   process.stdout.write "#{path.basename(file)}: "
   
-  # Check for known blockers (only loops now, :: is fixed!)
+  # Just try to compile everything now that loops are fixed!
   code = fs.readFileSync(filename).toString()
-  
-  if /\b(for\s+.*\s+in\s+|for\s+.*\s+of\s+|while\s+|loop\s+)/.test code
-    blockedByLoops++
-    console.log yellow + 'BLOCKED by loops' + reset
-    continue
 
   # Try to compile and run with CS3
   try

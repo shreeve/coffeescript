@@ -535,7 +535,17 @@ class ES5Backend
 
           when 'Body'
             expressions = @evaluateDirective directive.expressions, frame, ruleName
-            new nodes.Block @filterNodes (if Array.isArray(expressions) then expressions else [])
+            # Flatten nested arrays - expressions often come as [[expr1], [expr2]]
+            flatExpressions = []
+            if Array.isArray(expressions)
+              for expr in expressions
+                if Array.isArray(expr)
+                  flatExpressions.push item for item in expr
+                else
+                  flatExpressions.push expr
+            else if expressions?
+              flatExpressions.push expressions
+            new nodes.Block @filterNodes flatExpressions
 
           when 'RegexLiteral', 'Regex'
             value = @evaluateDirective directive.value, frame, ruleName
@@ -836,6 +846,28 @@ class ES5Backend
 
       when 'PropertyName'
         new nodes.PropertyName solarNode.value or ''
+
+      when 'Block'
+        expressions = if solarNode.expressions
+          @filterNodes (if Array.isArray(solarNode.expressions) then solarNode.expressions else [])
+        else
+          []
+        new nodes.Block expressions
+
+      when 'Body'
+        # Body nodes have expressions that are often nested arrays
+        expressions = solarNode.expressions or []
+        flatExpressions = []
+        if Array.isArray(expressions)
+          for expr in expressions
+            if Array.isArray(expr)
+              for item in expr
+                converted = if item?.type then @solarNodeToClass(item) else item
+                flatExpressions.push converted if converted?
+            else
+              converted = if expr?.type then @solarNodeToClass(expr) else expr
+              flatExpressions.push converted if converted?
+        new nodes.Block @filterNodes flatExpressions
 
       else
         # Placeholder for unimplemented node types
