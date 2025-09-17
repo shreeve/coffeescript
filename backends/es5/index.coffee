@@ -286,7 +286,7 @@ class ES5Backend
             flip  = @evaluateDirective (if directive.flip? then directive.flip else directive.args?[3]), frame, ruleName
             originalOperator = @evaluateDirective directive.originalOperator, frame, ruleName
             invertOperator   = @evaluateDirective directive.invertOperator, frame, ruleName
-            
+
             # Handle CoffeeScript's in/of/instanceof operators
             # IMPORTANT: These work opposite to JavaScript!
             # CoffeeScript 'of' checks properties/keys (like JS 'in')
@@ -332,8 +332,9 @@ class ES5Backend
               argsNode = []
 
             # Check if this is actually a tagged template (single string arg)
-            # The CS3 parser incorrectly treats tag"string" as an implicit call instead of TaggedTemplateCall
-            # Tagged templates should not have parentheses and have exactly one string argument
+            # The CS3 parser incorrectly treats tag"string" as a regular call instead of TaggedTemplateCall
+            # Tagged templates should have exactly one string argument and no parentheses in the source
+            soak = @evaluateDirective(directive.soak, frame, ruleName)
             if argsNode.length is 1
               argNode = argsNode[0]
               # Check if it's a string or string-like node
@@ -343,9 +344,10 @@ class ES5Backend
                   nodes.StringWithInterpolations.fromStringLiteral argNode
                 else
                   argNode
-                return new nodes.TaggedTemplateCall (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), templateArg
+                # Tagged templates should never have soak (no typeof check)
+                return new nodes.TaggedTemplateCall (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), templateArg, false
 
-            new nodes.Call (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), argsNode, @evaluateDirective(directive.soak, frame, ruleName), @evaluateDirective(directive.token, frame, ruleName)
+            new nodes.Call (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), argsNode, soak, @evaluateDirective(directive.token, frame, ruleName)
 
           when 'TaggedTemplateCall'
             vNode = @evaluateDirective directive.variable, frame, ruleName
@@ -688,7 +690,7 @@ class ES5Backend
               expression[0]
             else
               expression
-            
+
             expressionNode = if actualExpression instanceof nodes.Base
               actualExpression
             else if actualExpression
