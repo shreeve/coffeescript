@@ -1392,10 +1392,6 @@
             }
           }
           return new nodes.Block(this.filterNodes(flatExpressions));
-        case 'Elision':
-          // Elisions in array destructuring are placeholders for skipped elements
-          // CS2 has a special Elision class for this
-          return new nodes.Elision();
         default:
           // Placeholder for unimplemented node types
           return new nodes.Literal(`/* TODO: Solar node ${solarNode.type} */`);

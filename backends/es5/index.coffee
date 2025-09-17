@@ -1285,11 +1285,6 @@ class ES5Backend
               flatExpressions.push converted if converted?
         new nodes.Block @filterNodes flatExpressions
 
-      when 'Elision'
-        # Elisions in array destructuring are placeholders for skipped elements
-        # CS2 has a special Elision class for this
-        new nodes.Elision()
-
       else
         # Placeholder for unimplemented node types
         new nodes.Literal "/* TODO: Solar node #{solarNode.type} */"
