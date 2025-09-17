@@ -1044,6 +1044,31 @@ class ES5Backend
             # CS2 has a special Elision class for this
             new nodes.Elision()
 
+          when 'DynamicImport'
+            # Dynamic import is just the 'import' keyword itself
+            new nodes.IdentifierLiteral 'import'
+
+          when 'DynamicImportCall'
+            # Dynamic import: import('./module')
+            variable = @evaluateDirective directive.variable, frame, ruleName
+            args = @evaluateDirective directive.args, frame, ruleName
+            
+            # Ensure variable is the import identifier
+            variableNode = if variable instanceof nodes.Base
+              variable
+            else
+              new nodes.IdentifierLiteral 'import'
+            
+            # Process arguments
+            argsNode = if Array.isArray(args)
+              args.map (arg) => @ensureNode(arg)
+            else if args
+              [@ensureNode(args)]
+            else
+              []
+            
+            new nodes.Call variableNode, argsNode, false
+
           else
             # For unimplemented types, create placeholder
             new nodes.Literal "/* TODO: Solar #{nodeType} */"
