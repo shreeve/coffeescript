@@ -380,6 +380,24 @@ class ES5Backend
               if (value[0] is '"' and value[value.length - 1] is '"') or
                  (value[0] is "'" and value[value.length - 1] is "'")
                 value = value.slice(1, -1)
+            
+            # Handle triple-quoted strings (heredocs) - strip common leading whitespace
+            if quote is '"""' or quote is "'''"
+              lines = value.split('\n')
+              if lines.length > 1
+                # Find minimum indentation (excluding empty lines)
+                minIndent = Infinity
+                for line in lines[1..]  # Skip first line
+                  if line.trim().length > 0
+                    leadingSpaces = line.match(/^[ \t]*/)[0].length
+                    minIndent = Math.min(minIndent, leadingSpaces)
+                
+                # Strip common indentation from all lines except the first
+                if minIndent > 0 and minIndent < Infinity
+                  for i in [1...lines.length]
+                    lines[i] = lines[i].slice(minIndent)
+                  value = lines.join('\n')
+            
             node = new nodes.StringLiteral value, {quote}
             node.locationData ?= @defaultLocationData()
             node
@@ -1051,12 +1069,31 @@ class ES5Backend
 
       when 'StringLiteral'
         value = solarNode.value
+        quote = solarNode.quote
         # Strip the surrounding quotes from the value if present
         if value and typeof value is 'string' and value.length >= 2
           if (value[0] is '"' and value[value.length - 1] is '"') or
              (value[0] is "'" and value[value.length - 1] is "'")
             value = value.slice(1, -1)
-        node = new nodes.StringLiteral value, {quote: solarNode.quote}
+        
+        # Handle triple-quoted strings (heredocs) - strip common leading whitespace
+        if quote is '"""' or quote is "'''"
+          lines = value.split('\n')
+          if lines.length > 1
+            # Find minimum indentation (excluding empty lines)
+            minIndent = Infinity
+            for line in lines[1..]  # Skip first line
+              if line.trim().length > 0
+                leadingSpaces = line.match(/^[ \t]*/)[0].length
+                minIndent = Math.min(minIndent, leadingSpaces)
+            
+            # Strip common indentation from all lines except the first
+            if minIndent > 0 and minIndent < Infinity
+              for i in [1...lines.length]
+                lines[i] = lines[i].slice(minIndent)
+              value = lines.join('\n')
+        
+        node = new nodes.StringLiteral value, {quote}
         node.locationData = solarNode.locationData or @defaultLocationData()
         node
 

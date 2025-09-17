@@ -21,7 +21,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing exception handling**: 197 tests passing
 - **After fixing loop control flow**: 206 tests passing
 - **After fixing class inheritance & super calls**: 209 tests passing
-- **Note**: Major breakthrough - from 0 to 209 tests through systematic fixes
+- **After fixing heredoc indentation**: 210 tests passing
+- **Note**: Major breakthrough - from 0 to 210 tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -45,8 +46,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 19. **Exception handling (try/catch/finally)**: Fixed Try directive to use 'catch' property, fixed Catch directive parameter mapping and order
 20. **Loop control flow (break/continue)**: Fixed loop body handling for arrays in frame, added StatementLiteral handler for break/continue/debugger
 21. **Class inheritance & super calls**: Added SuperCall handler for super() in constructors and methods
+22. **Heredoc indentation (triple-quoted strings)**: Strip common leading whitespace from multi-line strings
 
-## Current Status (209 Tests Passing - 85.0%)
+## Current Status (210 Tests Passing - 85.4%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
