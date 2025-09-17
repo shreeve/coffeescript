@@ -641,6 +641,23 @@ class ES5Backend
 
             new nodes.StringWithInterpolations bodyNode, {quote}
 
+          when 'Interpolation'
+            expression = @evaluateDirective directive.expression, frame, ruleName
+            # Create Interpolation node with the evaluated expression
+            # Expression might be an array, so extract the first element
+            actualExpression = if Array.isArray(expression) and expression.length > 0
+              expression[0]
+            else
+              expression
+            
+            expressionNode = if actualExpression instanceof nodes.Base
+              actualExpression
+            else if actualExpression
+              @ensureNode(actualExpression)
+            else
+              new nodes.Literal 'undefined'
+            new nodes.Interpolation expressionNode
+
           when 'TemplateElement'
             value = @evaluateDirective directive.value, frame, ruleName
             tail = @evaluateDirective directive.tail, frame, ruleName
