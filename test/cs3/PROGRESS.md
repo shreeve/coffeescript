@@ -64,7 +64,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 32. **Numeric separator underscores**: Strip underscores from numeric literals for older JS runtimes
 33. **Dynamic import() calls**: Added support for DynamicImport and DynamicImportCall AST nodes
 34. **traverseChildren null errors**: Fixed by filtering null arguments in Call nodes
-35. **Infinity/NaN literals**: Added support for special numeric values  
+35. **Infinity/NaN literals**: Added support for special numeric values
 36. **unless statements**: Added proper handling for unless nodes in solarNodeToClass
 37. **if statements**: Added proper handling for if nodes in solarNodeToClass (including postfix)
 

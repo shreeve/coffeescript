@@ -1356,7 +1356,7 @@ class ES5Backend
         new nodes.Block @filterNodes flatExpressions
 
       when 'if'
-        # if statement  
+        # if statement
         bodyNode = if solarNode.body?.expressions
           new nodes.Block solarNode.body.expressions
         else
