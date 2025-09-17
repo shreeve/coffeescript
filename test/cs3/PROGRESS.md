@@ -63,8 +63,10 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 31. **Array destructuring elisions**: Fixed by implementing proper `nodes.Elision()` support
 32. **Numeric separator underscores**: Strip underscores from numeric literals for older JS runtimes
 33. **Dynamic import() calls**: Added support for DynamicImport and DynamicImportCall AST nodes
+34. **traverseChildren null errors**: Fixed by filtering null arguments in Call nodes
+35. **Infinity/NaN literals**: Added support for special numeric values
 
-## Current Status (270 Tests Passing - 90.0%)
+## Current Status (294 Tests Passing - 98.0%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations

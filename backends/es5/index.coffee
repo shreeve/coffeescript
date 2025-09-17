@@ -1046,6 +1046,23 @@ class ES5Backend
             # CS2 has a special Elision class for this
             new nodes.Elision()
 
+          when 'InfinityLiteral'
+            # Infinity is a special numeric value
+            new nodes.Literal 'Infinity'
+
+          when 'NaNLiteral'
+            # NaN is a special numeric value
+            new nodes.Literal 'NaN'
+
+          when 'ComputedPropertyName'
+            # Computed property names like ["dynamic" + key]: value
+            expression = @evaluateDirective directive.expression, frame, ruleName
+            # Return a bracket notation access node
+            if expression instanceof nodes.Base
+              expression
+            else
+              @ensureNode(expression)
+
           when 'DynamicImport'
             # Dynamic import is just the 'import' keyword itself
             new nodes.IdentifierLiteral 'import'
