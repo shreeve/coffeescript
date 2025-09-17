@@ -331,12 +331,29 @@ class ES5Backend
             else
               argsNode = []
 
+            # Check if this is actually a tagged template (single string arg)
+            # The CS3 parser incorrectly treats tag"string" as an implicit call instead of TaggedTemplateCall
+            # Tagged templates should not have parentheses and have exactly one string argument
+            if argsNode.length is 1
+              argNode = argsNode[0]
+              # Check if it's a string or string-like node
+              if argNode instanceof nodes.StringLiteral or argNode instanceof nodes.StringWithInterpolations
+                # This is a tagged template, not a regular call
+                templateArg = if argNode instanceof nodes.StringLiteral
+                  nodes.StringWithInterpolations.fromStringLiteral argNode
+                else
+                  argNode
+                return new nodes.TaggedTemplateCall (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), templateArg
+
             new nodes.Call (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), argsNode, @evaluateDirective(directive.soak, frame, ruleName), @evaluateDirective(directive.token, frame, ruleName)
 
           when 'TaggedTemplateCall'
             vNode = @evaluateDirective directive.variable, frame, ruleName
             templateArg = @ensureNode @evaluateDirective directive.template, frame, ruleName
-            new nodes.Call (if vNode instanceof nodes.Value then vNode else new nodes.Value vNode), [templateArg]
+            # Convert StringLiteral to StringWithInterpolations for tagged templates
+            if templateArg instanceof nodes.StringLiteral
+              templateArg = nodes.StringWithInterpolations.fromStringLiteral templateArg
+            new nodes.TaggedTemplateCall (if vNode instanceof nodes.Value then vNode else new nodes.Value vNode), templateArg, @evaluateDirective(directive.soak, frame, ruleName)
 
           when 'Assign'
             # Handle object property assignments differently
