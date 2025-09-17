@@ -503,6 +503,7 @@ class ES5Backend
             body = @evaluateDirective directive.body, frame, ruleName
             guard = @evaluateDirective directive.guard, frame, ruleName
             isLoop = @evaluateDirective directive.isLoop, frame, ruleName
+            invert = @evaluateDirective directive.invert, frame, ruleName
 
             # Handle body - convert from Solar node if needed
             if body?.type is 'Body' or body?.type is 'Block'
@@ -521,6 +522,7 @@ class ES5Backend
             opts = {}
             opts.guard = guard if guard
             opts.isLoop = isLoop if isLoop
+            opts.invert = invert if invert  # Handle 'until' loops
             whileNode = new nodes.While condition, opts
             # Set the body - ensure it's never null
             finalBody = bodyNode or new nodes.Block []
