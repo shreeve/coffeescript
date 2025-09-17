@@ -18,7 +18,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing core operators (in/of/instanceof)**: 177 tests passing
 - **After fixing slicing operations**: 187 tests passing
 - **After fixing tagged templates**: 191 tests passing
-- **Note**: Major breakthrough - from 0 to 191 tests through systematic fixes
+- **After fixing exception handling**: 197 tests passing
+- **Note**: Major breakthrough - from 0 to 197 tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -39,8 +40,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 16. **Core operators (in/of/instanceof)**: Fixed to match CoffeeScript semantics - `of` checks keys, `in` checks values
 17. **Slicing operations**: Added Slice directive handler for array/string slicing with ranges
 18. **Tagged templates**: Fixed soak pattern issue - set soak=false in TaggedTemplateCall (one-line fix!)
+19. **Exception handling (try/catch/finally)**: Fixed Try directive to use 'catch' property, fixed Catch directive parameter mapping and order
 
-## Current Status (191 Tests Passing - 77.6%)
+## Current Status (197 Tests Passing - 80.1%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
@@ -62,6 +64,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - Advanced literals
 - Function invocation patterns
 - Operator precedence
+- Exception handling (try/catch/finally/throw/rethrow)
 - typeof, existence, and soak operators
 
 ### Partially Working 🟡

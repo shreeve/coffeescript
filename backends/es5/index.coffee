@@ -537,7 +537,8 @@ class ES5Backend
 
           when 'Try'
             attempt = @evaluateDirective directive.attempt, frame, ruleName
-            recovery = @evaluateDirective directive.recovery, frame, ruleName
+            # CS3 uses 'catch' not 'recovery' for the catch clause
+            catchDirective = @evaluateDirective directive.catch, frame, ruleName
             ensure = @evaluateDirective directive.ensure, frame, ruleName
 
             # Ensure attempt is a proper block
@@ -549,6 +550,16 @@ class ES5Backend
               new nodes.Block [@ensureNode(attempt)]
             else
               new nodes.Block []
+
+            # Process the catch clause - it should be a Catch node
+            # If catchDirective is not a Catch node, we may need to evaluate it
+            recovery = if catchDirective instanceof nodes.Catch
+              catchDirective
+            else if catchDirective
+              # It might be a directive that needs to be evaluated into a Catch node
+              catchDirective
+            else
+              null
 
             # Ensure ensure is a proper block if present
             ensureNode = if ensure
@@ -895,11 +906,26 @@ class ES5Backend
             new nodes.SwitchWhen conditionsNode, blockNode
 
           when 'Catch'
-            body = @evaluateDirective directive.body, frame, ruleName
-            error = @evaluateDirective directive.error, frame, ruleName
-            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
-            # Catch can have an optional error parameter
-            new nodes.Catch error, bodyNode
+            # CS3 uses either 'recovery' or 'body' for the catch block
+            body = @evaluateDirective(directive.recovery, frame, ruleName) or @evaluateDirective(directive.body, frame, ruleName)
+            # CS3 uses 'variable' or 'errorVariable' for the error parameter
+            error = @evaluateDirective(directive.variable, frame, ruleName) or @evaluateDirective(directive.errorVariable, frame, ruleName)
+
+            # Ensure body is a proper Block
+            bodyNode = if Array.isArray(body)
+              new nodes.Block @filterNodes(body)
+            else if body instanceof nodes.Block
+              body
+            else if body
+              new nodes.Block [@ensureNode(body)]
+            else
+              new nodes.Block []
+
+            # Ensure error parameter is properly converted if present
+            errorNode = if error then @ensureNode(error) else null
+
+            # Catch constructor expects (recovery, errorVariable) not (errorVariable, recovery)!
+            new nodes.Catch bodyNode, errorNode
 
           when 'Finally'
             body = @evaluateDirective directive.body, frame, ruleName
