@@ -415,9 +415,13 @@ class ES5Backend
 
             # Build source object for For constructor
             sourceObj = {}
-            sourceObj.source = source if source
-            sourceObj.name = name if name
-            sourceObj.index = index if index
+            # Ensure source is a proper node
+            if source
+              sourceObj.source = if source instanceof nodes.Base then source else @ensureNode(source)
+            if name
+              sourceObj.name = if name instanceof nodes.Base then name else @ensureNode(name)
+            if index
+              sourceObj.index = if index instanceof nodes.Base then index else @ensureNode(index)
             sourceObj.guard = guard if guard
             sourceObj.step = step if step
             sourceObj.own = own if own
@@ -426,6 +430,7 @@ class ES5Backend
 
             # Create For node - constructor expects (body, source)
             forNode = new nodes.For bodyNode, sourceObj
+            forNode.locationData ?= @defaultLocationData()
             forNode
 
           when 'Try'
@@ -953,6 +958,24 @@ class ES5Backend
           # Convert sourceInfo to proper node if needed
           if sourceInfo?.type
             sourceInfo = @solarNodeToClass sourceInfo
+          
+          # Ensure source has proper structure
+          if sourceInfo
+            # For addSource, we might get an object with source, name, index, etc.
+            if sourceInfo instanceof nodes.Base
+              # Already a node, ensure it has locationData
+              sourceInfo.locationData ?= @defaultLocationData()
+            else if typeof sourceInfo is 'object' and not Array.isArray(sourceInfo)
+              # It's a source object with properties
+              if sourceInfo.source and not (sourceInfo.source instanceof nodes.Base)
+                sourceInfo.source = @ensureNode sourceInfo.source
+              if sourceInfo.name and not (sourceInfo.name instanceof nodes.Base)
+                sourceInfo.name = @ensureNode sourceInfo.name
+              if sourceInfo.index and not (sourceInfo.index instanceof nodes.Base)
+                sourceInfo.index = @ensureNode sourceInfo.index
+            else
+              # Convert to node
+              sourceInfo = @ensureNode sourceInfo
 
           if loopNode and sourceInfo
             loopNode.addSource sourceInfo
@@ -972,12 +995,20 @@ class ES5Backend
           # Convert body to proper node if needed
           if bodyNode?.type
             bodyNode = @solarNodeToClass bodyNode
-
-          # Ensure body has locationData
-          if bodyNode?.constructor?.name and not bodyNode.locationData
+          
+          # Ensure body is a proper Block node with locationData
+          if bodyNode
+            # If it's not a nodes.Base, wrap it
+            unless bodyNode instanceof nodes.Base
+              bodyNode = new nodes.Block [@ensureNode(bodyNode)]
+            # Ensure locationData exists
+            bodyNode.locationData ?= @defaultLocationData()
+          else
+            # Create empty block if no body
+            bodyNode = new nodes.Block []
             bodyNode.locationData = @defaultLocationData()
 
-          if loopNode and bodyNode
+          if loopNode
             loopNode.addBody bodyNode
           loopNode
         else
