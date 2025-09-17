@@ -124,6 +124,11 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 **CS2 Nodes.js Compilation Issues:**
 - Nested loops incorrectly reuse variable names (overwrites outer loop indices)
 
+**Backend AST Construction Issues:**
+- If-else clauses inside functions lose their else body (causing implicit returns to fail)
+  - The addElse operations are called but don't persist on the final If node
+  - Likely due to If nodes being cloned/recreated during AST construction
+
 **Remaining Backend Issues:**
 - Bound methods (fat arrow =>) in classes not creating bindings (need bind(this) in constructor)
 - Some advanced operator precedence
