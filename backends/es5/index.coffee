@@ -674,7 +674,9 @@ class ES5Backend
             new nodes.Throw (expression or new nodes.Literal 'undefined')
 
           when 'Splat'
-            name = @evaluateDirective directive.name, frame, ruleName
+            # Check for 'name' or 'body' field (@ directive uses 'body')
+            nameDirective = directive.name ? directive.body
+            name = @evaluateDirective nameDirective, frame, ruleName
             # Splat requires a valid expression, not undefined
             if name
               new nodes.Splat name
@@ -683,7 +685,9 @@ class ES5Backend
               new nodes.Splat new nodes.Literal 'undefined'
 
           when 'Expansion'
-            expression = @evaluateDirective directive.expression, frame, ruleName
+            # Check for 'expression' or 'body' field (@ directive uses 'body')
+            exprDirective = directive.expression ? directive.body
+            expression = @evaluateDirective exprDirective, frame, ruleName
             # Expansion needs a valid expression
             if expression
               new nodes.Expansion expression
