@@ -97,10 +97,22 @@ class ES5Backend
     return [] unless array?
     result = []
     for item in array
-      if item?.compileToFragments or item instanceof nodes.Base
+      # Skip null/undefined
+      continue unless item?
+
+      # Already a proper node
+      if item instanceof nodes.Base
         result.push item
         continue
-      node = @ensureNode @dataToClass item
+
+      # Solar node that needs conversion
+      if item?.type
+        node = @solarNodeToClass item
+        result.push node if node?
+        continue
+
+      # Primitive that needs wrapping
+      node = @ensureNode item
       result.push node if node?
     result
 
@@ -188,12 +200,36 @@ class ES5Backend
               valueNode = if inner instanceof nodes.Value then inner else new nodes.Value inner
               if properties and Array.isArray(properties) and properties.length > 0
                 for prop in properties
-                  valueNode.add prop if prop
+                  # Handle nested arrays of properties
+                  if Array.isArray(prop)
+                    for subProp in prop
+                      continue unless subProp?  # Skip null/undefined
+                      if subProp instanceof nodes.Base
+                        valueNode.add subProp
+                      else if subProp?.type
+                        converted = @solarNodeToClass(subProp)
+                        if converted instanceof nodes.Base
+                          valueNode.add converted
+                        else if converted?
+                          console.error "Warning: solarNodeToClass returned non-node:", converted
+                  else if prop?  # Skip null/undefined
+                    if prop instanceof nodes.Base
+                      valueNode.add prop
+                    else if prop?.type
+                      converted = @solarNodeToClass(prop)
+                      valueNode.add converted if converted?
               return valueNode
             @ensureNode(inner) or new nodes.Literal "/* TODO: Solar Value */"
 
           when 'Access'
             nameNode = @evaluateDirective directive.name, frame, ruleName
+            # Ensure nameNode is not null
+            if not nameNode?
+              nameNode = new nodes.PropertyName ''
+            else if nameNode?.type
+              nameNode = @solarNodeToClass(nameNode)
+            else if not (nameNode instanceof nodes.Base)
+              nameNode = @ensureNode(nameNode)
             new nodes.Access nameNode, soak: directive.soak, shorthand: directive.shorthand
 
           when 'Index'
@@ -202,6 +238,8 @@ class ES5Backend
 
           when 'PropertyName'
             value = @evaluateDirective directive.value, frame, ruleName
+            # Ensure value is not null
+            value = '' unless value?
             new nodes.PropertyName value
 
           when 'Op'
@@ -222,7 +260,22 @@ class ES5Backend
           when 'Call'
             variableNode = @evaluateDirective directive.variable, frame, ruleName
             argsNode = @evaluateDirective directive.args, frame, ruleName
-            argsNode = [] unless Array.isArray argsNode
+
+            # Ensure args are proper nodes
+            if Array.isArray argsNode
+              argsNode = argsNode.map (arg) =>
+                if arg instanceof nodes.Base
+                  arg
+                else if arg?.type
+                  @solarNodeToClass(arg)
+                else if arg?
+                  @ensureNode(arg)
+                else
+                  null
+              argsNode = @filterNodes argsNode
+            else
+              argsNode = []
+
             new nodes.Call (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), argsNode, @evaluateDirective(directive.soak, frame, ruleName), @evaluateDirective(directive.token, frame, ruleName)
 
           when 'TaggedTemplateCall'
@@ -382,8 +435,39 @@ class ES5Backend
             params = @evaluateDirective directive.params, frame, ruleName
             body = @evaluateDirective directive.body, frame, ruleName
             bound = @evaluateDirective directive.bound, frame, ruleName
-            paramsNode = @filterNodes (if Array.isArray(params) then params else [])
-            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+
+            # Ensure params are proper nodes
+            if Array.isArray(params)
+              paramsNode = params.map (p) =>
+                if p?.type
+                  @solarNodeToClass(p)
+                else if p instanceof nodes.Base
+                  p
+                else
+                  @ensureNode(p)
+              paramsNode = @filterNodes paramsNode
+            else
+              paramsNode = []
+
+            # Ensure body is a proper Block with converted nodes
+            if Array.isArray(body)
+              bodyNodes = body.map (b) =>
+                if b?.type
+                  @solarNodeToClass(b)
+                else if b instanceof nodes.Base
+                  b
+                else
+                  @ensureNode(b)
+              bodyNode = new nodes.Block @filterNodes(bodyNodes)
+            else if body?.type
+              bodyNode = new nodes.Block [@solarNodeToClass(body)]
+            else if body instanceof nodes.Block
+              bodyNode = body
+            else if body
+              bodyNode = new nodes.Block [@ensureNode(body)]
+            else
+              bodyNode = new nodes.Block []
+
             new nodes.Code paramsNode, bodyNode, bound or 'func'
 
           when 'Param'
@@ -416,7 +500,24 @@ class ES5Backend
           when 'StringWithInterpolations'
             body = @evaluateDirective directive.body, frame, ruleName
             quote = @evaluateDirective directive.quote, frame, ruleName
-            bodyNode = @filterNodes (if Array.isArray(body) then body else [])
+
+            # Convert body to proper nodes
+            if Array.isArray(body)
+              bodyNodes = body.map (b) =>
+                if b instanceof nodes.Base
+                  b
+                else if b?.type
+                  @solarNodeToClass(b)
+                else if b?
+                  @ensureNode(b)
+                else
+                  null
+              bodyNode = new nodes.Block @filterNodes(bodyNodes)
+            else if body instanceof nodes.Block
+              bodyNode = body
+            else
+              bodyNode = new nodes.Block []
+
             new nodes.StringWithInterpolations bodyNode, {quote}
 
           when 'TemplateElement'
@@ -448,7 +549,29 @@ class ES5Backend
 
           when 'Parens'
             body = @evaluateDirective directive.body, frame, ruleName
-            new nodes.Parens body
+
+            # Handle array body (Parens can contain an array with a single expression)
+            if Array.isArray(body) and body.length > 0
+              # Take the first element if it's an array
+              bodyItem = body[0]
+              if bodyItem instanceof nodes.Base
+                bodyNode = bodyItem
+              else if bodyItem?.type
+                bodyNode = @solarNodeToClass(bodyItem)
+              else if bodyItem?
+                bodyNode = @ensureNode(bodyItem)
+              else
+                bodyNode = new nodes.Literal ''
+            else if body instanceof nodes.Base
+              bodyNode = body
+            else if body?.type
+              bodyNode = @solarNodeToClass(body)
+            else if body?
+              bodyNode = @ensureNode(body)
+            else
+              bodyNode = new nodes.Literal ''
+
+            new nodes.Parens bodyNode
 
           when 'PassthroughLiteral'
             value = @evaluateDirective directive.value, frame, ruleName
@@ -686,6 +809,18 @@ class ES5Backend
       when 'Loop'
         body = @solarNodeToClass solarNode.body if solarNode.body
         new nodes.Loop body
+
+      when 'Access'
+        nameNode = if solarNode.name?.type
+          @solarNodeToClass solarNode.name
+        else if solarNode.name
+          new nodes.PropertyName solarNode.name
+        else
+          new nodes.PropertyName ''
+        new nodes.Access nameNode, {soak: solarNode.soak, shorthand: solarNode.shorthand}
+
+      when 'PropertyName'
+        new nodes.PropertyName solarNode.value or ''
 
       else
         # Placeholder for unimplemented node types
