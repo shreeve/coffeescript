@@ -298,7 +298,7 @@ class ES5Backend
             body = @evaluateDirective directive.body, frame, ruleName
             guard = @evaluateDirective directive.guard, frame, ruleName
             isLoop = @evaluateDirective directive.isLoop, frame, ruleName
-            
+
             # Handle body - convert from Solar node if needed
             if body?.type is 'Body' or body?.type is 'Block'
               # Convert the Solar Body/Block node to CoffeeScript Block
@@ -311,7 +311,7 @@ class ES5Backend
               bodyNode = new nodes.Block [@ensureNode(body)]
             else
               bodyNode = new nodes.Block []
-            
+
             # While constructor expects (condition, opts)
             opts = {}
             opts.guard = guard if guard
