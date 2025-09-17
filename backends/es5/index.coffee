@@ -153,7 +153,7 @@ class ES5Backend
     # Handle Solar directives
     if directive? and typeof directive is 'object'
 
-      # $use directive (with optional method/prop)
+      # $use directive (with optional method/prop/index)
       if directive.$use?
         ref = directive.$use
         value = if typeof ref is 'number'
@@ -173,6 +173,12 @@ class ES5Backend
             result
           else
             String(value)
+        # Apply array index access
+        else if directive.index?
+          if Array.isArray(value) or value?.length?
+            value?[directive.index] or undefined
+          else
+            undefined
         else
           value
 
