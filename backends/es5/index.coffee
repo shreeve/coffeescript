@@ -390,7 +390,8 @@ class ES5Backend
               # Here 'value' is the variable name and 'expression' is the default value
               variable = @evaluateDirective directive.value, frame, ruleName
               value = @evaluateDirective directive.expression, frame, ruleName
-              new nodes.Assign variable, value, '='
+              # Use null context for destructuring defaults so Param.eachName handles it correctly
+              new nodes.Assign variable, value, null
             else
               # Regular assignment
               variable = @evaluateDirective directive.variable, frame, ruleName
@@ -1295,12 +1296,16 @@ class ES5Backend
           # Here 'value' is the variable name and 'expression' is the default value
           variable = @solarNodeToClass solarNode.value if solarNode.value
           value = @solarNodeToClass solarNode.expression if solarNode.expression
+          # Use null context for destructuring defaults so Param.eachName handles it correctly
         else
           # Regular assignment
           variable = @solarNodeToClass solarNode.variable if solarNode.variable
           value = @solarNodeToClass solarNode.value if solarNode.value
         # For compound assignments, use the operator as the context
-        context = if solarNode.operator
+        # For destructuring defaults (expression but no variable), use null context
+        context = if solarNode.expression? and not solarNode.variable? and not (solarNode.context is 'object')
+          null
+        else if solarNode.operator
           operator = if typeof solarNode.operator is 'string'
             solarNode.operator
           else if solarNode.operator?.toString?()
