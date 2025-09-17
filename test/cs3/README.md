@@ -109,8 +109,7 @@ test/cs3/
 │
 ├── README.md              # 📖 This comprehensive guide
 ├── test-cs3.coffee        # ⚙️ CS3 test runner (executable)
-├── test-cs2.coffee         # 🔄 CS2 parser runner (executable)
-├── test-compare.sh        # 🔀 Parser comparison tool
+├── test-cs2.coffee        # 🔄 CS2 parser runner (executable)
 │
 └── *.test.coffee          # 🧪 Test files (29 total)
     ├── Core (01-07)       # Language fundamentals
@@ -138,15 +137,9 @@ test/cs3/
 
 ### Test with CS2 Parser
 ```bash
-./bin/coffee test/cs3/test-cs2.coffee
+./test/cs3/test-cs2.coffee
 ```
 This runs the CS3 test suite using the CS2 parser (CoffeeScript 2.x: grammar.coffee → parser.js) instead of the CS3/ES5 pipeline. Shows 99.2% compatibility!
-
-### Compare Both Parsers
-```bash
-./test/cs3/test-compare.sh
-```
-Runs the test suite on both parsers side-by-side and shows a comparison of results.
 
 ## 🔍 Known Issues
 
