@@ -37,7 +37,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 15. **String interpolation**: Fixed `"Hello #{name}"` by properly handling Interpolation directives
 16. **Core operators (in/of/instanceof)**: Fixed to match CoffeeScript semantics - `of` checks keys, `in` checks values
 17. **Slicing operations**: Added Slice directive handler for array/string slicing with ranges
-18. **Tagged templates (partial)**: Identified parser issue - CS3 treats tag"string" as implicit call
+18. **Tagged templates (partial)**: Added backend workaround - CS3 parser treats tag"string" as regular call, not TaggedTemplateCall
 
 ## Current Status (187 Tests Passing - 76.0%)
 ### Working ✅
@@ -68,14 +68,14 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - Conditionals (simple if/else works)
 
 ### Known Issues ❌
-**Parser Limitations:**
+**Parser Limitations (CS3 Solar parser issues):**
+- Tagged template literals (`tag"string"` parsed as regular call instead of TaggedTemplateCall)
 - For-from loops (`for x from array`)
 - Exclusive ranges ([1...4] produces [1,2,3,4] instead of [1,2,3])
 - Computed property names in objects
 - Implicit objects in certain contexts
 
 **Remaining Backend Issues:**
-- Tagged template literals (CS3 parser treats as implicit call)
 - Prototype operator (::) code generation
 - Some complex destructuring patterns
 - Some edge cases in super calls
