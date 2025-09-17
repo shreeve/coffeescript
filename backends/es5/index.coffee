@@ -191,7 +191,9 @@ class ES5Backend
           when 'NumberLiteral'
             value = @evaluateDirective directive.value, frame, ruleName
             parsedValue = @evaluateDirective directive.parsedValue, frame, ruleName
-            new nodes.NumberLiteral value, parsedValue
+            node = new nodes.NumberLiteral value, parsedValue
+            node.locationData ?= @defaultLocationData()
+            node
 
           when 'Value'
             inner = @evaluateDirective (if directive.val? then directive.val else directive.value), frame, ruleName
@@ -310,7 +312,9 @@ class ES5Backend
               if (value[0] is '"' and value[value.length - 1] is '"') or
                  (value[0] is "'" and value[value.length - 1] is "'")
                 value = value.slice(1, -1)
-            new nodes.StringLiteral value, {quote}
+            node = new nodes.StringLiteral value, {quote}
+            node.locationData ?= @defaultLocationData()
+            node
 
           when 'BooleanLiteral'
             value = @evaluateDirective directive.value, frame, ruleName
@@ -598,15 +602,25 @@ class ES5Backend
 
           when 'Throw'
             expression = @evaluateDirective directive.expression, frame, ruleName
-            new nodes.Throw expression
+            # Throw needs a valid expression
+            new nodes.Throw (expression or new nodes.Literal 'undefined')
 
           when 'Splat'
             name = @evaluateDirective directive.name, frame, ruleName
-            new nodes.Splat name
+            # Splat requires a valid expression, not undefined
+            if name
+              new nodes.Splat name
+            else
+              # Create a placeholder if name is missing
+              new nodes.Splat new nodes.Literal 'undefined'
 
           when 'Expansion'
             expression = @evaluateDirective directive.expression, frame, ruleName
-            new nodes.Expansion expression
+            # Expansion needs a valid expression
+            if expression
+              new nodes.Expansion expression
+            else
+              new nodes.Expansion new nodes.Literal 'undefined'
 
           when 'In'
             object = @evaluateDirective directive.object, frame, ruleName
@@ -743,7 +757,9 @@ class ES5Backend
         new nodes.Literal solarNode.value
 
       when 'NumberLiteral'
-        new nodes.NumberLiteral solarNode.value, solarNode.parsedValue
+        node = new nodes.NumberLiteral solarNode.value, solarNode.parsedValue
+        node.locationData = solarNode.locationData or @defaultLocationData()
+        node
 
       when 'StringLiteral'
         value = solarNode.value
@@ -752,7 +768,9 @@ class ES5Backend
           if (value[0] is '"' and value[value.length - 1] is '"') or
              (value[0] is "'" and value[value.length - 1] is "'")
             value = value.slice(1, -1)
-        new nodes.StringLiteral value, {quote: solarNode.quote}
+        node = new nodes.StringLiteral value, {quote: solarNode.quote}
+        node.locationData = solarNode.locationData or @defaultLocationData()
+        node
 
       when 'BooleanLiteral'
         new nodes.BooleanLiteral solarNode.value
@@ -811,13 +829,16 @@ class ES5Backend
         new nodes.PassthroughLiteral solarNode.value, {here: solarNode.here, generated: solarNode.generated}
 
       when 'Throw'
-        new nodes.Throw @solarNodeToClass solarNode.expression if solarNode.expression
+        expr = if solarNode.expression then @solarNodeToClass solarNode.expression else null
+        new nodes.Throw (expr or new nodes.Literal 'undefined')
 
       when 'Splat'
-        new nodes.Splat @solarNodeToClass solarNode.name if solarNode.name
+        name = if solarNode.name then @solarNodeToClass solarNode.name else null
+        new nodes.Splat (name or new nodes.Literal 'undefined')
 
       when 'Expansion'
-        new nodes.Expansion @solarNodeToClass solarNode.expression if solarNode.expression
+        expr = if solarNode.expression then @solarNodeToClass solarNode.expression else null
+        new nodes.Expansion (expr or new nodes.Literal 'undefined')
 
       when 'In'
         object = @solarNodeToClass solarNode.object if solarNode.object
