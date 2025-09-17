@@ -741,7 +741,7 @@ class ES5Backend
           when 'When', 'SwitchWhen'
             conditions = @evaluateDirective directive.conditions, frame, ruleName
             body = @evaluateDirective directive.body, frame, ruleName
-            
+
             # Process conditions - make sure they are proper nodes
             conditionsNode = if Array.isArray(conditions)
               processedConditions = []
@@ -759,7 +759,7 @@ class ES5Backend
               if converted instanceof nodes.Base then [converted] else []
             else
               []
-              
+
             # SwitchWhen expects 'block' not 'body'
             blockNode = if Array.isArray(body)
               new nodes.Block @filterNodes(body)
@@ -775,7 +775,7 @@ class ES5Backend
           when 'Case', 'SwitchCase'
             conditions = @evaluateDirective directive.conditions, frame, ruleName
             body = @evaluateDirective directive.body, frame, ruleName
-            
+
             # Process conditions - make sure they are proper nodes
             conditionsNode = if Array.isArray(conditions)
               processedConditions = []
@@ -793,7 +793,7 @@ class ES5Backend
               if converted instanceof nodes.Base then [converted] else []
             else
               []
-              
+
             # SwitchCase expects 'block' not 'body'
             blockNode = if Array.isArray(body)
               new nodes.Block @filterNodes(body)

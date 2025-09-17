@@ -10,7 +10,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After backend fixes**: 42.1% (40/95 tests)
 - **After rewriter investigation**: 47.8% (66/138 tests)
 - **After fixing traverseChildren**: 50.3% (79/157 tests)
-- **Note**: More tests now run as backend issues are resolved
+- **After fixing Switch statements**: 55.3% (99/179 tests)
+- **Note**: Steady progress as backend issues are systematically resolved
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -22,6 +23,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 7. **Shorthand object syntax**: Fixed `{x, y}` to properly create `{x: x, y: y}`
 8. **ThisLiteral**: Added support for `this` keyword (was generating TODO comment)
 9. **traverseChildren errors**: Fixed Value.add() to filter out null properties
+10. **Switch statements**: Fixed makeReturn bug and proper SwitchWhen node creation
 
 ## Current Status (After Major Fixes)
 ### Working ✅
