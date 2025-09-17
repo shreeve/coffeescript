@@ -173,7 +173,7 @@ CS3 parser achieves **97.2% pass rate** on the test suite!
 
 ### Recently Added Coverage (30-32)
 - ✅ Super with splats, static methods, async
-- ✅ Advanced regex features and Unicode support  
+- ✅ Advanced regex features and Unicode support
 - ✅ Complex operator precedence chains
 - ✅ All edge cases now covered!
 
