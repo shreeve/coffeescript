@@ -17,7 +17,8 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - **After fixing string interpolation**: 171 tests passing
 - **After fixing core operators (in/of/instanceof)**: 177 tests passing
 - **After fixing slicing operations**: 187 tests passing
-- **Note**: Major breakthrough - from 0 to 187 tests through systematic fixes
+- **After fixing tagged templates**: 191 tests passing
+- **Note**: Major breakthrough - from 0 to 191 tests through systematic fixes
 
 ## Major Fixes Applied
 1. **$ary directive bug**: Fixed array handling for position references
@@ -37,9 +38,9 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 15. **String interpolation**: Fixed `"Hello #{name}"` by properly handling Interpolation directives
 16. **Core operators (in/of/instanceof)**: Fixed to match CoffeeScript semantics - `of` checks keys, `in` checks values
 17. **Slicing operations**: Added Slice directive handler for array/string slicing with ranges
-18. **Tagged templates (partial)**: Added backend workaround - CS3 parser treats tag"string" as regular call, not TaggedTemplateCall
+18. **Tagged templates**: Fixed soak pattern issue - set soak=false in TaggedTemplateCall (one-line fix!)
 
-## Current Status (187 Tests Passing - 76.0%)
+## Current Status (191 Tests Passing - 77.6%)
 ### Working ✅
 - Basic literals (numbers, strings, booleans, null, undefined)
 - Arrays and array operations
@@ -55,6 +56,7 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 - Core operators: `in` (value membership), `of` (key/property check), `instanceof`
 - String operations and interpolation (fully working)
 - Template literals with interpolation
+- Tagged template literals
 - Classes (basic)
 - Slicing operations (array and string slicing with ranges)
 - Advanced literals
@@ -69,7 +71,6 @@ After extensive testing, we discovered that the cs3-runner.coffee runner was NOT
 
 ### Known Issues ❌
 **Parser Limitations (CS3 Solar parser issues):**
-- Tagged template literals (`tag"string"` parsed as regular call instead of TaggedTemplateCall)
 - For-from loops (`for x from array`)
 - Exclusive ranges ([1...4] produces [1,2,3,4] instead of [1,2,3])
 - Computed property names in objects
