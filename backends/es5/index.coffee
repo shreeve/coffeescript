@@ -331,23 +331,7 @@ class ES5Backend
             else
               argsNode = []
 
-            # Check if this is actually a tagged template (single string arg)
-            # The CS3 parser incorrectly treats tag"string" as a regular call instead of TaggedTemplateCall
-            # Tagged templates should have exactly one string argument and no parentheses in the source
-            soak = @evaluateDirective(directive.soak, frame, ruleName)
-            if argsNode.length is 1
-              argNode = argsNode[0]
-              # Check if it's a string or string-like node
-              if argNode instanceof nodes.StringLiteral or argNode instanceof nodes.StringWithInterpolations
-                # This is a tagged template, not a regular call
-                templateArg = if argNode instanceof nodes.StringLiteral
-                  nodes.StringWithInterpolations.fromStringLiteral argNode
-                else
-                  argNode
-                # Tagged templates should never have soak (no typeof check)
-                return new nodes.TaggedTemplateCall (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), templateArg, false
-
-            new nodes.Call (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), argsNode, soak, @evaluateDirective(directive.token, frame, ruleName)
+            new nodes.Call (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), argsNode, @evaluateDirective(directive.soak, frame, ruleName), @evaluateDirective(directive.token, frame, ruleName)
 
           when 'TaggedTemplateCall'
             vNode = @evaluateDirective directive.variable, frame, ruleName
