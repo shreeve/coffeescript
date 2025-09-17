@@ -406,8 +406,18 @@ class ES5Backend
           when 'Range'
             from = @evaluateDirective directive.from, frame, ruleName
             to = @evaluateDirective directive.to, frame, ruleName
-            exclusive = if directive.exclusive? then directive.exclusive else directive.equals is 'exclusive'
-            new nodes.Range from, to, exclusive
+            # Evaluate the exclusive flag if it's a directive
+            exclusiveVal = @evaluateDirective directive.exclusive, frame, ruleName
+            exclusive = if exclusiveVal?
+              exclusiveVal
+            else if directive.equals?
+              @evaluateDirective(directive.equals, frame, ruleName) is 'exclusive'
+            else
+              false
+            # Ensure from and to are proper nodes
+            fromNode = if from instanceof nodes.Base then from else @ensureNode(from)
+            toNode = if to instanceof nodes.Base then to else @ensureNode(to)
+            new nodes.Range fromNode, toNode, exclusive
 
           when 'If', 'if'
             condition = @evaluateDirective directive.condition, frame, ruleName
@@ -996,7 +1006,9 @@ class ES5Backend
       when 'Range'
         from = @solarNodeToClass solarNode.from if solarNode.from
         to = @solarNodeToClass solarNode.to if solarNode.to
-        new nodes.Range from, to, solarNode.exclusive
+        # Fix for exclusive range - the 'equals' field determines exclusivity
+        exclusive = solarNode.exclusive or solarNode.equals is 'exclusive'
+        new nodes.Range from, to, exclusive
 
       when 'RegexLiteral', 'Regex'
         # RegexLiteral expects the full regex string including delimiters
