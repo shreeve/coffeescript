@@ -346,6 +346,17 @@ class ES5Backend
           when 'Arguments'
             args = @evaluateDirective (if directive.args? then directive.args else if directive.$ary? then directive.$ary else directive), frame, ruleName
             args = @filterNodes (if Array.isArray(args) then args else [])
+            deepFlatten = (arr) ->
+              result = []
+              for item in arr
+                if Array.isArray(item)
+                  flattened = deepFlatten(item)
+                  for sub in flattened
+                    result.push sub
+                else
+                  result.push item
+              result
+            args = deepFlatten(args)
             args.implicit = !!directive.implicit
             args
 
@@ -355,16 +366,22 @@ class ES5Backend
 
             # Ensure args are proper nodes
             if Array.isArray argsNode
-              argsNode = argsNode.map (arg) =>
-                if arg instanceof nodes.Base
-                  arg
-                else if arg?.type
-                  @solarNodeToClass(arg)
-                else if arg?
-                  @ensureNode(arg)
-                else
-                  null
-              argsNode = @filterNodes argsNode
+              # Deep-flatten and convert to nodes, removing null/undefined
+              deepFlattenToNodes = (arr) =>
+                out = []
+                for item in arr
+                  if Array.isArray(item)
+                    out = out.concat deepFlattenToNodes(item)
+                  else if item instanceof nodes.Base
+                    out.push item
+                  else if item?.type
+                    converted = @solarNodeToClass(item)
+                    out.push converted if converted?
+                  else if item?
+                    ensured = @ensureNode(item)
+                    out.push ensured if ensured?
+                out
+              argsNode = deepFlattenToNodes argsNode
             else
               argsNode = []
 
