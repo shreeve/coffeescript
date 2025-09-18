@@ -368,7 +368,18 @@ class ES5Backend
             else
               argsNode = []
 
-            new nodes.Call (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), argsNode, @evaluateDirective(directive.soak, frame, ruleName), @evaluateDirective(directive.token, frame, ruleName)
+            # Check if this is a super() call
+            # Super can be the variable directly, or inside a Value node
+            isSuper = variableNode instanceof nodes.Super or
+                      (variableNode instanceof nodes.Value and variableNode.base instanceof nodes.Super)
+
+            if isSuper
+              # Create a SuperCall instead of a regular Call
+              # SuperCall expects (superVar, args)
+              superVar = if variableNode instanceof nodes.Super then variableNode else variableNode.base
+              new nodes.SuperCall(superVar, argsNode)
+            else
+              new nodes.Call (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), argsNode, @evaluateDirective(directive.soak, frame, ruleName), @evaluateDirective(directive.token, frame, ruleName)
 
           when 'TaggedTemplateCall'
             vNode = @evaluateDirective directive.variable, frame, ruleName
@@ -894,7 +905,7 @@ class ES5Backend
 
             # Create a SuperCall node with the Super variable and arguments
             variableNode = new nodes.Super()
-            new nodes.Call variableNode, argsNode, false
+            new nodes.SuperCall variableNode, argsNode
 
           when 'StringWithInterpolations'
             body = @evaluateDirective directive.body, frame, ruleName
