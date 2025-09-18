@@ -499,7 +499,7 @@ class ES5Backend
                       propName = new nodes.IdentifierLiteral propName
                     else if not (propName instanceof nodes.Base)
                       propName = @ensureNode propName
-                    
+
                     # Create the property assignment for object pattern
                     # The value should be a Value node marked with this=true
                     key = new nodes.Value propName
@@ -1608,7 +1608,7 @@ class ES5Backend
             # Directly set elseBody and isChain flag
             if elseBodyNode?
               ifNode.elseBody = elseBodyNode
-              # Set isChain flag if the elseBody is another If node  
+              # Set isChain flag if the elseBody is another If node
               ifNode.isChain = elseBodyNode instanceof nodes.If
           ifNode
         else
