@@ -190,7 +190,7 @@
 
     // Core directive evaluator - evaluates Solar directives against RHS frame
     evaluateDirective(directive, frame, ruleName = null) {
-      var actualExpression, arg, args, argsNode, arr, array, attempt, attemptNode, block, blockNode, body, bodyItem, bodyNode, bodyNodes, bound, cases, casesNode, catchDirective, clause, cleanValue, codeNode, cond, condition, conditions, conditionsNode, context, converted, deepFlatten, deepFlattenToNodes, delimiter, directiveCopy, elseBody, elseNode, ensure, ensureNode, ensured, error, errorNode, evaluated, exclusive, exclusiveVal, expr, exprDirective, expression, expressionNode, expressions, filteredBody, finalBody, fixedProps, flags, flatExpressions, flip, forNode, frameValue, from, fromNode, fullRegex, funcGlyph, generated, glyph, guard, hasSuper, i, idx, ifNode, index, inner, innerDirective, invert, invertOperator, isAwait, isLoop, isSuper, item, itemCopy, j, k, key, l, leadingSpaces, left, len, len1, len2, len3, len4, len5, len6, len7, line, lines, loopNode, m, minIndent, n, name, nameDirective, nameNode, negated, node, nodeType, obj, object, objects, op, opNode, operator, options, opts, origEachSuper, origFlag, originalOperator, otherwise, own, params, paramsNode, parent, parsedValue, pattern, postfix, processedConditions, prop, propName, propNameStr, properties, q, quote, r, range, recovery, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref17, ref18, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, s, source, sourceObj, splat, step, subProp, subject, superVar, t, tag, tail, templateArg, test, thisNode, to, toNode, type, vNode, validProps, value, valueNode, variable, variableNode, whileNode;
+      var actualExpression, arg, args, argsNode, arr, array, attempt, attemptNode, block, blockNode, body, bodyItem, bodyNode, bodyNodes, bound, cases, casesNode, catchDirective, clause, cleanValue, codeNode, cond, condition, conditions, conditionsNode, context, converted, deepFlatten, deepFlattenToNodes, delimiter, directiveCopy, elseBody, elseNode, ensure, ensureNode, ensured, error, errorNode, evaluated, exclusive, exclusiveVal, expr, exprDirective, expression, expressionNode, expressions, filteredBody, finalBody, fixedProps, flags, flatExpressions, flip, forNode, frameValue, from, fromNode, fullRegex, funcGlyph, generated, glyph, guard, hasSuper, i, idx, ifNode, incrementVar, index, inner, innerDirective, invert, invertOperator, isAwait, isLoop, isSuper, item, itemCopy, j, k, key, l, leadingSpaces, left, len, len1, len2, len3, len4, len5, len6, len7, line, lines, loopNode, loopVar, m, minIndent, n, name, nameDirective, nameNode, negated, node, nodeType, obj, object, objects, op, opNode, operator, options, opts, origEachSuper, origFlag, originalCompileNode, originalOperator, otherwise, own, params, paramsNode, parent, parsedValue, pattern, postfix, processedConditions, prop, propName, propNameStr, properties, q, quote, r, range, recovery, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref17, ref18, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, s, source, sourceObj, splat, step, subProp, subject, superVar, t, tag, tail, templateArg, test, thisNode, to, toNode, type, vNode, validProps, value, valueNode, variable, variableNode, whileNode;
       // Handle position references (1, 2, 3, ...) FIRST
       if (typeof directive === 'number') {
         return (ref1 = frame.rhs[directive - 1]) != null ? ref1.value : void 0; // 1-based → 0-based
@@ -834,6 +834,36 @@
               if (forNode.locationData == null) {
                 forNode.locationData = this.defaultLocationData();
               }
+              // CRITICAL FIX for nested loop var conflicts (#4889):
+              // Pre-allocate unique loop variables and override scope.freeVariable
+              loopVar = this.getUniqueLoopVar();
+              incrementVar = this.getUniqueLoopVar();
+              originalCompileNode = forNode.compileNode;
+              forNode.compileNode = (o) => {
+                var originalFreeVariable, preAllocatedVars, ref14, varCounter;
+                originalFreeVariable = null;
+                if (o != null ? (ref14 = o.scope) != null ? ref14.freeVariable : void 0 : void 0) {
+                  originalFreeVariable = o.scope.freeVariable;
+                  varCounter = 0;
+                  preAllocatedVars = [loopVar, incrementVar];
+                  o.scope.freeVariable = (name, options = {}) => {
+                    if (options.single && (name === 'i' || (name === 'i' || name === 'j' || name === 'k' || name === 'l'))) {
+                      if (varCounter < preAllocatedVars.length) {
+                        return preAllocatedVars[varCounter++];
+                      } else {
+                        return this.getUniqueLoopVar();
+                      }
+                    } else {
+                      return originalFreeVariable.call(o.scope, name, options);
+                    }
+                  };
+                }
+                result = originalCompileNode.call(forNode, o);
+                if (originalFreeVariable != null) {
+                  o.scope.freeVariable = originalFreeVariable;
+                }
+                return result;
+              };
               return forNode;
             case 'Try':
               attempt = this.evaluateDirective(directive.attempt, frame, ruleName);

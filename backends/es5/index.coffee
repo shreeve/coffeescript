@@ -731,6 +731,36 @@ class ES5Backend
             # Create For node - constructor expects (body, source)
             forNode = new nodes.For bodyNode, sourceObj
             forNode.locationData ?= @defaultLocationData()
+
+            # CRITICAL FIX for nested loop var conflicts (#4889):
+            # Pre-allocate unique loop variables and override scope.freeVariable
+            loopVar = @getUniqueLoopVar()
+            incrementVar = @getUniqueLoopVar()
+
+            originalCompileNode = forNode.compileNode
+            forNode.compileNode = (o) =>
+              originalFreeVariable = null
+              if o?.scope?.freeVariable
+                originalFreeVariable = o.scope.freeVariable
+                varCounter = 0
+                preAllocatedVars = [loopVar, incrementVar]
+
+                o.scope.freeVariable = (name, options = {}) =>
+                  if options.single and (name is 'i' or name in ['i','j','k','l'])
+                    if varCounter < preAllocatedVars.length
+                      return preAllocatedVars[varCounter++]
+                    else
+                      return @getUniqueLoopVar()
+                  else
+                    return originalFreeVariable.call(o.scope, name, options)
+
+              result = originalCompileNode.call(forNode, o)
+
+              if originalFreeVariable?
+                o.scope.freeVariable = originalFreeVariable
+
+              result
+
             forNode
 
           when 'Try'
