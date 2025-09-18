@@ -384,6 +384,9 @@ class ES5Backend
               variable = @evaluateDirective directive.value, frame, ruleName
               value = @evaluateDirective directive.expression, frame, ruleName
               context = directive.context
+              # Mark Value nodes with ThisLiteral base as this=true for static properties
+              if variable instanceof nodes.Value and variable.base instanceof nodes.ThisLiteral
+                variable.this = true
               new nodes.Assign variable, value, context
             else if directive.expression? and not directive.variable?
               # Default value assignment (e.g., in destructuring {x = 10})
@@ -544,17 +547,33 @@ class ES5Backend
 
             # The type will be the string 'unless' from the IF/POST_IF token for unless statements
 
-            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            bodyNode = if Array.isArray(body)
+              block = new nodes.Block @filterNodes(body)
+              block.locationData ?= @defaultLocationData()
+              block
+            else
+              body
             elseNode = if elseBody
-              if Array.isArray(elseBody) then new nodes.Block @filterNodes(elseBody) else elseBody
+              if Array.isArray(elseBody)
+                block = new nodes.Block @filterNodes(elseBody)
+                block.locationData ?= @defaultLocationData()
+                block
+              else
+                elseBody
             else
               null
 
             # Pass the type to the If constructor - it handles 'unless' internally
-            opts = {elseBody: elseNode}
+            opts = {}
             opts.type = type if type  # Will be 'unless' for unless statements
             opts.postfix = postfix if postfix
-            new nodes.If condition, bodyNode, opts
+            ifNode = new nodes.If condition, bodyNode, opts
+            ifNode.locationData ?= @defaultLocationData()
+            # Use addElse for proper else-if chaining
+            if elseNode
+              elseNode.locationData ?= @defaultLocationData()
+              ifNode.addElse elseNode
+            ifNode
 
           when 'Unless', 'unless'
             # Unless is an inverted If
@@ -563,16 +582,32 @@ class ES5Backend
             elseBody = @evaluateDirective directive.elseBody, frame, ruleName
             postfix = @evaluateDirective directive.postfix, frame, ruleName
 
-            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+            bodyNode = if Array.isArray(body)
+              block = new nodes.Block @filterNodes(body)
+              block.locationData ?= @defaultLocationData()
+              block
+            else
+              body
             elseNode = if elseBody
-              if Array.isArray(elseBody) then new nodes.Block @filterNodes(elseBody) else elseBody
+              if Array.isArray(elseBody)
+                block = new nodes.Block @filterNodes(elseBody)
+                block.locationData ?= @defaultLocationData()
+                block
+              else
+                elseBody
             else
               null
 
             # Create an If node with type: 'unless' for unless
-            opts = {elseBody: elseNode, type: 'unless'}
+            opts = {type: 'unless'}
             opts.postfix = postfix if postfix
-            new nodes.If condition, bodyNode, opts
+            ifNode = new nodes.If condition, bodyNode, opts
+            ifNode.locationData ?= @defaultLocationData()
+            # Use addElse for proper else-if chaining
+            if elseNode
+              elseNode.locationData ?= @defaultLocationData()
+              ifNode.addElse elseNode
+            ifNode
 
           when 'While'
             condition = @evaluateDirective directive.condition, frame, ruleName
@@ -1329,6 +1364,9 @@ class ES5Backend
           # In object context, 'value' is the property name, 'expression' is the value
           variable = @solarNodeToClass solarNode.value if solarNode.value
           value = @solarNodeToClass solarNode.expression if solarNode.expression
+          # Mark Value nodes with ThisLiteral base as this=true for static properties
+          if variable instanceof nodes.Value and variable.base instanceof nodes.ThisLiteral
+            variable.this = true
         else if solarNode.expression? and not solarNode.variable?
           # Default value assignment (e.g., in destructuring {x = 10})
           # Here 'value' is the variable name and 'expression' is the default value
@@ -1466,39 +1504,53 @@ class ES5Backend
       when 'if'
         # if statement
         bodyNode = if solarNode.body?.expressions
-          new nodes.Block solarNode.body.expressions
+          block = new nodes.Block solarNode.body.expressions
+          block.locationData ?= @defaultLocationData()
+          block
         else
           @ensureNode(solarNode.body)
         elseNode = if solarNode.elseBody
           if solarNode.elseBody.expressions
-            new nodes.Block solarNode.elseBody.expressions
+            block = new nodes.Block solarNode.elseBody.expressions
+            block.locationData ?= @defaultLocationData()
+            block
           else
             @ensureNode(solarNode.elseBody)
         else
           null
         # Include postfix and type if they exist
-        opts = {elseBody: elseNode}
+        opts = {}
         opts.postfix = solarNode.postfix if solarNode.postfix?
         opts.type = solarNode.type if solarNode.type?
-        new nodes.If @ensureNode(solarNode.condition), bodyNode, opts
+        ifNode = new nodes.If @ensureNode(solarNode.condition), bodyNode, opts
+        # Use addElse for proper else-if chaining
+        ifNode.addElse elseNode if elseNode
+        ifNode
 
       when 'unless'
         # unless is an inverted if statement
         bodyNode = if solarNode.body?.expressions
-          new nodes.Block solarNode.body.expressions
+          block = new nodes.Block solarNode.body.expressions
+          block.locationData ?= @defaultLocationData()
+          block
         else
           @ensureNode(solarNode.body)
         elseNode = if solarNode.elseBody
           if solarNode.elseBody.expressions
-            new nodes.Block solarNode.elseBody.expressions
+            block = new nodes.Block solarNode.elseBody.expressions
+            block.locationData ?= @defaultLocationData()
+            block
           else
             @ensureNode(solarNode.elseBody)
         else
           null
         # Pass type: 'unless' for unless statements
-        opts = {elseBody: elseNode, type: 'unless'}
+        opts = {type: 'unless'}
         opts.postfix = solarNode.postfix if solarNode.postfix?
-        new nodes.If @ensureNode(solarNode.condition), bodyNode, opts
+        ifNode = new nodes.If @ensureNode(solarNode.condition), bodyNode, opts
+        # Use addElse for proper else-if chaining
+        ifNode.addElse elseNode if elseNode
+        ifNode
 
       else
         # Placeholder for unimplemented node types
@@ -1594,22 +1646,26 @@ class ES5Backend
 
             # Set the else body (alternate property)
             elseBodyNode = if Array.isArray(elseBody)
-              new nodes.Block @filterNodes(elseBody)
+              block = new nodes.Block @filterNodes(elseBody)
+              block.locationData ?= @defaultLocationData()
+              block
             else if elseBody instanceof nodes.Block
+              elseBody.locationData ?= @defaultLocationData()
               elseBody
             else if elseBody
               if elseBody instanceof nodes.Base
+                elseBody.locationData ?= @defaultLocationData()
                 elseBody
               else
-                new nodes.Block [@ensureNode(elseBody)]
+                block = new nodes.Block [@ensureNode(elseBody)]
+                block.locationData ?= @defaultLocationData()
+                block
             else
               null
 
-            # Directly set elseBody and isChain flag
+            # Use addElse to properly handle else-if chains
             if elseBodyNode?
-              ifNode.elseBody = elseBodyNode
-              # Set isChain flag if the elseBody is another If node
-              ifNode.isChain = elseBodyNode instanceof nodes.If
+              ifNode.addElse elseBodyNode
           ifNode
         else
           null
