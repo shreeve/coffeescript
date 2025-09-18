@@ -190,7 +190,7 @@
 
     // Core directive evaluator - evaluates Solar directives against RHS frame
     evaluateDirective(directive, frame, ruleName = null) {
-      var actualExpression, arg, args, argsNode, arr, array, attempt, attemptNode, block, blockNode, body, bodyItem, bodyNode, bodyNodes, bound, cases, casesNode, catchDirective, clause, cleanValue, codeNode, cond, condition, conditions, conditionsNode, context, converted, delimiter, directiveCopy, elseBody, elseNode, ensure, ensureNode, ensured, error, errorNode, evaluated, exclusive, exclusiveVal, expr, exprDirective, expression, expressionNode, expressions, filteredBody, finalBody, fixedProps, flags, flatExpressions, flip, forNode, frameValue, from, fromNode, fullRegex, funcGlyph, generated, glyph, guard, hasSuper, i, idx, ifNode, index, inner, innerDirective, invert, invertOperator, isAwait, isLoop, item, itemCopy, j, k, key, l, leadingSpaces, left, len, len1, len2, len3, len4, len5, len6, len7, line, lines, loopNode, m, minIndent, n, name, nameDirective, nameNode, negated, node, nodeType, obj, object, objects, op, opNode, operator, options, opts, origEachSuper, origFlag, originalOperator, otherwise, own, params, paramsNode, parent, parsedValue, pattern, postfix, processedConditions, prop, propName, propNameStr, properties, q, quote, r, range, recovery, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref17, ref18, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, s, source, sourceObj, splat, step, subProp, subject, t, tag, tail, templateArg, test, thisNode, to, toNode, type, vNode, validProps, value, valueNode, variable, variableNode, whileNode;
+      var actualExpression, arg, args, argsNode, arr, array, attempt, attemptNode, block, blockNode, body, bodyItem, bodyNode, bodyNodes, bound, cases, casesNode, catchDirective, clause, cleanValue, codeNode, cond, condition, conditions, conditionsNode, context, converted, deepFlatten, deepFlattenToNodes, delimiter, directiveCopy, elseBody, elseNode, ensure, ensureNode, ensured, error, errorNode, evaluated, exclusive, exclusiveVal, expr, exprDirective, expression, expressionNode, expressions, filteredBody, finalBody, fixedProps, flags, flatExpressions, flip, forNode, frameValue, from, fromNode, fullRegex, funcGlyph, generated, glyph, guard, hasSuper, i, idx, ifNode, index, inner, innerDirective, invert, invertOperator, isAwait, isLoop, isSuper, item, itemCopy, j, k, key, l, leadingSpaces, left, len, len1, len2, len3, len4, len5, len6, len7, line, lines, loopNode, m, minIndent, n, name, nameDirective, nameNode, negated, node, nodeType, obj, object, objects, op, opNode, operator, options, opts, origEachSuper, origFlag, originalOperator, otherwise, own, params, paramsNode, parent, parsedValue, pattern, postfix, processedConditions, prop, propName, propNameStr, properties, q, quote, r, range, recovery, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref17, ref18, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, s, source, sourceObj, splat, step, subProp, subject, superVar, t, tag, tail, templateArg, test, thisNode, to, toNode, type, vNode, validProps, value, valueNode, variable, variableNode, whileNode;
       // Handle position references (1, 2, 3, ...) FIRST
       if (typeof directive === 'number') {
         return (ref1 = frame.rhs[directive - 1]) != null ? ref1.value : void 0; // 1-based → 0-based
@@ -275,6 +275,10 @@
               inner = this.evaluateDirective(innerDirective, frame, ruleName);
               // Handle properties (accessors)
               properties = this.evaluateDirective(directive.properties, frame, ruleName);
+              // Special case: SuperCall should not be wrapped in Value unless it has properties
+              if (inner instanceof nodes.SuperCall && (!properties || properties.length === 0)) {
+                return inner;
+              }
               if ((inner != null ? inner.compileToFragments : void 0) || inner instanceof nodes.Base) {
                 valueNode = inner instanceof nodes.Value ? inner : new nodes.Value(inner);
                 if (properties && Array.isArray(properties) && properties.length > 0) {
@@ -418,6 +422,24 @@
             case 'Arguments':
               args = this.evaluateDirective((directive.args != null ? directive.args : directive.$ary != null ? directive.$ary : directive), frame, ruleName);
               args = this.filterNodes((Array.isArray(args) ? args : []));
+              deepFlatten = function(arr) {
+                var flattened, item, l, len2, len3, m, sub;
+                result = [];
+                for (l = 0, len2 = arr.length; l < len2; l++) {
+                  item = arr[l];
+                  if (Array.isArray(item)) {
+                    flattened = deepFlatten(item);
+                    for (m = 0, len3 = flattened.length; m < len3; m++) {
+                      sub = flattened[m];
+                      result.push(sub);
+                    }
+                  } else {
+                    result.push(item);
+                  }
+                }
+                return result;
+              };
+              args = deepFlatten(args);
               args.implicit = !!directive.implicit;
               return args;
             case 'Call':
@@ -425,22 +447,46 @@
               argsNode = this.evaluateDirective(directive.args, frame, ruleName);
               // Ensure args are proper nodes
               if (Array.isArray(argsNode)) {
-                argsNode = argsNode.map((arg) => {
-                  if (arg instanceof nodes.Base) {
-                    return arg;
-                  } else if (arg != null ? arg.type : void 0) {
-                    return this.solarNodeToClass(arg);
-                  } else if (arg != null) {
-                    return this.ensureNode(arg);
-                  } else {
-                    return null;
+                // Deep-flatten and convert to nodes, removing null/undefined
+                deepFlattenToNodes = (arr) => {
+                  var item, l, len2, out;
+                  out = [];
+                  for (l = 0, len2 = arr.length; l < len2; l++) {
+                    item = arr[l];
+                    if (Array.isArray(item)) {
+                      out = out.concat(deepFlattenToNodes(item));
+                    } else if (item instanceof nodes.Base) {
+                      out.push(item);
+                    } else if (item != null ? item.type : void 0) {
+                      converted = this.solarNodeToClass(item);
+                      if (converted != null) {
+                        out.push(converted);
+                      }
+                    } else if (item != null) {
+                      ensured = this.ensureNode(item);
+                      if (ensured != null) {
+                        out.push(ensured);
+                      }
+                    }
                   }
-                });
-                argsNode = this.filterNodes(argsNode);
+                  return out;
+                };
+                argsNode = deepFlattenToNodes(argsNode);
               } else {
                 argsNode = [];
               }
-              return new nodes.Call((variableNode instanceof nodes.Value ? variableNode : new nodes.Value(variableNode)), argsNode, this.evaluateDirective(directive.soak, frame, ruleName), this.evaluateDirective(directive.token, frame, ruleName));
+              // Check if this is a super() call
+              // Super can be the variable directly, or inside a Value node
+              isSuper = variableNode instanceof nodes.Super || (variableNode instanceof nodes.Value && variableNode.base instanceof nodes.Super);
+              if (isSuper) {
+                // Create a SuperCall instead of a regular Call
+                // SuperCall expects (superVar, args)
+                superVar = variableNode instanceof nodes.Super ? variableNode : variableNode.base;
+                return new nodes.SuperCall(superVar, argsNode);
+              } else {
+                return new nodes.Call((variableNode instanceof nodes.Value ? variableNode : new nodes.Value(variableNode)), argsNode, this.evaluateDirective(directive.soak, frame, ruleName), this.evaluateDirective(directive.token, frame, ruleName));
+              }
+              break;
             case 'TaggedTemplateCall':
               vNode = this.evaluateDirective(directive.variable, frame, ruleName);
               templateArg = this.ensureNode(this.evaluateDirective(directive.template, frame, ruleName));
@@ -886,12 +932,15 @@
                 // Also patch eachSuperCall to make it always find the super call
                 // Skip the validation for CS3-generated code with super
                 origEachSuper = codeNode.eachSuperCall;
-                codeNode.eachSuperCall = function(context, iterator) {
+                codeNode.eachSuperCall = function(context, iterator, opts) {
                   var expr, len4, q, ref15;
-                  // For CS3 code with super, pretend we found it
+                  // If checking params (not the body), use original so validations still run
+                  if (context !== this.body && (origEachSuper != null)) {
+                    return origEachSuper.call(this, context, iterator, opts);
+                  }
+                  // Otherwise, search body for the real SuperCall and report it
                   if (iterator) {
                     ref15 = bodyNode.expressions;
-                    // Find the actual super call node
                     for (q = 0, len4 = ref15.length; q < len4; q++) {
                       expr = ref15[q];
                       if (expr instanceof nodes.SuperCall || (expr instanceof nodes.Call && expr.variable instanceof nodes.Super)) {
@@ -900,7 +949,7 @@
                       }
                     }
                   }
-                  return true; // Always return true to indicate super was found
+                  return true;
                 };
               }
               return codeNode;
@@ -961,7 +1010,7 @@
               }) : args ? (arg = this.ensureNode(args), arg != null ? [arg] : []) : [];
               // Create a SuperCall node with the Super variable and arguments
               variableNode = new nodes.Super();
-              return new nodes.Call(variableNode, argsNode, false);
+              return new nodes.SuperCall(variableNode, argsNode);
             case 'StringWithInterpolations':
               body = this.evaluateDirective(directive.body, frame, ruleName);
               quote = this.evaluateDirective(directive.quote, frame, ruleName);

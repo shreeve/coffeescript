@@ -222,6 +222,9 @@ class ES5Backend
             inner = @evaluateDirective innerDirective, frame, ruleName
             # Handle properties (accessors)
             properties = @evaluateDirective directive.properties, frame, ruleName
+            # Special case: SuperCall should not be wrapped in Value unless it has properties
+            if inner instanceof nodes.SuperCall and (not properties or properties.length is 0)
+              return inner
             if inner?.compileToFragments or inner instanceof nodes.Base
               valueNode = if inner instanceof nodes.Value then inner else new nodes.Value inner
               if properties and Array.isArray(properties) and properties.length > 0
@@ -847,15 +850,17 @@ class ES5Backend
 
               # Also patch eachSuperCall to make it always find the super call
               origEachSuper = codeNode.eachSuperCall
-              codeNode.eachSuperCall = (context, iterator) ->
-                # For CS3 code with super, pretend we found it
+              codeNode.eachSuperCall = (context, iterator, opts) ->
+                # If checking params (not the body), use original so validations still run
+                if context isnt @body and origEachSuper?
+                  return origEachSuper.call this, context, iterator, opts
+                # Otherwise, search body for the real SuperCall and report it
                 if iterator
-                  # Find the actual super call node
                   for expr in bodyNode.expressions
                     if expr instanceof nodes.SuperCall or (expr instanceof nodes.Call and expr.variable instanceof nodes.Super)
                       iterator(expr)
                       break
-                return true  # Always return true to indicate super was found
+                true
 
             codeNode
 
