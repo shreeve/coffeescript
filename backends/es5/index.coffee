@@ -111,10 +111,14 @@ class ES5Backend
   toArray: (value) ->
     if Array.isArray(value) then value else (if value? then [value] else [])
 
+  # Helper to check if value is a node (performance optimization)
+  isNode: (value) ->
+    value instanceof nodes.Base
+
   # Helper to convert any value to a proper node
   toNode: (value) ->
     return null unless value?
-    return value if value instanceof nodes.Base
+    return value if @isNode(value)
     return @solarNodeToClass(value) if value?.type
     @ensureNode(value)
 
@@ -128,6 +132,17 @@ class ES5Backend
       new nodes.Block [@ensureNode(value)]
     else
       new nodes.Block []
+
+  # Helper to batch evaluate directive properties
+  evaluateProps: (directive, props, frame, ruleName) ->
+    result = {}
+    for prop in props
+      result[prop] = @evaluateDirective directive[prop], frame, ruleName if directive[prop]?
+    result
+
+  # Helper to lazily evaluate directive properties
+  lazyEval: (directive, prop, frame, ruleName) ->
+    if directive[prop]? then @evaluateDirective directive[prop], frame, ruleName else null
 
   # ==============================================================================
   # NODE CREATION METHODS - Extracted from main switch for clarity
@@ -196,11 +211,10 @@ class ES5Backend
     new nodes.PropertyName(value or '')
 
   createIf: (directive, frame, ruleName, defaultType = 'if') ->
-    condition = @evaluateDirective directive.condition, frame, ruleName
-    body = @evaluateDirective directive.body, frame, ruleName
-    elseBody = @evaluateDirective directive.elseBody, frame, ruleName
-    type = @evaluateDirective(directive.type, frame, ruleName) or defaultType
-    postfix = @evaluateDirective directive.postfix, frame, ruleName
+    # Batch evaluate properties
+    props = @evaluateProps directive, ['condition', 'body', 'elseBody', 'type', 'postfix'], frame, ruleName
+    {condition, body, elseBody, postfix} = props
+    type = props.type or defaultType
 
     bodyNode = @toBlock(body)
     bodyNode.locationData ?= @defaultLocationData() if bodyNode
@@ -249,9 +263,8 @@ class ES5Backend
     new nodes.Existence expression
 
   createSwitch: (directive, frame, ruleName) ->
-    subject = @evaluateDirective directive.subject, frame, ruleName
-    cases = @evaluateDirective directive.cases, frame, ruleName
-    otherwise = @evaluateDirective directive.otherwise, frame, ruleName
+    props = @evaluateProps directive, ['subject', 'cases', 'otherwise'], frame, ruleName
+    {subject, cases, otherwise} = props
     casesNode = @filterNodes (if Array.isArray(cases) then cases else [])
     # Ensure otherwise is a proper block or null
     if otherwise
@@ -263,9 +276,9 @@ class ES5Backend
 
   createCatch: (directive, frame, ruleName) ->
     # CS3 uses either 'recovery' or 'body' for the catch block
-    body = @evaluateDirective(directive.recovery, frame, ruleName) or @evaluateDirective(directive.body, frame, ruleName)
+    body = @lazyEval(directive, 'recovery', frame, ruleName) or @lazyEval(directive, 'body', frame, ruleName)
     # CS3 uses 'variable' or 'errorVariable' for the error parameter
-    error = @evaluateDirective(directive.variable, frame, ruleName) or @evaluateDirective(directive.errorVariable, frame, ruleName)
+    error = @lazyEval(directive, 'variable', frame, ruleName) or @lazyEval(directive, 'errorVariable', frame, ruleName)
 
     # Ensure body is a proper Block
     bodyNode = if Array.isArray(body)
@@ -284,11 +297,9 @@ class ES5Backend
     new nodes.Catch bodyNode, errorNode
 
   createWhile: (directive, frame, ruleName) ->
-    condition = @evaluateDirective directive.condition, frame, ruleName
-    body = @evaluateDirective directive.body, frame, ruleName
-    guard = @evaluateDirective directive.guard, frame, ruleName
-    isLoop = @evaluateDirective directive.isLoop, frame, ruleName
-    invert = @evaluateDirective directive.invert, frame, ruleName
+    # Batch evaluate properties
+    props = @evaluateProps directive, ['condition', 'body', 'guard', 'isLoop', 'invert'], frame, ruleName
+    {condition, body, guard, isLoop, invert} = props
 
     # Handle body - convert from Solar node if needed
     bodyNode = if body?.type is 'Body' or body?.type is 'Block'
@@ -308,10 +319,10 @@ class ES5Backend
     whileNode
 
   createTry: (directive, frame, ruleName) ->
-    attempt = @evaluateDirective directive.attempt, frame, ruleName
-    # CS3 uses 'catch' not 'recovery' for the catch clause
-    catchDirective = @evaluateDirective directive.catch, frame, ruleName
-    ensure = @evaluateDirective directive.ensure, frame, ruleName
+    props = @evaluateProps directive, ['attempt', 'catch', 'ensure'], frame, ruleName
+    attempt = props.attempt
+    catchDirective = props.catch
+    ensure = props.ensure
 
     # Ensure attempt is a proper block
     attemptNode = @toBlock(attempt)
@@ -371,8 +382,8 @@ class ES5Backend
     new nodes.Interpolation expressionNode
 
   createStringWithInterpolations: (directive, frame, ruleName) ->
-    body = @evaluateDirective directive.body, frame, ruleName
-    quote = @evaluateDirective directive.quote, frame, ruleName
+    props = @evaluateProps directive, ['body', 'quote'], frame, ruleName
+    {body, quote} = props
 
     # Convert body to proper nodes
     bodyNode = if Array.isArray(body)
@@ -386,9 +397,8 @@ class ES5Backend
     new nodes.StringWithInterpolations bodyNode, {quote}
 
   createParam: (directive, frame, ruleName) ->
-    name = @evaluateDirective directive.name, frame, ruleName
-    value = @evaluateDirective directive.value, frame, ruleName
-    splat = @evaluateDirective directive.splat, frame, ruleName
+    props = @evaluateProps directive, ['name', 'value', 'splat'], frame, ruleName
+    {name, value, splat} = props
 
     # Param requires at least a name
     name = new nodes.IdentifierLiteral 'param' unless name
@@ -417,9 +427,8 @@ class ES5Backend
     new nodes.Param name, value, splat
 
   createClass: (directive, frame, ruleName) ->
-    variable = @evaluateDirective directive.variable, frame, ruleName
-    parent = @evaluateDirective directive.parent, frame, ruleName
-    body = @evaluateDirective directive.body, frame, ruleName
+    props = @evaluateProps directive, ['variable', 'parent', 'body'], frame, ruleName
+    {variable, parent, body} = props
     bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
     new nodes.Class variable, parent, bodyNode
 
@@ -442,28 +451,25 @@ class ES5Backend
     new nodes.Block @filterNodes flatExpressions
 
   createRegexLiteral: (directive, frame, ruleName) ->
-    value = @evaluateDirective directive.value, frame, ruleName
-    delimiter = @evaluateDirective directive.delimiter, frame, ruleName
+    props = @evaluateProps directive, ['value', 'delimiter', 'pattern', 'flags'], frame, ruleName
+    {value, delimiter, pattern, flags} = props
 
     # RegexLiteral expects the full regex string including delimiters
     if value and typeof value is 'string' and value[0] is '/'
       new nodes.RegexLiteral value, {delimiter: delimiter or '/'}
     else
       # Otherwise try to construct from pattern and flags
-      pattern = @evaluateDirective directive.pattern, frame, ruleName
-      flags = @evaluateDirective directive.flags, frame, ruleName
       fullRegex = "/#{pattern or ''}/#{flags or ''}"
       new nodes.RegexLiteral fullRegex, {delimiter: delimiter or '/'}
 
   createRange: (directive, frame, ruleName) ->
-    from = @evaluateDirective directive.from, frame, ruleName
-    to = @evaluateDirective directive.to, frame, ruleName
+    props = @evaluateProps directive, ['from', 'to', 'exclusive', 'equals'], frame, ruleName
+    {from, to} = props
     # Evaluate the exclusive flag - it can be a directive or a boolean
-    exclusiveVal = @evaluateDirective directive.exclusive, frame, ruleName
-    exclusive = if typeof exclusiveVal is 'boolean'
-      exclusiveVal
-    else if directive.equals?
-      @evaluateDirective(directive.equals, frame, ruleName) is 'exclusive'
+    exclusive = if typeof props.exclusive is 'boolean'
+      props.exclusive
+    else if props.equals?
+      props.equals is 'exclusive'
     else
       false
     # Ensure from and to are proper nodes
@@ -508,17 +514,12 @@ class ES5Backend
     new nodes.SwitchWhen conditionsNode, blockNode
 
   createFor: (directive, frame, ruleName) ->
-    # For loops are complex - they're built incrementally via $ops
-    body = @evaluateDirective directive.body, frame, ruleName
-    source = @evaluateDirective directive.source, frame, ruleName
-    guard = @evaluateDirective directive.guard, frame, ruleName
-    name = @evaluateDirective directive.name, frame, ruleName
-    index = @evaluateDirective directive.index, frame, ruleName
-    step = @evaluateDirective directive.step, frame, ruleName
-    own = @evaluateDirective directive.own, frame, ruleName
-    object = @evaluateDirective directive.object, frame, ruleName
-    from = @evaluateDirective directive.from, frame, ruleName
-    isAwait = @evaluateDirective directive.await, frame, ruleName
+    # Batch evaluate only the properties that exist
+    props = @evaluateProps directive, ['body', 'source', 'guard', 'name', 'index', 
+                                        'step', 'own', 'object', 'from', 'await'], frame, ruleName
+    
+    {body, source, guard, name, index, step, own, object, from} = props
+    isAwait = props.await
 
     # Handle body
     bodyNode = if body?.expressions
@@ -748,8 +749,9 @@ class ES5Backend
     # Handle object property assignments differently
     if directive.context is 'object' and directive.expression?
       # In object context, 'value' is the property name, 'expression' is the value
-      variable = @evaluateDirective directive.value, frame, ruleName
-      value = @evaluateDirective directive.expression, frame, ruleName
+      props = @evaluateProps directive, ['value', 'expression'], frame, ruleName
+      variable = props.value
+      value = props.expression
       context = directive.context
       # Mark Value nodes with ThisLiteral base as this=true for static properties
       if variable instanceof nodes.Value and variable.base instanceof nodes.ThisLiteral
@@ -757,24 +759,20 @@ class ES5Backend
       new nodes.Assign variable, value, context
     else if directive.expression? and not directive.variable?
       # Default value assignment (e.g., in destructuring {x = 10})
-      # Here 'value' is the variable name and 'expression' is the default value
-      variable = @evaluateDirective directive.value, frame, ruleName
-      value = @evaluateDirective directive.expression, frame, ruleName
+      props = @evaluateProps directive, ['value', 'expression'], frame, ruleName
+      variable = props.value
+      value = props.expression
       # Use null context for destructuring defaults so Param.eachName handles it correctly
       new nodes.Assign variable, value, null
     else
       # Regular assignment
-      variable = @evaluateDirective directive.variable, frame, ruleName
-      value = @evaluateDirective directive.value, frame, ruleName
+      props = @evaluateProps directive, ['variable', 'value', 'operator', 'context', 'originalContext'], frame, ruleName
+      variable = props.variable
+      value = props.value
       # For compound assignments, use the operator as the context
-      context = if directive.operator?
-        operator = @evaluateDirective directive.operator, frame, ruleName
-        operator
-      else
-        @evaluateDirective directive.context, frame, ruleName
+      context = props.operator or props.context
       options = {}
-      if directive.originalContext?
-        options.originalContext = @evaluateDirective directive.originalContext, frame, ruleName
+      options.originalContext = props.originalContext if props.originalContext?
       # Create the Assign node with the correct context for compound assignments
       new nodes.Assign variable, value, context, options
 
