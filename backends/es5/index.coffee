@@ -828,7 +828,7 @@ class ES5Backend
         value: values[offset]
         pos: positions[offset]
       }
-    
+
     # Evaluate Solar directive against ReductionFrame
     @evaluateDirective directive, frame, null
 
