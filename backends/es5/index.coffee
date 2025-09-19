@@ -331,6 +331,148 @@ class ES5Backend
     # Try expects (attempt, recovery, ensure) where recovery and ensure are optional
     new nodes.Try attemptNode, recovery, ensureNode
 
+  createLoop: (directive, frame, ruleName) ->
+    body = @evaluateDirective directive.body, frame, ruleName
+    # Ensure body is a proper Block
+    bodyNode = if Array.isArray(body)
+      new nodes.Block @filterNodes(body)
+    else if body instanceof nodes.Block
+      body
+    else if body
+      new nodes.Block [body]
+    else
+      new nodes.Block []
+    # Loop is a While with true condition
+    loopNode = new nodes.While new nodes.BooleanLiteral('true'), {isLoop: true}
+    loopNode.body = bodyNode
+    loopNode
+
+  createParens: (directive, frame, ruleName) ->
+    body = @evaluateDirective directive.body, frame, ruleName
+
+    # Handle array body (Parens can contain an array with a single expression)
+    bodyNode = if Array.isArray(body) and body.length > 0
+      # Take the first element if it's an array
+      @toNode(body[0]) or new nodes.Literal ''
+    else
+      @toNode(body) or new nodes.Literal ''
+
+    new nodes.Parens bodyNode
+
+  createInterpolation: (directive, frame, ruleName) ->
+    expression = @evaluateDirective directive.expression, frame, ruleName
+    # Expression might be an array, so extract the first element
+    actualExpression = if Array.isArray(expression) and expression.length > 0
+      expression[0]
+    else
+      expression
+
+    expressionNode = @toNode(actualExpression) or new nodes.Literal 'undefined'
+    new nodes.Interpolation expressionNode
+
+  createStringWithInterpolations: (directive, frame, ruleName) ->
+    body = @evaluateDirective directive.body, frame, ruleName
+    quote = @evaluateDirective directive.quote, frame, ruleName
+
+    # Convert body to proper nodes
+    bodyNode = if Array.isArray(body)
+      bodyNodes = body.map (b) => @toNode(b)
+      new nodes.Block @filterNodes(bodyNodes)
+    else if body instanceof nodes.Block
+      body
+    else
+      new nodes.Block []
+
+    new nodes.StringWithInterpolations bodyNode, {quote}
+
+  createParam: (directive, frame, ruleName) ->
+    name = @evaluateDirective directive.name, frame, ruleName
+    value = @evaluateDirective directive.value, frame, ruleName
+    splat = @evaluateDirective directive.splat, frame, ruleName
+    
+    # Param requires at least a name
+    name = new nodes.IdentifierLiteral 'param' unless name
+
+    # Check if this is an @ parameter (like @x)
+    if name instanceof nodes.Value and name.base instanceof nodes.ThisLiteral
+      # This is an @param - mark it with this=true so Param recognizes it
+      name.this = true
+      name.locationData ?= @defaultLocationData()
+    else if name and not name.locationData
+      # Ensure name has locationData (needed for destructuring)
+      name.locationData = @defaultLocationData()
+
+    # Handle {@x, @y} destructuring - convert CS3 Assigns to CS2-style Values
+    if name instanceof nodes.Obj or (name instanceof nodes.Value and name.base instanceof nodes.Obj)
+      obj = if name instanceof nodes.Obj then name else name.base
+      obj.generated = false
+      if obj.properties
+        for prop, i in obj.properties when prop instanceof nodes.Assign and prop.value?.this
+          # Create the CS2-style Value node for @param
+          obj.properties[i] = atValue = new nodes.Value(new nodes.ThisLiteral())
+          atValue.properties = [new nodes.Access(new nodes.PropertyName(prop.variable.base.value))]
+          atValue.this = true
+        obj.objects = obj.properties # eachName uses 'objects' not 'properties'
+
+    new nodes.Param name, value, splat
+
+  createClass: (directive, frame, ruleName) ->
+    variable = @evaluateDirective directive.variable, frame, ruleName
+    parent = @evaluateDirective directive.parent, frame, ruleName
+    body = @evaluateDirective directive.body, frame, ruleName
+    bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
+    new nodes.Class variable, parent, bodyNode
+
+  createBlock: (directive, frame, ruleName) ->
+    expressions = @evaluateDirective directive.expressions, frame, ruleName
+    new nodes.Block @filterNodes (if Array.isArray(expressions) then expressions else [])
+
+  createBody: (directive, frame, ruleName) ->
+    expressions = @evaluateDirective directive.expressions, frame, ruleName
+    # Flatten nested arrays - expressions often come as [[expr1], [expr2]]
+    flatExpressions = []
+    if Array.isArray(expressions)
+      for expr in expressions
+        if Array.isArray(expr)
+          flatExpressions.push item for item in expr
+        else
+          flatExpressions.push expr
+    else if expressions?
+      flatExpressions.push expressions
+    new nodes.Block @filterNodes flatExpressions
+
+  createRegexLiteral: (directive, frame, ruleName) ->
+    value = @evaluateDirective directive.value, frame, ruleName
+    delimiter = @evaluateDirective directive.delimiter, frame, ruleName
+    
+    # RegexLiteral expects the full regex string including delimiters
+    if value and typeof value is 'string' and value[0] is '/'
+      new nodes.RegexLiteral value, {delimiter: delimiter or '/'}
+    else
+      # Otherwise try to construct from pattern and flags
+      pattern = @evaluateDirective directive.pattern, frame, ruleName
+      flags = @evaluateDirective directive.flags, frame, ruleName
+      fullRegex = "/#{pattern or ''}/#{flags or ''}"
+      new nodes.RegexLiteral fullRegex, {delimiter: delimiter or '/'}
+
+  createRange: (directive, frame, ruleName) ->
+    from = @evaluateDirective directive.from, frame, ruleName
+    to = @evaluateDirective directive.to, frame, ruleName
+    # Evaluate the exclusive flag - it can be a directive or a boolean
+    exclusiveVal = @evaluateDirective directive.exclusive, frame, ruleName
+    exclusive = if typeof exclusiveVal is 'boolean'
+      exclusiveVal
+    else if directive.equals?
+      @evaluateDirective(directive.equals, frame, ruleName) is 'exclusive'
+    else
+      false
+    # Ensure from and to are proper nodes
+    fromNode = @toNode(from) or @ensureNode(from)
+    toNode = @toNode(to) or @ensureNode(to)
+    # Pass 'exclusive' as the tag for exclusive ranges
+    tag = if exclusive then 'exclusive' else null
+    new nodes.Range fromNode, toNode, tag
+
   createSwitchWhen: (directive, frame, ruleName) ->
     conditions = @evaluateDirective directive.conditions, frame, ruleName
     body = @evaluateDirective directive.body, frame, ruleName
@@ -921,23 +1063,7 @@ class ES5Backend
             @createObj directive, frame, ruleName
 
           when 'Range'
-            from = @evaluateDirective directive.from, frame, ruleName
-            to = @evaluateDirective directive.to, frame, ruleName
-            # Evaluate the exclusive flag - it can be a directive or a boolean
-            exclusiveVal = @evaluateDirective directive.exclusive, frame, ruleName
-            # The evaluateDirective should return the boolean value from {$use: 3, prop: 'exclusive'}
-            exclusive = if typeof exclusiveVal is 'boolean'
-              exclusiveVal
-            else if directive.equals?
-              @evaluateDirective(directive.equals, frame, ruleName) is 'exclusive'
-            else
-              false
-            # Ensure from and to are proper nodes
-            fromNode = if from instanceof nodes.Base then from else @ensureNode(from)
-            toNode = if to instanceof nodes.Base then to else @ensureNode(to)
-            # Pass 'exclusive' as the tag for exclusive ranges
-            tag = if exclusive then 'exclusive' else null
-            new nodes.Range fromNode, toNode, tag
+            @createRange directive, frame, ruleName
 
           when 'If', 'if'
             @createIf directive, frame, ruleName, 'if'
@@ -958,37 +1084,7 @@ class ES5Backend
             @createCode directive, frame, ruleName
 
           when 'Param'
-            name = @evaluateDirective directive.name, frame, ruleName
-            value = @evaluateDirective directive.value, frame, ruleName
-            splat = @evaluateDirective directive.splat, frame, ruleName
-            # Param requires at least a name
-            if not name
-              name = new nodes.IdentifierLiteral 'param'
-
-            # Check if this is an @ parameter (like @x)
-            # Name will be a Value with base=ThisLiteral and properties containing the actual name
-            if name instanceof nodes.Value and name.base instanceof nodes.ThisLiteral
-              # This is an @param - mark it with this=true so Param recognizes it
-              name.this = true
-              name.locationData ?= @defaultLocationData()
-            else if name and not name.locationData
-              # Ensure name has locationData (needed for destructuring)
-              name.locationData = @defaultLocationData()
-
-            # Handle {@x, @y} destructuring - convert CS3 Assigns to CS2-style Values
-            # eachParamName expects Value nodes with this=true for @ params
-            if name instanceof nodes.Obj or (name instanceof nodes.Value and name.base instanceof nodes.Obj)
-              obj = if name instanceof nodes.Obj then name else name.base
-              obj.generated = false
-              if obj.properties
-                for prop, i in obj.properties when prop instanceof nodes.Assign and prop.value?.this
-                  # Create the CS2-style Value node for @param
-                  obj.properties[i] = atValue = new nodes.Value(new nodes.ThisLiteral())
-                  atValue.properties = [new nodes.Access(new nodes.PropertyName(prop.variable.base.value))]
-                  atValue.this = true
-                obj.objects = obj.properties # eachName uses 'objects' not 'properties'
-
-            new nodes.Param name, value, splat
+            @createParam directive, frame, ruleName
 
           when 'Return'
             @createReturn directive, frame, ruleName
@@ -997,11 +1093,7 @@ class ES5Backend
             @createYield directive, frame, ruleName
 
           when 'Class'
-            variable = @evaluateDirective directive.variable, frame, ruleName
-            parent = @evaluateDirective directive.parent, frame, ruleName
-            body = @evaluateDirective directive.body, frame, ruleName
-            bodyNode = if Array.isArray(body) then new nodes.Block @filterNodes(body) else body
-            new nodes.Class variable, parent, bodyNode
+            @createClass directive, frame, ruleName
 
           when 'Slice'
             @createSlice directive, frame, ruleName
@@ -1036,36 +1128,10 @@ class ES5Backend
             new nodes.SuperCall variableNode, argsNode
 
           when 'StringWithInterpolations'
-            body = @evaluateDirective directive.body, frame, ruleName
-            quote = @evaluateDirective directive.quote, frame, ruleName
-
-            # Convert body to proper nodes
-            if Array.isArray(body)
-              bodyNodes = body.map (b) => @toNode(b)
-              bodyNode = new nodes.Block @filterNodes(bodyNodes)
-            else if body instanceof nodes.Block
-              bodyNode = body
-            else
-              bodyNode = new nodes.Block []
-
-            new nodes.StringWithInterpolations bodyNode, {quote}
+            @createStringWithInterpolations directive, frame, ruleName
 
           when 'Interpolation'
-            expression = @evaluateDirective directive.expression, frame, ruleName
-            # Create Interpolation node with the evaluated expression
-            # Expression might be an array, so extract the first element
-            actualExpression = if Array.isArray(expression) and expression.length > 0
-              expression[0]
-            else
-              expression
-
-            expressionNode = if actualExpression instanceof nodes.Base
-              actualExpression
-            else if actualExpression
-              @ensureNode(actualExpression)
-            else
-              new nodes.Literal 'undefined'
-            new nodes.Interpolation expressionNode
+            @createInterpolation directive, frame, ruleName
 
           when 'TemplateElement'
             value = @evaluateDirective directive.value, frame, ruleName
@@ -1073,62 +1139,16 @@ class ES5Backend
             new nodes.TemplateElement value, tail
 
           when 'Block'
-            expressions = @evaluateDirective directive.expressions, frame, ruleName
-            new nodes.Block @filterNodes (if Array.isArray(expressions) then expressions else [])
+            @createBlock directive, frame, ruleName
 
           when 'Body'
-            expressions = @evaluateDirective directive.expressions, frame, ruleName
-            # Flatten nested arrays - expressions often come as [[expr1], [expr2]]
-            flatExpressions = []
-            if Array.isArray(expressions)
-              for expr in expressions
-                if Array.isArray(expr)
-                  flatExpressions.push item for item in expr
-                else
-                  flatExpressions.push expr
-            else if expressions?
-              flatExpressions.push expressions
-            new nodes.Block @filterNodes flatExpressions
+            @createBody directive, frame, ruleName
 
           when 'RegexLiteral', 'Regex'
-            value = @evaluateDirective directive.value, frame, ruleName
-            delimiter = @evaluateDirective directive.delimiter, frame, ruleName
-            # RegexLiteral expects the full regex string including delimiters
-            # If we have a value like "/test/gi", pass it directly
-            if value and typeof value is 'string' and value[0] is '/'
-              new nodes.RegexLiteral value, {delimiter: delimiter or '/'}
-            else
-              # Otherwise try to construct from pattern and flags
-              pattern = @evaluateDirective directive.pattern, frame, ruleName
-              flags = @evaluateDirective directive.flags, frame, ruleName
-              fullRegex = "/#{pattern or ''}/#{flags or ''}"
-              new nodes.RegexLiteral fullRegex, {delimiter: delimiter or '/'}
+            @createRegexLiteral directive, frame, ruleName
 
           when 'Parens'
-            body = @evaluateDirective directive.body, frame, ruleName
-
-            # Handle array body (Parens can contain an array with a single expression)
-            if Array.isArray(body) and body.length > 0
-              # Take the first element if it's an array
-              bodyItem = body[0]
-              if bodyItem instanceof nodes.Base
-                bodyNode = bodyItem
-              else if bodyItem?.type
-                bodyNode = @solarNodeToClass(bodyItem)
-              else if bodyItem?
-                bodyNode = @ensureNode(bodyItem)
-              else
-                bodyNode = new nodes.Literal ''
-            else if body instanceof nodes.Base
-              bodyNode = body
-            else if body?.type
-              bodyNode = @solarNodeToClass(body)
-            else if body?
-              bodyNode = @ensureNode(body)
-            else
-              bodyNode = new nodes.Literal ''
-
-            new nodes.Parens bodyNode
+            @createParens directive, frame, ruleName
 
           when 'PassthroughLiteral'
             value = @evaluateDirective directive.value, frame, ruleName
@@ -1177,20 +1197,7 @@ class ES5Backend
             @createExistence directive, frame, ruleName
 
           when 'Loop'
-            body = @evaluateDirective directive.body, frame, ruleName
-            # Ensure body is a proper Block
-            if Array.isArray(body)
-              bodyNode = new nodes.Block @filterNodes(body)
-            else if body instanceof nodes.Block
-              bodyNode = body
-            else if body
-              bodyNode = new nodes.Block [body]
-            else
-              bodyNode = new nodes.Block []
-            # Loop is a While with true condition
-            loopNode = new nodes.While new nodes.BooleanLiteral('true'), {isLoop: true}
-            loopNode.body = bodyNode
-            loopNode
+            @createLoop directive, frame, ruleName
 
           when 'Switch'
             @createSwitch directive, frame, ruleName

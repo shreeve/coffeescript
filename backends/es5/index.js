@@ -421,6 +421,165 @@
       return new nodes.Try(attemptNode, recovery, ensureNode);
     }
 
+    createLoop(directive, frame, ruleName) {
+      var body, bodyNode, loopNode;
+      body = this.evaluateDirective(directive.body, frame, ruleName);
+      // Ensure body is a proper Block
+      bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body instanceof nodes.Block ? body : body ? new nodes.Block([body]) : new nodes.Block([]);
+      // Loop is a While with true condition
+      loopNode = new nodes.While(new nodes.BooleanLiteral('true'), {
+        isLoop: true
+      });
+      loopNode.body = bodyNode;
+      return loopNode;
+    }
+
+    createParens(directive, frame, ruleName) {
+      var body, bodyNode;
+      body = this.evaluateDirective(directive.body, frame, ruleName);
+      // Handle array body (Parens can contain an array with a single expression)
+      // Take the first element if it's an array
+      bodyNode = Array.isArray(body) && body.length > 0 ? this.toNode(body[0]) || new nodes.Literal('') : this.toNode(body) || new nodes.Literal('');
+      return new nodes.Parens(bodyNode);
+    }
+
+    createInterpolation(directive, frame, ruleName) {
+      var actualExpression, expression, expressionNode;
+      expression = this.evaluateDirective(directive.expression, frame, ruleName);
+      // Expression might be an array, so extract the first element
+      actualExpression = Array.isArray(expression) && expression.length > 0 ? expression[0] : expression;
+      expressionNode = this.toNode(actualExpression) || new nodes.Literal('undefined');
+      return new nodes.Interpolation(expressionNode);
+    }
+
+    createStringWithInterpolations(directive, frame, ruleName) {
+      var body, bodyNode, bodyNodes, quote;
+      body = this.evaluateDirective(directive.body, frame, ruleName);
+      quote = this.evaluateDirective(directive.quote, frame, ruleName);
+      // Convert body to proper nodes
+      bodyNode = Array.isArray(body) ? (bodyNodes = body.map((b) => {
+        return this.toNode(b);
+      }), new nodes.Block(this.filterNodes(bodyNodes))) : body instanceof nodes.Block ? body : new nodes.Block([]);
+      return new nodes.StringWithInterpolations(bodyNode, {quote});
+    }
+
+    createParam(directive, frame, ruleName) {
+      var atValue, i, j, len, name, obj, prop, ref1, ref2, splat, value;
+      name = this.evaluateDirective(directive.name, frame, ruleName);
+      value = this.evaluateDirective(directive.value, frame, ruleName);
+      splat = this.evaluateDirective(directive.splat, frame, ruleName);
+      if (!name) {
+        
+        // Param requires at least a name
+        name = new nodes.IdentifierLiteral('param');
+      }
+      // Check if this is an @ parameter (like @x)
+      if (name instanceof nodes.Value && name.base instanceof nodes.ThisLiteral) {
+        // This is an @param - mark it with this=true so Param recognizes it
+        name.this = true;
+        if (name.locationData == null) {
+          name.locationData = this.defaultLocationData();
+        }
+      } else if (name && !name.locationData) {
+        // Ensure name has locationData (needed for destructuring)
+        name.locationData = this.defaultLocationData();
+      }
+      // Handle {@x, @y} destructuring - convert CS3 Assigns to CS2-style Values
+      if (name instanceof nodes.Obj || (name instanceof nodes.Value && name.base instanceof nodes.Obj)) {
+        obj = name instanceof nodes.Obj ? name : name.base;
+        obj.generated = false;
+        if (obj.properties) {
+          ref1 = obj.properties;
+          for (i = j = 0, len = ref1.length; j < len; i = ++j) {
+            prop = ref1[i];
+            if (!(prop instanceof nodes.Assign && ((ref2 = prop.value) != null ? ref2.this : void 0))) {
+              continue;
+            }
+            // Create the CS2-style Value node for @param
+            obj.properties[i] = atValue = new nodes.Value(new nodes.ThisLiteral());
+            atValue.properties = [new nodes.Access(new nodes.PropertyName(prop.variable.base.value))];
+            atValue.this = true;
+          }
+          obj.objects = obj.properties; // eachName uses 'objects' not 'properties'
+        }
+      }
+      return new nodes.Param(name, value, splat);
+    }
+
+    createClass(directive, frame, ruleName) {
+      var body, bodyNode, parent, variable;
+      variable = this.evaluateDirective(directive.variable, frame, ruleName);
+      parent = this.evaluateDirective(directive.parent, frame, ruleName);
+      body = this.evaluateDirective(directive.body, frame, ruleName);
+      bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body;
+      return new nodes.Class(variable, parent, bodyNode);
+    }
+
+    createBlock(directive, frame, ruleName) {
+      var expressions;
+      expressions = this.evaluateDirective(directive.expressions, frame, ruleName);
+      return new nodes.Block(this.filterNodes((Array.isArray(expressions) ? expressions : [])));
+    }
+
+    createBody(directive, frame, ruleName) {
+      var expr, expressions, flatExpressions, item, j, k, len, len1;
+      expressions = this.evaluateDirective(directive.expressions, frame, ruleName);
+      // Flatten nested arrays - expressions often come as [[expr1], [expr2]]
+      flatExpressions = [];
+      if (Array.isArray(expressions)) {
+        for (j = 0, len = expressions.length; j < len; j++) {
+          expr = expressions[j];
+          if (Array.isArray(expr)) {
+            for (k = 0, len1 = expr.length; k < len1; k++) {
+              item = expr[k];
+              flatExpressions.push(item);
+            }
+          } else {
+            flatExpressions.push(expr);
+          }
+        }
+      } else if (expressions != null) {
+        flatExpressions.push(expressions);
+      }
+      return new nodes.Block(this.filterNodes(flatExpressions));
+    }
+
+    createRegexLiteral(directive, frame, ruleName) {
+      var delimiter, flags, fullRegex, pattern, value;
+      value = this.evaluateDirective(directive.value, frame, ruleName);
+      delimiter = this.evaluateDirective(directive.delimiter, frame, ruleName);
+      
+      // RegexLiteral expects the full regex string including delimiters
+      if (value && typeof value === 'string' && value[0] === '/') {
+        return new nodes.RegexLiteral(value, {
+          delimiter: delimiter || '/'
+        });
+      } else {
+        // Otherwise try to construct from pattern and flags
+        pattern = this.evaluateDirective(directive.pattern, frame, ruleName);
+        flags = this.evaluateDirective(directive.flags, frame, ruleName);
+        fullRegex = `/${pattern || ''}/${flags || ''}`;
+        return new nodes.RegexLiteral(fullRegex, {
+          delimiter: delimiter || '/'
+        });
+      }
+    }
+
+    createRange(directive, frame, ruleName) {
+      var exclusive, exclusiveVal, from, fromNode, tag, to, toNode;
+      from = this.evaluateDirective(directive.from, frame, ruleName);
+      to = this.evaluateDirective(directive.to, frame, ruleName);
+      // Evaluate the exclusive flag - it can be a directive or a boolean
+      exclusiveVal = this.evaluateDirective(directive.exclusive, frame, ruleName);
+      exclusive = typeof exclusiveVal === 'boolean' ? exclusiveVal : directive.equals != null ? this.evaluateDirective(directive.equals, frame, ruleName) === 'exclusive' : false;
+      // Ensure from and to are proper nodes
+      fromNode = this.toNode(from) || this.ensureNode(from);
+      toNode = this.toNode(to) || this.ensureNode(to);
+      // Pass 'exclusive' as the tag for exclusive ranges
+      tag = exclusive ? 'exclusive' : null;
+      return new nodes.Range(fromNode, toNode, tag);
+    }
+
     createSwitchWhen(directive, frame, ruleName) {
       var blockNode, body, cond, conditions, conditionsNode, converted, processedConditions;
       conditions = this.evaluateDirective(directive.conditions, frame, ruleName);
@@ -845,7 +1004,7 @@
 
     // Core directive evaluator - evaluates Solar directives against RHS frame
     evaluateDirective(directive, frame, ruleName = null) {
-      var accessor, actualExpression, arg, args, argsNode, array, atValue, body, bodyItem, bodyNode, bodyNodes, clause, delimiter, directiveCopy, evaluated, exclusive, exclusiveVal, expr, exprDirective, expression, expressionNode, expressions, filteredBody, flags, flatExpressions, flattened, flip, from, fromNode, fullRegex, glyph, i, idx, inner, innerDirective, invertOperator, item, itemCopy, j, k, key, l, left, len, len1, len2, len3, len4, len5, len6, len7, literal, loopNode, m, n, name, nameDirective, nameNode, negated, node, nodeType, obj, object, op, opNode, originalOperator, parent, pattern, prop, properties, q, quote, r, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, s, source, splat, step, subProp, superNode, tag, tail, templateArg, test, to, toNode, vNode, validProps, value, valueNode, varName, varValue, variable, variableNode;
+      var accessor, arg, args, argsNode, array, body, bodyNode, clause, directiveCopy, evaluated, exprDirective, expression, filteredBody, flattened, flip, glyph, idx, inner, innerDirective, invertOperator, item, itemCopy, j, k, key, l, left, len, len1, len2, len3, len4, literal, m, n, name, nameDirective, nameNode, negated, node, nodeType, object, op, opNode, originalOperator, prop, properties, ref, ref1, ref10, ref11, ref12, ref13, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, source, step, subProp, superNode, tail, templateArg, test, vNode, validProps, value, valueNode, varName, varValue, variable, variableNode;
       // Handle position references (1, 2, 3, ...) FIRST
       if (typeof directive === 'number') {
         return (ref1 = frame.rhs[directive - 1]) != null ? ref1.value : void 0; // 1-based → 0-based
@@ -1093,18 +1252,7 @@
             case 'Obj':
               return this.createObj(directive, frame, ruleName);
             case 'Range':
-              from = this.evaluateDirective(directive.from, frame, ruleName);
-              to = this.evaluateDirective(directive.to, frame, ruleName);
-              // Evaluate the exclusive flag - it can be a directive or a boolean
-              exclusiveVal = this.evaluateDirective(directive.exclusive, frame, ruleName);
-              // The evaluateDirective should return the boolean value from {$use: 3, prop: 'exclusive'}
-              exclusive = typeof exclusiveVal === 'boolean' ? exclusiveVal : directive.equals != null ? this.evaluateDirective(directive.equals, frame, ruleName) === 'exclusive' : false;
-              // Ensure from and to are proper nodes
-              fromNode = from instanceof nodes.Base ? from : this.ensureNode(from);
-              toNode = to instanceof nodes.Base ? to : this.ensureNode(to);
-              // Pass 'exclusive' as the tag for exclusive ranges
-              tag = exclusive ? 'exclusive' : null;
-              return new nodes.Range(fromNode, toNode, tag);
+              return this.createRange(directive, frame, ruleName);
             case 'If':
             case 'if':
               return this.createIf(directive, frame, ruleName, 'if');
@@ -1120,56 +1268,13 @@
             case 'Code':
               return this.createCode(directive, frame, ruleName);
             case 'Param':
-              name = this.evaluateDirective(directive.name, frame, ruleName);
-              value = this.evaluateDirective(directive.value, frame, ruleName);
-              splat = this.evaluateDirective(directive.splat, frame, ruleName);
-              // Param requires at least a name
-              if (!name) {
-                name = new nodes.IdentifierLiteral('param');
-              }
-              // Check if this is an @ parameter (like @x)
-              // Name will be a Value with base=ThisLiteral and properties containing the actual name
-              if (name instanceof nodes.Value && name.base instanceof nodes.ThisLiteral) {
-                // This is an @param - mark it with this=true so Param recognizes it
-                name.this = true;
-                if (name.locationData == null) {
-                  name.locationData = this.defaultLocationData();
-                }
-              } else if (name && !name.locationData) {
-                // Ensure name has locationData (needed for destructuring)
-                name.locationData = this.defaultLocationData();
-              }
-              // Handle {@x, @y} destructuring - convert CS3 Assigns to CS2-style Values
-              // eachParamName expects Value nodes with this=true for @ params
-              if (name instanceof nodes.Obj || (name instanceof nodes.Value && name.base instanceof nodes.Obj)) {
-                obj = name instanceof nodes.Obj ? name : name.base;
-                obj.generated = false;
-                if (obj.properties) {
-                  ref10 = obj.properties;
-                  for (i = m = 0, len3 = ref10.length; m < len3; i = ++m) {
-                    prop = ref10[i];
-                    if (!(prop instanceof nodes.Assign && ((ref11 = prop.value) != null ? ref11.this : void 0))) {
-                      continue;
-                    }
-                    // Create the CS2-style Value node for @param
-                    obj.properties[i] = atValue = new nodes.Value(new nodes.ThisLiteral());
-                    atValue.properties = [new nodes.Access(new nodes.PropertyName(prop.variable.base.value))];
-                    atValue.this = true;
-                  }
-                  obj.objects = obj.properties; // eachName uses 'objects' not 'properties'
-                }
-              }
-              return new nodes.Param(name, value, splat);
+              return this.createParam(directive, frame, ruleName);
             case 'Return':
               return this.createReturn(directive, frame, ruleName);
             case 'Yield':
               return this.createYield(directive, frame, ruleName);
             case 'Class':
-              variable = this.evaluateDirective(directive.variable, frame, ruleName);
-              parent = this.evaluateDirective(directive.parent, frame, ruleName);
-              body = this.evaluateDirective(directive.body, frame, ruleName);
-              bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body;
-              return new nodes.Class(variable, parent, bodyNode);
+              return this.createClass(directive, frame, ruleName);
             case 'Slice':
               return this.createSlice(directive, frame, ruleName);
             case 'Super':
@@ -1199,99 +1304,22 @@
               variableNode = new nodes.Super();
               return new nodes.SuperCall(variableNode, argsNode);
             case 'StringWithInterpolations':
-              body = this.evaluateDirective(directive.body, frame, ruleName);
-              quote = this.evaluateDirective(directive.quote, frame, ruleName);
-              // Convert body to proper nodes
-              if (Array.isArray(body)) {
-                bodyNodes = body.map((b) => {
-                  return this.toNode(b);
-                });
-                bodyNode = new nodes.Block(this.filterNodes(bodyNodes));
-              } else if (body instanceof nodes.Block) {
-                bodyNode = body;
-              } else {
-                bodyNode = new nodes.Block([]);
-              }
-              return new nodes.StringWithInterpolations(bodyNode, {quote});
+              return this.createStringWithInterpolations(directive, frame, ruleName);
             case 'Interpolation':
-              expression = this.evaluateDirective(directive.expression, frame, ruleName);
-              // Create Interpolation node with the evaluated expression
-              // Expression might be an array, so extract the first element
-              actualExpression = Array.isArray(expression) && expression.length > 0 ? expression[0] : expression;
-              expressionNode = actualExpression instanceof nodes.Base ? actualExpression : actualExpression ? this.ensureNode(actualExpression) : new nodes.Literal('undefined');
-              return new nodes.Interpolation(expressionNode);
+              return this.createInterpolation(directive, frame, ruleName);
             case 'TemplateElement':
               value = this.evaluateDirective(directive.value, frame, ruleName);
               tail = this.evaluateDirective(directive.tail, frame, ruleName);
               return new nodes.TemplateElement(value, tail);
             case 'Block':
-              expressions = this.evaluateDirective(directive.expressions, frame, ruleName);
-              return new nodes.Block(this.filterNodes((Array.isArray(expressions) ? expressions : [])));
+              return this.createBlock(directive, frame, ruleName);
             case 'Body':
-              expressions = this.evaluateDirective(directive.expressions, frame, ruleName);
-              // Flatten nested arrays - expressions often come as [[expr1], [expr2]]
-              flatExpressions = [];
-              if (Array.isArray(expressions)) {
-                for (n = 0, len4 = expressions.length; n < len4; n++) {
-                  expr = expressions[n];
-                  if (Array.isArray(expr)) {
-                    for (q = 0, len5 = expr.length; q < len5; q++) {
-                      item = expr[q];
-                      flatExpressions.push(item);
-                    }
-                  } else {
-                    flatExpressions.push(expr);
-                  }
-                }
-              } else if (expressions != null) {
-                flatExpressions.push(expressions);
-              }
-              return new nodes.Block(this.filterNodes(flatExpressions));
+              return this.createBody(directive, frame, ruleName);
             case 'RegexLiteral':
             case 'Regex':
-              value = this.evaluateDirective(directive.value, frame, ruleName);
-              delimiter = this.evaluateDirective(directive.delimiter, frame, ruleName);
-              // RegexLiteral expects the full regex string including delimiters
-              // If we have a value like "/test/gi", pass it directly
-              if (value && typeof value === 'string' && value[0] === '/') {
-                return new nodes.RegexLiteral(value, {
-                  delimiter: delimiter || '/'
-                });
-              } else {
-                // Otherwise try to construct from pattern and flags
-                pattern = this.evaluateDirective(directive.pattern, frame, ruleName);
-                flags = this.evaluateDirective(directive.flags, frame, ruleName);
-                fullRegex = `/${pattern || ''}/${flags || ''}`;
-                return new nodes.RegexLiteral(fullRegex, {
-                  delimiter: delimiter || '/'
-                });
-              }
-              break;
+              return this.createRegexLiteral(directive, frame, ruleName);
             case 'Parens':
-              body = this.evaluateDirective(directive.body, frame, ruleName);
-              // Handle array body (Parens can contain an array with a single expression)
-              if (Array.isArray(body) && body.length > 0) {
-                // Take the first element if it's an array
-                bodyItem = body[0];
-                if (bodyItem instanceof nodes.Base) {
-                  bodyNode = bodyItem;
-                } else if (bodyItem != null ? bodyItem.type : void 0) {
-                  bodyNode = this.solarNodeToClass(bodyItem);
-                } else if (bodyItem != null) {
-                  bodyNode = this.ensureNode(bodyItem);
-                } else {
-                  bodyNode = new nodes.Literal('');
-                }
-              } else if (body instanceof nodes.Base) {
-                bodyNode = body;
-              } else if (body != null ? body.type : void 0) {
-                bodyNode = this.solarNodeToClass(body);
-              } else if (body != null) {
-                bodyNode = this.ensureNode(body);
-              } else {
-                bodyNode = new nodes.Literal('');
-              }
-              return new nodes.Parens(bodyNode);
+              return this.createParens(directive, frame, ruleName);
             case 'PassthroughLiteral':
               value = this.evaluateDirective(directive.value, frame, ruleName);
               return new nodes.PassthroughLiteral(value, {
@@ -1302,7 +1330,7 @@
               return this.createThrow(directive, frame, ruleName);
             case 'Splat':
               // Check for 'name' or 'body' field (@ directive uses 'body')
-              nameDirective = (ref12 = directive.name) != null ? ref12 : directive.body;
+              nameDirective = (ref10 = directive.name) != null ? ref10 : directive.body;
               name = this.evaluateDirective(nameDirective, frame, ruleName);
               // Splat requires a valid expression, not undefined
               if (name) {
@@ -1314,7 +1342,7 @@
               break;
             case 'Expansion':
               // Check for 'expression' or 'body' field (@ directive uses 'body')
-              exprDirective = (ref13 = directive.expression) != null ? ref13 : directive.body;
+              exprDirective = (ref11 = directive.expression) != null ? ref11 : directive.body;
               expression = this.evaluateDirective(exprDirective, frame, ruleName);
               // Expansion needs a valid expression
               if (expression) {
@@ -1339,23 +1367,7 @@
             case 'Existence':
               return this.createExistence(directive, frame, ruleName);
             case 'Loop':
-              body = this.evaluateDirective(directive.body, frame, ruleName);
-              // Ensure body is a proper Block
-              if (Array.isArray(body)) {
-                bodyNode = new nodes.Block(this.filterNodes(body));
-              } else if (body instanceof nodes.Block) {
-                bodyNode = body;
-              } else if (body) {
-                bodyNode = new nodes.Block([body]);
-              } else {
-                bodyNode = new nodes.Block([]);
-              }
-              // Loop is a While with true condition
-              loopNode = new nodes.While(new nodes.BooleanLiteral('true'), {
-                isLoop: true
-              });
-              loopNode.body = bodyNode;
-              return loopNode;
+              return this.createLoop(directive, frame, ruleName);
             case 'Switch':
               return this.createSwitch(directive, frame, ruleName);
             case 'When':
@@ -1425,9 +1437,9 @@
         // $ary directive (array creation)
         } else if (directive.$ary != null) {
           result = [];
-          ref14 = directive.$ary;
-          for (r = 0, len6 = ref14.length; r < len6; r++) {
-            item = ref14[r];
+          ref12 = directive.$ary;
+          for (m = 0, len3 = ref12.length; m < len3; m++) {
+            item = ref12[m];
             // If item is a number, it's a position reference
             if (typeof item === 'number') {
               evaluated = this.evaluateDirective(item, frame, ruleName);
@@ -1460,9 +1472,9 @@
         // $seq directive (sequences)
         } else if (directive.$seq != null) {
           result = null;
-          ref15 = directive.$seq;
-          for (s = 0, len7 = ref15.length; s < len7; s++) {
-            step = ref15[s];
+          ref13 = directive.$seq;
+          for (n = 0, len4 = ref13.length; n < len4; n++) {
+            step = ref13[n];
             // Handle $var directives to store variables
             if ((step != null ? step.$var : void 0) != null) {
               varName = step.$var;
