@@ -87,7 +87,10 @@ buildBackend = (callback) ->
     callback?()
 
 build = (callback) ->
+  # Build both parsers (super fast with Solar - ~100ms each)
   buildParser()
+  buildParserCS3()
+  # Build the backend and all other files
   buildBackend ->
     buildExceptParser callback
 
@@ -121,13 +124,12 @@ testBuiltCode = (watch = no) ->
   unless watch
     process.exit 1 unless testResults
 
-buildAndTest = (includingParser = yes, harmony = no) ->
+buildAndTest = (harmony = no) ->
   process.stdout.write '\x1Bc' # Clear terminal screen.
   execSync 'git checkout lib/*', stdio: 'inherit' # Reset the generated compiler.
 
-  buildArgs = ['bin/cake']
-  buildArgs.push if includingParser then 'build' else 'build:except-parser'
-  log "building#{if includingParser then ', including parser' else ''}...", green
+  buildArgs = ['bin/cake', 'build']
+  log "building (including both parsers)...", green
   spawnNodeProcess buildArgs, 'both', ->
     log 'testing...', green
     testArgs = if harmony then ['--harmony'] else []
@@ -135,24 +137,18 @@ buildAndTest = (includingParser = yes, harmony = no) ->
     spawnNodeProcess testArgs, 'both'
 
 watchAndBuildAndTest = (harmony = no) ->
-  buildAndTest yes, harmony
+  buildAndTest harmony
   fs.watch 'src/', interval: 200, (eventType, filename) ->
     if eventType is 'change'
       log "src/#{filename} changed, rebuilding..."
-      buildAndTest (filename is 'grammar.coffee'), harmony
+      buildAndTest harmony
   fs.watch 'test/', {interval: 200, recursive: yes}, (eventType, filename) ->
     if eventType is 'change'
       log "test/#{filename} changed, rebuilding..."
-      buildAndTest no, harmony
+      buildAndTest harmony
 
 
-task 'build', 'build the CoffeeScript compiler from source', build
-
-task 'build:parser', 'build the Jison parser only', buildParser
-
-task 'build:parser-cs3', 'build the CS3 parser from syntax.coffee using Solar', buildParserCS3
-
-task 'build:except-parser', 'build the CoffeeScript compiler, except for the Jison parser', buildExceptParser
+task 'build', 'build the CoffeeScript compiler from source (including both parsers)', build
 
 task 'build:full', 'build the CoffeeScript compiler from source twice, and run the tests', ->
   build ->
