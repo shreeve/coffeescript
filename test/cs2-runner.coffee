@@ -9,7 +9,7 @@ This runs our CS3 test files using the CS2 parser/compiler
 
 fs = require 'fs'
 path = require 'path'
-CoffeeScript = require '../../lib/coffeescript'
+CoffeeScript = require '../lib/coffeescript'
 
 # Test helpers
 passedTests = 0
@@ -119,7 +119,7 @@ console.log "\n#{bold}========================================#{reset}"
 console.log "#{bold}CS2 Parser Summary:#{reset}"
 console.log "#{bold}========================================#{reset}\n"
 console.log "Parser:       CS2 (grammar.coffee -> parser.js)"
-console.log "Tests Run:    CS3 test suite (test/cs3/*.test.coffee)"
+console.log "Tests Run:    CS3 test suite (test/*.test.coffee)"
 console.log "Pass Rate:    #{successRate}%"
 
 # Exit code

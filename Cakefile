@@ -526,11 +526,11 @@ task 'test', 'run the CoffeeScript language test suite', ->
   runTests(CoffeeScript).catch -> process.exit 1
 
 task 'test:cs3', 'run CS3/ES5 test suite', ->
-  try execSync 'cd test/cs3 && coffee cs3-runner.coffee', stdio: 'inherit'
+  try execSync 'cd test && coffee cs3-runner.coffee', stdio: 'inherit'
   catch e then process.exit 1
 
 task 'test:cs2', 'run CS2/AST test suite', ->
-  try execSync 'cd test/cs3 && coffee cs2-runner.coffee', stdio: 'inherit'
+  try execSync 'cd test && coffee cs2-runner.coffee', stdio: 'inherit'
   catch e then process.exit 1
 
 task 'test:browser', 'run the test suite against the modern browser compiler in a headless browser', ->

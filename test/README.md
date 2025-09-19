@@ -4,7 +4,7 @@ This directory contains the complete test suite for CoffeeScript 3 (CS3) with th
 
 ## Status: Production Ready ✅
 
-All 425 tests across 32 test files are passing. The CS3 implementation is complete and optimized, with performance that matches or slightly exceeds the traditional CS2 parser.
+All 455 tests across 33 test files are passing. The CS3 implementation is complete and optimized, with performance that matches or slightly exceeds the traditional CS2 parser.
 
 ## Running Tests
 

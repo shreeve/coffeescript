@@ -8,18 +8,18 @@ Uses the actual CS3 parser (parser-cs3.js) with ES5 backend
 
 fs = require 'fs'
 path = require 'path'
-CoffeeScript = require '../../lib/coffeescript'
-{Lexer} = require '../../lib/coffeescript/lexer'
+CoffeeScript = require '../lib/coffeescript'
+{Lexer} = require '../lib/coffeescript/lexer'
 
 # Load CS3 parser and ES5 backend
 try
-  parserCS3 = require '../../lib/coffeescript/parser-cs3'
+  parserCS3 = require '../lib/coffeescript/parser-cs3'
 catch err
   console.error "CS3 parser not available: #{err.message}"
   process.exit 1
 
 try
-  ES5Backend = require '../../lib/backends/es5'
+  ES5Backend = require '../lib/backends/es5'
 catch err
   console.error "ES5 backend not available: #{err.message}"
   process.exit 1
@@ -91,7 +91,7 @@ compileCS3Real = (code, options = {}) ->
     upcomingInput: -> ''
 
   # Set up parser with ES5 backend - pass nodes module
-  nodes = require '../../lib/coffeescript/nodes'
+  nodes = require '../lib/coffeescript/nodes'
   backend = new ES5Backend(options, nodes)
   parserCS3.parser.lexer = lexIface
   parserCS3.parser.yy = { backend }
@@ -164,7 +164,7 @@ console.log "#{bold}CS3 Parser Summary:#{reset}"
 console.log "#{bold}========================================#{reset}\n"
 console.log "Parser:       CS3 (parser-cs3.js - Solar parser)"
 console.log "Backend:      ES5 (backends/es5/)"
-console.log "Tests Run:    CS3 test suite (test/cs3/*.test.coffee)"
+console.log "Tests Run:    CS3 test suite (test/*.test.coffee)"
 console.log "Pass Rate:    #{successRate}%"
 
 process.exit(if failed > 0 then 1 else 0)
