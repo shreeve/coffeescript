@@ -17,6 +17,7 @@ nodes = require '../../coffeescript/nodes'
 
 class ES5Backend
   constructor: (@options = {}, @nodes = nodes) ->
+    @variableContext = {}  # Store for $var/$use variables
     # Allow nodes to be passed in or use the require
     nodes = @nodes
     @compileOptions =
@@ -160,8 +161,10 @@ class ES5Backend
         ref = directive.$use
         value = if typeof ref is 'number'
           frame.rhs[ref - 1]?.value  # Position reference
+        else if typeof ref is 'string' and @variableContext[ref]?
+          @variableContext[ref]  # Lookup stored variable
         else
-          ref  # Direct value or temp variable
+          ref  # Direct value
 
         # Apply method calls
         if directive.method?
@@ -695,7 +698,18 @@ class ES5Backend
               bodyNode = new nodes.Block []
 
             # Handle name/index - they often come as arrays
-            if Array.isArray(name) then name = name[0]
+            # Special case: for own k, v of obj - name comes as [k, v]
+            # But nodes.For swaps name and index when object is true, so we need to account for that
+            if own and object and Array.isArray(name) and name.length is 2 and not index?
+              # nodes.For will swap these, so set them opposite to what we want
+              # We want: name=v, index=k (after the swap)
+              # So we set: name=k, index=v (before the swap)
+              nameArray = name
+              name = nameArray[0]   # k (will become index after swap)
+              index = nameArray[1]  # v (will become name after swap)
+            else if Array.isArray(name)
+              name = name[0]
+
             if Array.isArray(index) then index = index[0]
 
             # Convert to proper nodes if needed
@@ -1360,7 +1374,13 @@ class ES5Backend
       else if directive.$seq?
         result = null
         for step in directive.$seq
-          result = @evaluateDirective step, frame, ruleName
+          # Handle $var directives to store variables
+          if step?.$var?
+            varName = step.$var
+            varValue = @evaluateDirective step.value, frame, ruleName
+            @variableContext[varName] = varValue
+          else
+            result = @evaluateDirective step, frame, ruleName
         result
 
       # $ite directive (conditionals)
