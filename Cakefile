@@ -50,7 +50,7 @@ run = (args, callback) ->
 
 
 # Build the CoffeeScript language from source.
-buildParser = ->
+buildParserCS2 = ->
   helpers.extend global, require 'util'
   grammar = require('./src/grammar')
   language =
@@ -89,7 +89,7 @@ buildSources = (callback) ->
 
 build = (callback) ->
   # Build both parsers (super fast with Solar - ~100ms each)
-  buildParser()
+  buildParserCS2()
   buildParserCS3()
   # Build all source files and backends
   buildSources callback
