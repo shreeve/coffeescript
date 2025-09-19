@@ -522,9 +522,6 @@ runTests = (CoffeeScript) ->
     Promise.reject() if failures.length isnt 0
 
 
-task 'test', 'run the CoffeeScript language test suite', ->
-  runTests(CoffeeScript).catch -> process.exit 1
-
 task 'test:cs3', 'run CS3/ES5 test suite', ->
   try execSync 'cd test && coffee cs3-runner.coffee', stdio: 'inherit'
   catch e then process.exit 1
