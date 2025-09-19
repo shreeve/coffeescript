@@ -163,16 +163,16 @@ class ES5Backend
   createStringLiteral: (directive, frame, ruleName) ->
     value = @evaluateDirective directive.value, frame, ruleName
     quote = @evaluateDirective directive.quote, frame, ruleName
-    
+
     # Strip the surrounding quotes from the value if present
     if value and typeof value is 'string' and value.length >= 2
       if (value[0] is '"' and value[value.length - 1] is '"') or
          (value[0] is "'" and value[value.length - 1] is "'")
         value = value.slice(1, -1)
-    
+
     # Handle triple-quoted strings (heredocs)
     value = @stripHeredocIndentation(value, quote)
-    
+
     node = new nodes.StringLiteral value, {quote}
     node.locationData ?= @defaultLocationData()
     node
@@ -194,22 +194,22 @@ class ES5Backend
     elseBody = @evaluateDirective directive.elseBody, frame, ruleName
     type = @evaluateDirective(directive.type, frame, ruleName) or defaultType
     postfix = @evaluateDirective directive.postfix, frame, ruleName
-    
+
     bodyNode = @toBlock(body)
     bodyNode.locationData ?= @defaultLocationData() if bodyNode
     elseNode = if elseBody then @toBlock(elseBody) else null
     elseNode.locationData ?= @defaultLocationData() if elseNode
-    
+
     opts = {}
     opts.type = type if type is 'unless'
     opts.postfix = postfix if postfix
-    
+
     ifNode = new nodes.If condition, bodyNode, opts
     ifNode.locationData ?= @defaultLocationData()
-    
+
     if elseNode
       ifNode.addElse elseNode
-    
+
     ifNode
 
   createReturn: (directive, frame, ruleName) ->
@@ -240,6 +240,277 @@ class ES5Backend
   createExistence: (directive, frame, ruleName) ->
     expression = @evaluateDirective directive.expression, frame, ruleName
     new nodes.Existence expression
+
+  createFor: (directive, frame, ruleName) ->
+    # For loops are complex - they're built incrementally via $ops
+    body = @evaluateDirective directive.body, frame, ruleName
+    source = @evaluateDirective directive.source, frame, ruleName
+    guard = @evaluateDirective directive.guard, frame, ruleName
+    name = @evaluateDirective directive.name, frame, ruleName
+    index = @evaluateDirective directive.index, frame, ruleName
+    step = @evaluateDirective directive.step, frame, ruleName
+    own = @evaluateDirective directive.own, frame, ruleName
+    object = @evaluateDirective directive.object, frame, ruleName
+    from = @evaluateDirective directive.from, frame, ruleName
+    isAwait = @evaluateDirective directive.await, frame, ruleName
+
+    # Handle body
+    bodyNode = if body?.expressions
+      # Body node with expressions - preserve full list and order
+      new nodes.Block @filterNodes(body.expressions)
+    else
+      @toBlock(body)
+
+    # Handle name/index - they often come as arrays
+    # Special case: for own k, v of obj - name comes as [k, v]
+    # But nodes.For swaps name and index when object is true, so we need to account for that
+    if own and object and Array.isArray(name) and name.length is 2 and not index?
+      # nodes.For will swap these, so set them opposite to what we want
+      # We want: name=v, index=k (after the swap)
+      # So we set: name=k, index=v (before the swap)
+      nameArray = name
+      name = nameArray[0]   # k (will become index after swap)
+      index = nameArray[1]  # v (will become name after swap)
+    else if Array.isArray(name)
+      name = name[0]
+
+    if Array.isArray(index) then index = index[0]
+
+    # Convert to proper nodes if needed
+    if name?.type then name = @solarNodeToClass name
+    if index?.type then index = @solarNodeToClass index
+    if source?.type then source = @solarNodeToClass source
+
+    # Build source object for For constructor
+    sourceObj = {}
+    # Ensure source is a proper node
+    if source
+      sourceObj.source = if source instanceof nodes.Base then source else @ensureNode(source)
+    if name
+      sourceObj.name = if name instanceof nodes.Base then name else @ensureNode(name)
+    # Only add index if it's actually defined (not undefined/null)
+    # This is important for for-await loops which may not have an index
+    # Also check if index is the string "index" which means the variable wasn't found
+    # console.error "[For] index value:", index, "typeof:", typeof index, "is null?:", index is null
+    if index? and index isnt undefined and index isnt 'index'
+      sourceObj.index = if index instanceof nodes.Base then index else @ensureNode(index)
+    sourceObj.guard = guard if guard
+    sourceObj.step = step if step
+    sourceObj.own = own if own
+    sourceObj.object = object if object
+    sourceObj.from = from if from
+    sourceObj.await = isAwait if isAwait
+
+    # Create For node - constructor expects (body, source)
+    forNode = new nodes.For bodyNode, sourceObj
+    forNode.locationData ?= @defaultLocationData()
+
+    # CRITICAL FIX for nested loop var conflicts (#4889):
+    # Pre-allocate unique loop variables and override scope.freeVariable
+    loopVar = @getUniqueLoopVar()
+    incrementVar = @getUniqueLoopVar()
+
+    originalCompileNode = forNode.compileNode
+    forNode.compileNode = (o) =>
+      originalFreeVariable = null
+      if o?.scope?.freeVariable
+        originalFreeVariable = o.scope.freeVariable
+        varCounter = 0
+        preAllocatedVars = [loopVar, incrementVar]
+
+        # Determine user-declared value variable name to avoid collisions
+        userName = null
+        try
+          if forNode.name? and forNode.name instanceof nodes.IdentifierLiteral
+            userName = forNode.name.value
+          else if forNode.name? and forNode.name instanceof nodes.Value and forNode.name.base instanceof nodes.IdentifierLiteral
+            userName = forNode.name.base.value
+        catch e then userName = null
+
+        o.scope.freeVariable = (name, options = {}) =>
+          # When nodes.For requests 'i' with single:true, it's asking for an iterator temp
+          # ALWAYS return our pre-allocated var for these iterator requests
+          if options.single and name is 'i'
+            if varCounter < preAllocatedVars.length
+              result = preAllocatedVars[varCounter++]
+              return result
+            else
+              return @getUniqueLoopVar()
+          else
+            return originalFreeVariable.call(o.scope, name, options)
+
+      result = originalCompileNode.call(forNode, o)
+
+      if originalFreeVariable?
+        o.scope.freeVariable = originalFreeVariable
+
+      result
+
+    forNode
+
+  createCode: (directive, frame, ruleName) ->
+    params = @evaluateDirective directive.params, frame, ruleName
+
+    # For body, check if it's a position reference to an already-processed array or Block
+    # This preserves modifications made by operations like addElse
+    if typeof directive.body is 'number' and frame?.rhs?[directive.body - 1]
+      frameValue = frame.rhs[directive.body - 1].value
+      # If it's already a Block or an array of nodes, use it directly
+      # This preserves any modifications made by operations
+      if frameValue instanceof nodes.Block or (Array.isArray(frameValue) and frameValue.some((v) -> v instanceof nodes.Base))
+        body = frameValue
+      else
+        body = @evaluateDirective directive.body, frame, ruleName
+    else
+      body = @evaluateDirective directive.body, frame, ruleName
+
+    # Check if this is a bound function (fat arrow =>)
+    funcGlyph = @evaluateDirective directive.funcGlyph, frame, ruleName
+    bound = funcGlyph?.glyph is '=>' or @evaluateDirective directive.bound, frame, ruleName
+
+    # Ensure params are proper nodes
+    if Array.isArray(params)
+      paramsNode = params.map (p) =>
+        if p?.type
+          @solarNodeToClass(p)
+        else if p instanceof nodes.Base
+          p
+        else
+          @ensureNode(p)
+      paramsNode = @filterNodes paramsNode
+    else
+      paramsNode = []
+
+    # Ensure body is a proper Block with converted nodes
+    bodyNode = if Array.isArray(body)
+      bodyNodes = body.map (b) =>
+        # Check for nodes.Base FIRST to avoid re-processing existing nodes
+        if b instanceof nodes.Base then b
+        else if b?.type then @solarNodeToClass(b)
+        else @ensureNode(b)
+      new nodes.Block @filterNodes(bodyNodes)
+    else
+      @toBlock(body)
+
+    # Create proper FuncGlyph for bound/unbound functions
+    funcGlyph = if bound then new nodes.FuncGlyph('=>') else new nodes.FuncGlyph('->')
+    codeNode = new nodes.Code paramsNode, bodyNode, funcGlyph
+
+    # For CS3, pre-scan for super calls to avoid false positives
+    # in derived constructor validation
+    hasSuper = false
+    if bodyNode?.expressions
+      bodyNode.traverseChildren false, (node) ->
+        if node instanceof nodes.SuperCall or (node instanceof nodes.Call and node.variable instanceof nodes.Super)
+          hasSuper = true
+          return false  # Stop traversing
+        return true  # Continue traversing
+
+    # Monkey-patch only for constructors; avoid affecting arrow methods and regular methods
+    isCtor = !!(@evaluateDirective(directive.isConstructor, frame, ruleName))
+    if hasSuper and isCtor
+      # Skip validation for @params in derived constructors
+      origFlag = codeNode.flagThisParamInDerivedClassConstructorWithoutCallingSuper
+      codeNode.flagThisParamInDerivedClassConstructorWithoutCallingSuper = (param) ->
+        # Skip the validation for CS3-generated code with super
+        return
+
+      # Also patch eachSuperCall to make it always find the super call
+      origEachSuper = codeNode.eachSuperCall
+      codeNode.eachSuperCall = (context, iterator, opts) ->
+        # If checking params (not the body), use original so validations still run
+        if context isnt @body and origEachSuper?
+          return origEachSuper.call this, context, iterator, opts
+        # Otherwise, search body for the real SuperCall and report it
+        if iterator
+          for expr in bodyNode.expressions
+            if expr instanceof nodes.SuperCall or (expr instanceof nodes.Call and expr.variable instanceof nodes.Super)
+              iterator(expr)
+              break
+        true
+
+    codeNode
+
+  createObj: (directive, frame, ruleName) ->
+    properties = @evaluateDirective directive.properties, frame, ruleName
+    properties = @filterNodes (if Array.isArray(properties) then properties else [])
+    generated = @evaluateDirective directive.generated, frame, ruleName
+
+    # If object is generated (from braces) and has shorthand properties,
+    # convert them to proper key-value pairs
+    if generated
+      fixedProps = []
+      for prop in properties
+        if prop instanceof nodes.Value and prop.base instanceof nodes.IdentifierLiteral and not prop.properties?.length
+          # This is a shorthand property like 'x' in {x}
+          # Convert to x: x
+          key = new nodes.Value prop.base
+          value = new nodes.Value prop.base
+          fixedProps.push new nodes.Assign key, value, 'object'
+        else if prop instanceof nodes.Value and prop.base instanceof nodes.ThisLiteral
+          # This is an @ property like {@x} - extract the property name
+          # and mark the Value node with this=true for Param.eachName to handle correctly
+          if prop.properties?[0] instanceof nodes.Access
+            # Get the property name from the Access node
+            propName = prop.properties[0].name
+            if propName instanceof nodes.PropertyName
+              # PropertyName has a 'value' property with the actual name
+              propNameStr = propName.value
+              propName = new nodes.IdentifierLiteral propNameStr
+            else if typeof propName is 'string'
+              propName = new nodes.IdentifierLiteral propName
+            else if not (propName instanceof nodes.Base)
+              propName = @ensureNode propName
+
+            # Create the property assignment for object pattern
+            # The value should be a Value node marked with this=true
+            key = new nodes.Value propName
+            value = new nodes.Value propName
+            value.this = true  # Mark as @ parameter
+            fixedProps.push new nodes.Assign key, value, 'object'
+          else
+            fixedProps.push prop
+        else
+          fixedProps.push prop
+      properties = fixedProps
+
+    obj = new nodes.Obj properties, generated
+    obj.locationData ?= @defaultLocationData()
+    obj
+
+  createAssign: (directive, frame, ruleName) ->
+    # Handle object property assignments differently
+    if directive.context is 'object' and directive.expression?
+      # In object context, 'value' is the property name, 'expression' is the value
+      variable = @evaluateDirective directive.value, frame, ruleName
+      value = @evaluateDirective directive.expression, frame, ruleName
+      context = directive.context
+      # Mark Value nodes with ThisLiteral base as this=true for static properties
+      if variable instanceof nodes.Value and variable.base instanceof nodes.ThisLiteral
+        variable.this = true
+      new nodes.Assign variable, value, context
+    else if directive.expression? and not directive.variable?
+      # Default value assignment (e.g., in destructuring {x = 10})
+      # Here 'value' is the variable name and 'expression' is the default value
+      variable = @evaluateDirective directive.value, frame, ruleName
+      value = @evaluateDirective directive.expression, frame, ruleName
+      # Use null context for destructuring defaults so Param.eachName handles it correctly
+      new nodes.Assign variable, value, null
+    else
+      # Regular assignment
+      variable = @evaluateDirective directive.variable, frame, ruleName
+      value = @evaluateDirective directive.value, frame, ruleName
+      # For compound assignments, use the operator as the context
+      context = if directive.operator?
+        operator = @evaluateDirective directive.operator, frame, ruleName
+        operator
+      else
+        @evaluateDirective directive.context, frame, ruleName
+      options = {}
+      if directive.originalContext?
+        options.originalContext = @evaluateDirective directive.originalContext, frame, ruleName
+      # Create the Assign node with the correct context for compound assignments
+      new nodes.Assign variable, value, context, options
 
   # Helper to ensure value is a proper node
   ensureNode: (value) ->
@@ -549,38 +820,7 @@ class ES5Backend
             new nodes.TaggedTemplateCall (if vNode instanceof nodes.Value then vNode else new nodes.Value vNode), templateArg, false
 
           when 'Assign'
-            # Handle object property assignments differently
-            if directive.context is 'object' and directive.expression?
-              # In object context, 'value' is the property name, 'expression' is the value
-              variable = @evaluateDirective directive.value, frame, ruleName
-              value = @evaluateDirective directive.expression, frame, ruleName
-              context = directive.context
-              # Mark Value nodes with ThisLiteral base as this=true for static properties
-              if variable instanceof nodes.Value and variable.base instanceof nodes.ThisLiteral
-                variable.this = true
-              new nodes.Assign variable, value, context
-            else if directive.expression? and not directive.variable?
-              # Default value assignment (e.g., in destructuring {x = 10})
-              # Here 'value' is the variable name and 'expression' is the default value
-              variable = @evaluateDirective directive.value, frame, ruleName
-              value = @evaluateDirective directive.expression, frame, ruleName
-              # Use null context for destructuring defaults so Param.eachName handles it correctly
-              new nodes.Assign variable, value, null
-            else
-              # Regular assignment
-              variable = @evaluateDirective directive.variable, frame, ruleName
-              value = @evaluateDirective directive.value, frame, ruleName
-              # For compound assignments, use the operator as the context
-              context = if directive.operator?
-                operator = @evaluateDirective directive.operator, frame, ruleName
-                operator
-              else
-                @evaluateDirective directive.context, frame, ruleName
-              options = {}
-              if directive.originalContext?
-                options.originalContext = @evaluateDirective directive.originalContext, frame, ruleName
-              # Create the Assign node with the correct context for compound assignments
-              new nodes.Assign variable, value, context, options
+            @createAssign directive, frame, ruleName
 
           when 'StringLiteral'
             @createStringLiteral directive, frame, ruleName
@@ -612,51 +852,7 @@ class ES5Backend
             @createArr directive, frame, ruleName
 
           when 'Obj'
-            properties = @evaluateDirective directive.properties, frame, ruleName
-            properties = @filterNodes (if Array.isArray(properties) then properties else [])
-            generated = @evaluateDirective directive.generated, frame, ruleName
-
-            # If object is generated (from braces) and has shorthand properties,
-            # convert them to proper key-value pairs
-            if generated
-              fixedProps = []
-              for prop in properties
-                if prop instanceof nodes.Value and prop.base instanceof nodes.IdentifierLiteral and not prop.properties?.length
-                  # This is a shorthand property like 'x' in {x}
-                  # Convert to x: x
-                  key = new nodes.Value prop.base
-                  value = new nodes.Value prop.base
-                  fixedProps.push new nodes.Assign key, value, 'object'
-                else if prop instanceof nodes.Value and prop.base instanceof nodes.ThisLiteral
-                  # This is an @ property like {@x} - extract the property name
-                  # and mark the Value node with this=true for Param.eachName to handle correctly
-                  if prop.properties?[0] instanceof nodes.Access
-                    # Get the property name from the Access node
-                    propName = prop.properties[0].name
-                    if propName instanceof nodes.PropertyName
-                      # PropertyName has a 'value' property with the actual name
-                      propNameStr = propName.value
-                      propName = new nodes.IdentifierLiteral propNameStr
-                    else if typeof propName is 'string'
-                      propName = new nodes.IdentifierLiteral propName
-                    else if not (propName instanceof nodes.Base)
-                      propName = @ensureNode propName
-
-                    # Create the property assignment for object pattern
-                    # The value should be a Value node marked with this=true
-                    key = new nodes.Value propName
-                    value = new nodes.Value propName
-                    value.this = true  # Mark as @ parameter
-                    fixedProps.push new nodes.Assign key, value, 'object'
-                  else
-                    fixedProps.push prop
-                else
-                  fixedProps.push prop
-              properties = fixedProps
-
-            obj = new nodes.Obj properties, generated
-            obj.locationData ?= @defaultLocationData()
-            obj
+            @createObj directive, frame, ruleName
 
           when 'Range'
             from = @evaluateDirective directive.from, frame, ruleName
@@ -709,111 +905,7 @@ class ES5Backend
             whileNode
 
           when 'For'
-            # For loops are complex - they're built incrementally via $ops
-            body = @evaluateDirective directive.body, frame, ruleName
-            source = @evaluateDirective directive.source, frame, ruleName
-            guard = @evaluateDirective directive.guard, frame, ruleName
-            name = @evaluateDirective directive.name, frame, ruleName
-            index = @evaluateDirective directive.index, frame, ruleName
-            step = @evaluateDirective directive.step, frame, ruleName
-            own = @evaluateDirective directive.own, frame, ruleName
-            object = @evaluateDirective directive.object, frame, ruleName
-            from = @evaluateDirective directive.from, frame, ruleName
-            isAwait = @evaluateDirective directive.await, frame, ruleName
-
-            # Handle body
-            bodyNode = if body?.expressions
-              # Body node with expressions - preserve full list and order
-              new nodes.Block @filterNodes(body.expressions)
-            else
-              @toBlock(body)
-
-            # Handle name/index - they often come as arrays
-            # Special case: for own k, v of obj - name comes as [k, v]
-            # But nodes.For swaps name and index when object is true, so we need to account for that
-            if own and object and Array.isArray(name) and name.length is 2 and not index?
-              # nodes.For will swap these, so set them opposite to what we want
-              # We want: name=v, index=k (after the swap)
-              # So we set: name=k, index=v (before the swap)
-              nameArray = name
-              name = nameArray[0]   # k (will become index after swap)
-              index = nameArray[1]  # v (will become name after swap)
-            else if Array.isArray(name)
-              name = name[0]
-
-            if Array.isArray(index) then index = index[0]
-
-            # Convert to proper nodes if needed
-            if name?.type then name = @solarNodeToClass name
-            if index?.type then index = @solarNodeToClass index
-            if source?.type then source = @solarNodeToClass source
-
-            # Build source object for For constructor
-            sourceObj = {}
-            # Ensure source is a proper node
-            if source
-              sourceObj.source = if source instanceof nodes.Base then source else @ensureNode(source)
-            if name
-              sourceObj.name = if name instanceof nodes.Base then name else @ensureNode(name)
-            # Only add index if it's actually defined (not undefined/null)
-            # This is important for for-await loops which may not have an index
-            # Also check if index is the string "index" which means the variable wasn't found
-            # console.error "[For] index value:", index, "typeof:", typeof index, "is null?:", index is null
-            if index? and index isnt undefined and index isnt 'index'
-              sourceObj.index = if index instanceof nodes.Base then index else @ensureNode(index)
-            sourceObj.guard = guard if guard
-            sourceObj.step = step if step
-            sourceObj.own = own if own
-            sourceObj.object = object if object
-            sourceObj.from = from if from
-            sourceObj.await = isAwait if isAwait
-
-            # Create For node - constructor expects (body, source)
-            forNode = new nodes.For bodyNode, sourceObj
-            forNode.locationData ?= @defaultLocationData()
-
-            # CRITICAL FIX for nested loop var conflicts (#4889):
-            # Pre-allocate unique loop variables and override scope.freeVariable
-            loopVar = @getUniqueLoopVar()
-            incrementVar = @getUniqueLoopVar()
-
-            originalCompileNode = forNode.compileNode
-            forNode.compileNode = (o) =>
-              originalFreeVariable = null
-              if o?.scope?.freeVariable
-                originalFreeVariable = o.scope.freeVariable
-                varCounter = 0
-                preAllocatedVars = [loopVar, incrementVar]
-
-                # Determine user-declared value variable name to avoid collisions
-                userName = null
-                try
-                  if forNode.name? and forNode.name instanceof nodes.IdentifierLiteral
-                    userName = forNode.name.value
-                  else if forNode.name? and forNode.name instanceof nodes.Value and forNode.name.base instanceof nodes.IdentifierLiteral
-                    userName = forNode.name.base.value
-                catch e then userName = null
-
-                o.scope.freeVariable = (name, options = {}) =>
-                  # When nodes.For requests 'i' with single:true, it's asking for an iterator temp
-                  # ALWAYS return our pre-allocated var for these iterator requests
-                  if options.single and name is 'i'
-                    if varCounter < preAllocatedVars.length
-                      result = preAllocatedVars[varCounter++]
-                      return result
-                    else
-                      return @getUniqueLoopVar()
-                  else
-                    return originalFreeVariable.call(o.scope, name, options)
-
-              result = originalCompileNode.call(forNode, o)
-
-              if originalFreeVariable?
-                o.scope.freeVariable = originalFreeVariable
-
-              result
-
-            forNode
+            @createFor directive, frame, ruleName
 
           when 'Try'
             attempt = @evaluateDirective directive.attempt, frame, ruleName
@@ -841,87 +933,7 @@ class ES5Backend
             new nodes.Try attemptNode, recovery, ensureNode
 
           when 'Code'
-            params = @evaluateDirective directive.params, frame, ruleName
-
-            # For body, check if it's a position reference to an already-processed array or Block
-            # This preserves modifications made by operations like addElse
-            if typeof directive.body is 'number' and frame?.rhs?[directive.body - 1]
-              frameValue = frame.rhs[directive.body - 1].value
-              # If it's already a Block or an array of nodes, use it directly
-              # This preserves any modifications made by operations
-              if frameValue instanceof nodes.Block or (Array.isArray(frameValue) and frameValue.some((v) -> v instanceof nodes.Base))
-                body = frameValue
-              else
-                body = @evaluateDirective directive.body, frame, ruleName
-            else
-              body = @evaluateDirective directive.body, frame, ruleName
-
-            # Check if this is a bound function (fat arrow =>)
-            funcGlyph = @evaluateDirective directive.funcGlyph, frame, ruleName
-            bound = funcGlyph?.glyph is '=>' or @evaluateDirective directive.bound, frame, ruleName
-
-            # Ensure params are proper nodes
-            if Array.isArray(params)
-              paramsNode = params.map (p) =>
-                if p?.type
-                  @solarNodeToClass(p)
-                else if p instanceof nodes.Base
-                  p
-                else
-                  @ensureNode(p)
-              paramsNode = @filterNodes paramsNode
-            else
-              paramsNode = []
-
-            # Ensure body is a proper Block with converted nodes
-            bodyNode = if Array.isArray(body)
-              bodyNodes = body.map (b) =>
-                # Check for nodes.Base FIRST to avoid re-processing existing nodes
-                if b instanceof nodes.Base then b
-                else if b?.type then @solarNodeToClass(b)
-                else @ensureNode(b)
-              new nodes.Block @filterNodes(bodyNodes)
-            else
-              @toBlock(body)
-
-            # Create proper FuncGlyph for bound/unbound functions
-            funcGlyph = if bound then new nodes.FuncGlyph('=>') else new nodes.FuncGlyph('->')
-            codeNode = new nodes.Code paramsNode, bodyNode, funcGlyph
-
-            # For CS3, pre-scan for super calls to avoid false positives
-            # in derived constructor validation
-            hasSuper = false
-            if bodyNode?.expressions
-              bodyNode.traverseChildren false, (node) ->
-                if node instanceof nodes.SuperCall or (node instanceof nodes.Call and node.variable instanceof nodes.Super)
-                  hasSuper = true
-                  return false  # Stop traversing
-                return true  # Continue traversing
-
-            # Monkey-patch only for constructors; avoid affecting arrow methods and regular methods
-            isCtor = !!(@evaluateDirective(directive.isConstructor, frame, ruleName))
-            if hasSuper and isCtor
-              # Skip validation for @params in derived constructors
-              origFlag = codeNode.flagThisParamInDerivedClassConstructorWithoutCallingSuper
-              codeNode.flagThisParamInDerivedClassConstructorWithoutCallingSuper = (param) ->
-                # Skip the validation for CS3-generated code with super
-                return
-
-              # Also patch eachSuperCall to make it always find the super call
-              origEachSuper = codeNode.eachSuperCall
-              codeNode.eachSuperCall = (context, iterator, opts) ->
-                # If checking params (not the body), use original so validations still run
-                if context isnt @body and origEachSuper?
-                  return origEachSuper.call this, context, iterator, opts
-                # Otherwise, search body for the real SuperCall and report it
-                if iterator
-                  for expr in bodyNode.expressions
-                    if expr instanceof nodes.SuperCall or (expr instanceof nodes.Call and expr.variable instanceof nodes.Super)
-                      iterator(expr)
-                      break
-                true
-
-            codeNode
+            @createCode directive, frame, ruleName
 
           when 'Param'
             name = @evaluateDirective directive.name, frame, ruleName
