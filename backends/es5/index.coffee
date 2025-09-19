@@ -388,16 +388,12 @@ class ES5Backend
             else
               argsNode = []
 
-            # Check if this is a super() call
-            # Super can be the variable directly, or inside a Value node
-            isSuper = variableNode instanceof nodes.Super or
-                      (variableNode instanceof nodes.Value and variableNode.base instanceof nodes.Super)
-
-            if isSuper
-              # Create a SuperCall instead of a regular Call
-              # SuperCall expects (superVar, args)
-              superVar = if variableNode instanceof nodes.Super then variableNode else variableNode.base
-              new nodes.SuperCall(superVar, argsNode)
+            # Check if this is a bare super() call (not a delegated super.method(...))
+            if variableNode instanceof nodes.Super
+              new nodes.SuperCall(variableNode, argsNode)
+            else if variableNode instanceof nodes.Value and variableNode.base instanceof nodes.Super
+              # Has a property access: this is super.method(...), NOT a constructor super()
+              new nodes.Call variableNode, argsNode, @evaluateDirective(directive.soak, frame, ruleName), @evaluateDirective(directive.token, frame, ruleName)
             else
               new nodes.Call (if variableNode instanceof nodes.Value then variableNode else new nodes.Value variableNode), argsNode, @evaluateDirective(directive.soak, frame, ruleName), @evaluateDirective(directive.token, frame, ruleName)
 
@@ -870,8 +866,9 @@ class ES5Backend
                   return false  # Stop traversing
                 return true  # Continue traversing
 
-            # Monkey-patch the validation methods to skip validation if we know there's a super call
-            if hasSuper
+            # Monkey-patch only for constructors; avoid affecting arrow methods and regular methods
+            isCtor = !!(@evaluateDirective(directive.isConstructor, frame, ruleName))
+            if hasSuper and isCtor
               # Skip validation for @params in derived constructors
               origFlag = codeNode.flagThisParamInDerivedClassConstructorWithoutCallingSuper
               codeNode.flagThisParamInDerivedClassConstructorWithoutCallingSuper = (param) ->
