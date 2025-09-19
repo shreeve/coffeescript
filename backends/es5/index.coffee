@@ -933,7 +933,7 @@ class ES5Backend
               # Ensure name has locationData (needed for destructuring)
               name.locationData = @defaultLocationData()
 
-            # Handle {@x, @y} destructuring - convert CS3 Assigns to CS2-style Values  
+            # Handle {@x, @y} destructuring - convert CS3 Assigns to CS2-style Values
             # eachParamName expects Value nodes with this=true for @ params
             if name instanceof nodes.Obj or (name instanceof nodes.Value and name.base instanceof nodes.Obj)
               obj = if name instanceof nodes.Obj then name else name.base
