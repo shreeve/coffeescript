@@ -171,8 +171,15 @@ class CS3DebugBackend
 
         # Unknown operation - return as-is for debugging
         return {$ops: op, data: d}
-      if d.$seq? then r=null; for s in d.$seq then r=@evaluate s, fr, rn; return r
-      o={}; for k,v of d when not k.startsWith '$' then o[k]=@evaluate v, fr, rn; return o
+      if d.$seq?
+        r = null
+        for s in d.$seq
+          r = @evaluate s, fr, rn
+        return r
+      o = {}
+      for k,v of d when not k.startsWith '$'
+        o[k] = @evaluate v, fr, rn
+      return o
     d
 
 # Format converters for AST output

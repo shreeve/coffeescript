@@ -11,7 +11,7 @@ CoffeeScript 3 (CS3) represents a **paradigm shift** in parser architecture: tra
 - **ReductionFrame architecture** - Backends evaluate Solar directives against per-reduction RHS frames
 - **Universal position resolution** - Automatic `1` → `'x'` resolution through frame slots
 - **Complete Solar directive system** - All 404 patterns transformed to language-agnostic directives
-- **100% test compatibility** - All 425 tests passing with the new architecture
+- **100% test compatibility** - All 455 tests passing with the new architecture
 - **Universal backend interface** - Any language can implement Solar directive evaluation
 
 ## The Solar Directive System
@@ -105,7 +105,7 @@ The CS3 implementation is **complete and optimized**:
 - **JSX-free Grammar** - Cleaner, focused on core CoffeeScript features
 
 ### ✅ Complete Implementation
-- **Test Suite Compatibility** - 100% pass rate (425/425 tests)
+- **Test Suite Compatibility** - 100% pass rate (455/455 tests)
 - **All language features** - Complete support for all CoffeeScript syntax
 - **@params in destructuring** - Full support including `{@x, @y}` patterns
 - **Super calls** - Working in all contexts including arrow functions
@@ -396,7 +396,7 @@ CoffeeScript 3 is a stepping stone toward **Rip**, a truly universal programming
 # Build everything (parsers and backend)
 cake build
 
-# Test CS3 pipeline (425/425 tests passing - 100%!)
+# Test CS3 pipeline (455/455 tests passing - 100%!)
 cake test:cs3
 
 # View the Solar directive grammar
@@ -455,6 +455,6 @@ CS3 is an ambitious project that needs community involvement:
 - ✅ All edge cases handled
 
 **Test Results:**
-- 425/425 tests passing (100%)
+- 455/455 tests passing (100%)
 - Complete compatibility with CoffeeScript 2
 - Production-ready implementation
