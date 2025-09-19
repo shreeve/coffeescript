@@ -970,8 +970,17 @@ class ES5Backend
             new nodes.Slice range
 
           when 'Super'
-            # Create a Super node (this keyword for accessing parent methods)
-            new nodes.Super()
+            # Handle Super nodes which may have accessor for super.method() calls
+            accessor = @evaluateDirective directive.accessor, frame, ruleName
+            literal = @evaluateDirective directive.literal, frame, ruleName
+            # If accessor is present, this is super.method() or super[expr]
+            # The CS2 nodes.Super expects accessor to be set on the node
+            superNode = new nodes.Super()
+            if accessor
+              superNode.accessor = accessor
+            if literal
+              superNode.literal = literal
+            superNode
 
           when 'SuperCall'
             # Handle super() calls in constructors and methods
