@@ -1413,251 +1413,26 @@ class ES5Backend
       directive
 
   # Convert evaluated Solar node to CoffeeScript class (Phase A: Legacy adapter)
+  # This is a compatibility shim that converts already-evaluated Solar nodes to CoffeeScript nodes
+  # It creates a mock directive and frame, then uses our existing creation methods
   solarNodeToClass: (solarNode) ->
     return null unless solarNode?.type
 
-    switch solarNode.type
-      when 'IdentifierLiteral'
-        new nodes.IdentifierLiteral solarNode.value
+    # For nodes that are already CoffeeScript nodes, return as-is
+    return solarNode if solarNode instanceof nodes.Base
 
-      when 'Literal'
-        new nodes.Literal solarNode.value
+    # Create a mock directive that looks like what evaluateDirective expects
+    # Most Solar nodes have their properties directly on the object
+    directive = Object.assign {$ast: solarNode.type}, solarNode
 
-      when 'NumberLiteral'
-        # Strip underscores from numeric literals for compatibility
-        value = solarNode.value
-        cleanValue = if typeof value is 'string' then value.replace(/_/g, '') else value
-        node = new nodes.NumberLiteral cleanValue, solarNode.parsedValue
-        node.locationData = solarNode.locationData or @defaultLocationData()
-        node
+    # Create a mock frame with empty context
+    mockFrame = { rhs: [], ruleName: solarNode.type }
 
-      when 'StringLiteral'
-        value = solarNode.value
-        quote = solarNode.quote
-        # Strip the surrounding quotes from the value if present
-        if value and typeof value is 'string' and value.length >= 2
-          if (value[0] is '"' and value[value.length - 1] is '"') or
-             (value[0] is "'" and value[value.length - 1] is "'")
-            value = value.slice(1, -1)
+    # Use our existing evaluateDirective logic, which will dispatch to the appropriate create method
+    result = @evaluateDirective directive, mockFrame, solarNode.type
 
-        # Handle triple-quoted strings (heredocs) - use helper method
-        value = @stripHeredocIndentation(value, quote)
-
-        node = new nodes.StringLiteral value, {quote}
-        node.locationData = solarNode.locationData or @defaultLocationData()
-        node
-
-      when 'BooleanLiteral'
-        new nodes.BooleanLiteral solarNode.value
-
-      when 'NullLiteral'
-        new nodes.NullLiteral()
-
-      when 'UndefinedLiteral'
-        new nodes.UndefinedLiteral()
-
-      when 'Op'
-        first = @solarNodeToClass solarNode.left if solarNode.left
-        second = @solarNodeToClass solarNode.right if solarNode.right
-        new nodes.Op solarNode.operator, first, second, solarNode.flip
-
-      when 'Assign'
-        # Handle object property assignments differently
-        if solarNode.context is 'object' and solarNode.expression?
-          # In object context, 'value' is the property name, 'expression' is the value
-          variable = @solarNodeToClass solarNode.value if solarNode.value
-          value = @solarNodeToClass solarNode.expression if solarNode.expression
-          # Mark Value nodes with ThisLiteral base as this=true for static properties
-          if variable instanceof nodes.Value and variable.base instanceof nodes.ThisLiteral
-            variable.this = true
-        else if solarNode.expression? and not solarNode.variable?
-          # Default value assignment (e.g., in destructuring {x = 10})
-          # Here 'value' is the variable name and 'expression' is the default value
-          variable = @solarNodeToClass solarNode.value if solarNode.value
-          value = @solarNodeToClass solarNode.expression if solarNode.expression
-          # Use null context for destructuring defaults so Param.eachName handles it correctly
-        else
-          # Regular assignment
-          variable = @solarNodeToClass solarNode.variable if solarNode.variable
-          value = @solarNodeToClass solarNode.value if solarNode.value
-        # For compound assignments, use the operator as the context
-        # For destructuring defaults (expression but no variable), use null context
-        context = if solarNode.expression? and not solarNode.variable? and not (solarNode.context is 'object')
-          null
-        else if solarNode.operator
-          operator = if typeof solarNode.operator is 'string'
-            solarNode.operator
-          else if solarNode.operator?.toString?()
-            solarNode.operator.toString()
-          operator
-        else
-          solarNode.context
-        options = {}
-        if solarNode.originalContext
-          options.originalContext = solarNode.originalContext
-        new nodes.Assign variable, value, context, options
-
-      when 'Arr'
-        objects = (if solarNode.objects then solarNode.objects.map((o) => @solarNodeToClass o) else [])
-        new nodes.Arr @filterNodes objects
-
-      when 'Obj'
-        properties = (if solarNode.properties then solarNode.properties.map((p) => @solarNodeToClass p) else [])
-        new nodes.Obj @filterNodes properties, solarNode.generated
-
-      when 'Range'
-        from = @solarNodeToClass solarNode.from if solarNode.from
-        to = @solarNodeToClass solarNode.to if solarNode.to
-        # Fix for exclusive range - the 'equals' field determines exclusivity
-        exclusive = solarNode.exclusive or solarNode.equals is 'exclusive'
-        new nodes.Range from, to, exclusive
-
-      when 'RegexLiteral', 'Regex'
-        # RegexLiteral expects the full regex string including delimiters
-        if solarNode.value and typeof solarNode.value is 'string' and solarNode.value[0] is '/'
-          new nodes.RegexLiteral solarNode.value, {delimiter: solarNode.delimiter or '/'}
-        else
-          # Otherwise try to construct from pattern and flags
-          pattern = solarNode.pattern or ''
-          flags = solarNode.flags or ''
-          fullRegex = "/#{pattern}/#{flags}"
-          new nodes.RegexLiteral fullRegex, {delimiter: solarNode.delimiter or '/'}
-
-      when 'Parens'
-        new nodes.Parens @solarNodeToClass solarNode.body
-
-      when 'PassthroughLiteral'
-        new nodes.PassthroughLiteral solarNode.value, {here: solarNode.here, generated: solarNode.generated}
-
-      when 'Throw'
-        expr = if solarNode.expression then @solarNodeToClass solarNode.expression else null
-        new nodes.Throw (expr or new nodes.Literal 'undefined')
-
-      when 'Splat'
-        name = if solarNode.name then @solarNodeToClass solarNode.name else null
-        new nodes.Splat (name or new nodes.Literal 'undefined')
-
-      when 'Expansion'
-        expr = if solarNode.expression then @solarNodeToClass solarNode.expression else null
-        new nodes.Expansion (expr or new nodes.Literal 'undefined')
-
-      when 'Slice'
-        range = @solarNodeToClass solarNode.range if solarNode.range
-        new nodes.Slice range
-
-      when 'In'
-        object = @solarNodeToClass solarNode.object if solarNode.object
-        array = @solarNodeToClass solarNode.array if solarNode.array
-        new nodes.In object, array
-
-      when 'ImportDeclaration'
-        clause = @solarNodeToClass solarNode.clause if solarNode.clause
-        source = @solarNodeToClass solarNode.source if solarNode.source
-        new nodes.ImportDeclaration clause, source
-
-      when 'ExportNamedDeclaration', 'ExportDeclaration'
-        clause = @solarNodeToClass solarNode.clause if solarNode.clause
-        source = @solarNodeToClass solarNode.source if solarNode.source
-        new nodes.ExportNamedDeclaration clause, source
-
-      when 'Existence'
-        new nodes.Existence @solarNodeToClass solarNode.expression if solarNode.expression
-
-      when 'Loop'
-        body = @solarNodeToClass solarNode.body if solarNode.body
-        new nodes.Loop body
-
-      when 'Access'
-        nameNode = if solarNode.name?.type
-          @solarNodeToClass solarNode.name
-        else if solarNode.name?.value?
-          new nodes.PropertyName solarNode.name.value
-        else if typeof solarNode.name is 'string'
-          new nodes.PropertyName solarNode.name
-        else
-          # For shorthand (::), default to "prototype"
-          new nodes.PropertyName (if solarNode.shorthand then 'prototype' else '')
-        new nodes.Access nameNode, {soak: solarNode.soak, shorthand: solarNode.shorthand}
-
-      when 'PropertyName'
-        new nodes.PropertyName solarNode.value or ''
-
-      when 'Block'
-        expressions = if solarNode.expressions
-          @filterNodes (if Array.isArray(solarNode.expressions) then solarNode.expressions else [])
-        else
-          []
-        new nodes.Block expressions
-
-      when 'Body'
-        # Body nodes have expressions that are often nested arrays
-        expressions = solarNode.expressions or []
-        flatExpressions = []
-        if Array.isArray(expressions)
-          for expr in expressions
-            if Array.isArray(expr)
-              for item in expr
-                converted = if item?.type then @solarNodeToClass(item) else item
-                flatExpressions.push converted if converted?
-            else
-              converted = if expr?.type then @solarNodeToClass(expr) else expr
-              flatExpressions.push converted if converted?
-        new nodes.Block @filterNodes flatExpressions
-
-      when 'if'
-        # if statement
-        bodyNode = if solarNode.body?.expressions
-          block = new nodes.Block solarNode.body.expressions
-          block.locationData ?= @defaultLocationData()
-          block
-        else
-          @ensureNode(solarNode.body)
-        elseNode = if solarNode.elseBody
-          if solarNode.elseBody.expressions
-            block = new nodes.Block solarNode.elseBody.expressions
-            block.locationData ?= @defaultLocationData()
-            block
-          else
-            @ensureNode(solarNode.elseBody)
-        else
-          null
-        # Include postfix and type if they exist
-        opts = {}
-        opts.postfix = solarNode.postfix if solarNode.postfix?
-        opts.type = solarNode.type if solarNode.type?
-        ifNode = new nodes.If @ensureNode(solarNode.condition), bodyNode, opts
-        # Use addElse for proper else-if chaining
-        ifNode.addElse elseNode if elseNode
-        ifNode
-
-      when 'unless'
-        # unless is an inverted if statement
-        bodyNode = if solarNode.body?.expressions
-          block = new nodes.Block solarNode.body.expressions
-          block.locationData ?= @defaultLocationData()
-          block
-        else
-          @ensureNode(solarNode.body)
-        elseNode = if solarNode.elseBody
-          if solarNode.elseBody.expressions
-            block = new nodes.Block solarNode.elseBody.expressions
-            block.locationData ?= @defaultLocationData()
-            block
-          else
-            @ensureNode(solarNode.elseBody)
-        else
-          null
-        # Pass type: 'unless' for unless statements
-        opts = {type: 'unless'}
-        opts.postfix = solarNode.postfix if solarNode.postfix?
-        ifNode = new nodes.If @ensureNode(solarNode.condition), bodyNode, opts
-        # Use addElse for proper else-if chaining
-        ifNode.addElse elseNode if elseNode
-        ifNode
-
-      else
-        # Placeholder for unimplemented node types
-        new nodes.Literal "/* TODO: Solar node #{solarNode.type} */"
+    # If evaluateDirective couldn't handle it, fall back to a simple literal
+    result or new nodes.Literal "/* TODO: Solar node #{solarNode.type} */"
 
   # Resolve $pos directive to locationData
   resolvePosition: (posDirective, frame) ->
