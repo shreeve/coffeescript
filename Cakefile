@@ -52,19 +52,44 @@ run = (args, callback) ->
 # Build the CoffeeScript language from source.
 buildParser = ->
   helpers.extend global, require 'util'
-  require 'jison'
-  # We don't need `moduleMain`, since the parser is unlikely to be run standalone.
-  parser = require('./lib/coffeescript/grammar').parser.generate(moduleMain: ->)
+  grammar = require('./src/grammar')
+  language =
+    bnf: grammar.bnf
+    operators: grammar.operators
+  {Generator} = require './solar.coffee'
+  parser = Generator(language).generate(compress: !true)
   fs.writeFileSync 'lib/coffeescript/parser.js', parser
+
+# Build the CS3 parser from syntax.coffee using Solar
+buildParserCS3 = ->
+  helpers.extend global, require 'util'
+  syntax = require('./src/syntax')
+  language =
+    grammar: syntax.grammar    # CS3 uses 'grammar' instead of 'bnf'
+    operators: syntax.operators
+  {Generator} = require './solar.coffee'
+  parser = Generator(language).generate(compress: !true)
+  fs.writeFileSync 'lib/coffeescript/parser-cs3.js', parser
 
 buildExceptParser = (callback) ->
   files = fs.readdirSync 'src'
-  files = ('src/' + file for file in files when file.match(/\.(lit)?coffee$/))
+  files = ('src/' + file for file in files when file.match(/\.(lit)?coffee$/) and file not in ['grammar.coffee', 'syntax.coffee'])
   run ['-c', '-o', 'lib/coffeescript'].concat(files), callback
+
+buildBackend = (callback) ->
+  # Build CS3 ES5 backend
+  if fs.existsSync 'backends/es5/index.coffee'
+    console.log "Building CS3 ES5 backend..."
+    # Ensure output directory exists
+    fs.mkdirSync 'lib/backends/es5', {recursive: true}
+    run ['-c', '-o', 'lib/backends/es5', 'backends/es5/index.coffee'], callback
+  else
+    callback?()
 
 build = (callback) ->
   buildParser()
-  buildExceptParser callback
+  buildBackend ->
+    buildExceptParser callback
 
 transpile = (code, options = {}) ->
   options.minify =      process.env.MINIFY    isnt 'false'
@@ -124,6 +149,8 @@ watchAndBuildAndTest = (harmony = no) ->
 task 'build', 'build the CoffeeScript compiler from source', build
 
 task 'build:parser', 'build the Jison parser only', buildParser
+
+task 'build:parser-cs3', 'build the CS3 parser from syntax.coffee using Solar', buildParserCS3
 
 task 'build:except-parser', 'build the CoffeeScript compiler, except for the Jison parser', buildExceptParser
 
@@ -498,6 +525,13 @@ runTests = (CoffeeScript) ->
 task 'test', 'run the CoffeeScript language test suite', ->
   runTests(CoffeeScript).catch -> process.exit 1
 
+task 'test:cs3', 'run CS3/ES5 test suite', ->
+  try execSync 'cd test/cs3 && coffee cs3-runner.coffee', stdio: 'inherit'
+  catch e then process.exit 1
+
+task 'test:cs2', 'run CS2/AST test suite', ->
+  try execSync 'cd test/cs3 && coffee cs2-runner.coffee', stdio: 'inherit'
+  catch e then process.exit 1
 
 task 'test:browser', 'run the test suite against the modern browser compiler in a headless browser', ->
   # Create very simple web server to serve the two files we need.

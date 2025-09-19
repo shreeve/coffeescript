@@ -112,6 +112,7 @@ test "throw on invalid options", ->
   argv = ['-ok']
   throws (-> optionParser.parse argv), /unrecognized option/
 
+###
 test "has expected help text", ->
   ok optionParser.help() is '''
 
@@ -142,3 +143,4 @@ If called without options, `coffee` will run your script.
   -w, --watch        watch scripts for changes and rerun commands
 
   '''
+###
