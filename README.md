@@ -7,6 +7,7 @@ CoffeeScript 3 (CS3) represents a **paradigm shift** in parser architecture: tra
 ### Key Achievements
 - **Complete parser rewrite** - Pure data-oriented architecture with no performance loss
 - **100x faster parser generation** with Solar (12+ seconds → 100ms)
+- **Ultra-compact rule definitions** - Single-line rules with efficient aliasing (`r` function)
 - **ReductionFrame architecture** - Backends evaluate Solar directives against per-reduction RHS frames
 - **Universal position resolution** - Automatic `1` → `'x'` resolution through frame slots
 - **Complete Solar directive system** - All 404 patterns transformed to language-agnostic directives

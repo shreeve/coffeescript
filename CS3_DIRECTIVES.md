@@ -54,7 +54,7 @@ $ops: 'value', add: [1, 2]           # Add accessor to value
 $ops: 'if', addElse: [1, 2]          # Add else branch to if
 
 $ops: 'loop', addBody: [1, 2]        # Add body to loop
-$ops: 'loop', addSource: [1, 2]      # Add source to loop  
+$ops: 'loop', addSource: [1, 2]      # Add source to loop
 $ops: 'loop', addBody: [1, 2], postfix: true  # Postfix loop
 
 $ops: 'prop', set: {target: 1, property: 'name', value: 2}  # Set property
@@ -121,7 +121,7 @@ $ast: 'Code', params: {$ary: 1}, body: {$use: 2}
 
 ```coffee
 # Nested value with property access
-$ast: 'Value', val: {$ast: 'IdentifierLiteral', value: 'foo'}, 
+$ast: 'Value', val: {$ast: 'IdentifierLiteral', value: 'foo'},
                properties: [{$ast: 'Access', name: 'bar'}]
 
 # Array with mixed elements
