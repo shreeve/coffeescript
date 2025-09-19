@@ -53,6 +53,7 @@ The test runner (`cs3-runner.coffee`) coordinates:
 Despite the complete architectural transformation:
 - **No performance penalty** - Compilation speed matches CS2
 - **Actually slightly faster** in CPU utilization
+- **Ultra-compact rules** - Single-line definitions with efficient `r` function
 - **Clean, maintainable code** without clever optimizations
 
 ## Key Features Tested
