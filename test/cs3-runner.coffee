@@ -162,9 +162,8 @@ else
 console.log "\n#{bold}========================================#{reset}"
 console.log "#{bold}CS3 Parser Summary:#{reset}"
 console.log "#{bold}========================================#{reset}\n"
-console.log "Parser:       CS3 (parser-cs3.js - Solar parser)"
+console.log "Parser:       CS3 (syntax.coffee -> parser-cs3.js) [Solar parser]"
 console.log "Backend:      ES5 (backends/es5/)"
-console.log "Tests Run:    CS3 test suite (test/*.test.coffee)"
 console.log "Pass Rate:    #{successRate}%"
 
 process.exit(if failed > 0 then 1 else 0)

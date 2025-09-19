@@ -118,8 +118,7 @@ else
 console.log "\n#{bold}========================================#{reset}"
 console.log "#{bold}CS2 Parser Summary:#{reset}"
 console.log "#{bold}========================================#{reset}\n"
-console.log "Parser:       CS2 (grammar.coffee -> parser.js)"
-console.log "Tests Run:    CS3 test suite (test/*.test.coffee)"
+console.log "Parser:       CS2 (grammar.coffee -> parser.js) [Solar parser]"
 console.log "Pass Rate:    #{successRate}%"
 
 # Exit code
