@@ -685,9 +685,8 @@ class ES5Backend
 
             # Handle body
             if body?.expressions
-              # Body node with expressions
-              expressions = @filterNodes(if Array.isArray(body.expressions[0]) then body.expressions[0] else body.expressions)
-              bodyNode = new nodes.Block expressions
+              # Body node with expressions - preserve full list and order
+              bodyNode = new nodes.Block @filterNodes(body.expressions)
             else if Array.isArray(body)
               bodyNode = new nodes.Block @filterNodes(body)
             else if body
