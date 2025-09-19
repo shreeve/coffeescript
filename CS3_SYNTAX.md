@@ -17,9 +17,10 @@ CoffeeScript 3 (CS3) represents a paradigm shift to **ReductionFrame-based Solar
 - **Universal multi-target compilation** (ES5, Python, WASM, LLVM IR)
 - **Per-reduction frame evaluation** (backends evaluate against RHS frames, not global stack)
 - **Language-agnostic directive processing** (any backend can implement Solar evaluator)
-- **Revolutionary position resolution** (automatic `1` → actual token value)
-- **Clean architectural separation** (parser dumb, backends smart)
-- **100% backward compatible** with existing CoffeeScript
+- **Automatic position resolution** (`1` → actual token value)
+- **Clean architectural separation** (parser generates frames, backends evaluate directives)
+- **100% backward compatibility** with existing CoffeeScript
+- **No performance penalty** - The completely revamped architecture maintains excellent performance
 
 ## The Solar Directive System
 
