@@ -671,7 +671,7 @@ grammar =
   ]
 
   ForLineSource: [
-    o 'FORIN ExpressionLine'                                      , source: {$use: 2}
+    o 'FORIN ExpressionLine'                                      , source: 2
     o 'FOROF ExpressionLine'                                      , source: 2, object: true
     o 'FORIN Expression WHEN ExpressionLine'                      , source: 2, guard: 4
     o 'FORIN ExpressionLine WHEN ExpressionLine'                  , source: 2, guard: 4
