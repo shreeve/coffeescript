@@ -111,6 +111,13 @@ class ES5Backend
   toArray: (value) ->
     if Array.isArray(value) then value else (if value? then [value] else [])
 
+  # Helper to convert any value to a proper node
+  toNode: (value) ->
+    return null unless value?
+    return value if value instanceof nodes.Base
+    return @solarNodeToClass(value) if value?.type
+    @ensureNode(value)
+
   # Helper to convert value to a Block node
   toBlock: (value) ->
     if Array.isArray(value)
@@ -240,6 +247,123 @@ class ES5Backend
   createExistence: (directive, frame, ruleName) ->
     expression = @evaluateDirective directive.expression, frame, ruleName
     new nodes.Existence expression
+
+  createSwitch: (directive, frame, ruleName) ->
+    subject = @evaluateDirective directive.subject, frame, ruleName
+    cases = @evaluateDirective directive.cases, frame, ruleName
+    otherwise = @evaluateDirective directive.otherwise, frame, ruleName
+    casesNode = @filterNodes (if Array.isArray(cases) then cases else [])
+    # Ensure otherwise is a proper block or null
+    if otherwise
+      if Array.isArray(otherwise)
+        otherwise = new nodes.Block @filterNodes(otherwise)
+      else if not (otherwise instanceof nodes.Base)
+        otherwise = new nodes.Block [@ensureNode(otherwise)]
+    new nodes.Switch subject, casesNode, otherwise
+
+  createCatch: (directive, frame, ruleName) ->
+    # CS3 uses either 'recovery' or 'body' for the catch block
+    body = @evaluateDirective(directive.recovery, frame, ruleName) or @evaluateDirective(directive.body, frame, ruleName)
+    # CS3 uses 'variable' or 'errorVariable' for the error parameter
+    error = @evaluateDirective(directive.variable, frame, ruleName) or @evaluateDirective(directive.errorVariable, frame, ruleName)
+
+    # Ensure body is a proper Block
+    bodyNode = if Array.isArray(body)
+      new nodes.Block @filterNodes(body)
+    else if body instanceof nodes.Block
+      body
+    else if body
+      new nodes.Block [@ensureNode(body)]
+    else
+      new nodes.Block []
+
+    # Ensure error parameter is properly converted if present
+    errorNode = if error then @ensureNode(error) else null
+
+    # Catch constructor expects (recovery, errorVariable) not (errorVariable, recovery)!
+    new nodes.Catch bodyNode, errorNode
+
+  createWhile: (directive, frame, ruleName) ->
+    condition = @evaluateDirective directive.condition, frame, ruleName
+    body = @evaluateDirective directive.body, frame, ruleName
+    guard = @evaluateDirective directive.guard, frame, ruleName
+    isLoop = @evaluateDirective directive.isLoop, frame, ruleName
+    invert = @evaluateDirective directive.invert, frame, ruleName
+
+    # Handle body - convert from Solar node if needed
+    bodyNode = if body?.type is 'Body' or body?.type is 'Block'
+      @solarNodeToClass body
+    else
+      @toBlock(body)
+
+    # While constructor expects (condition, opts)
+    opts = {}
+    opts.guard = guard if guard
+    opts.isLoop = isLoop if isLoop
+    opts.invert = invert if invert  # Handle 'until' loops
+    whileNode = new nodes.While condition, opts
+    # Set the body - ensure it's never null
+    finalBody = bodyNode or new nodes.Block []
+    whileNode.body = finalBody
+    whileNode
+
+  createTry: (directive, frame, ruleName) ->
+    attempt = @evaluateDirective directive.attempt, frame, ruleName
+    # CS3 uses 'catch' not 'recovery' for the catch clause
+    catchDirective = @evaluateDirective directive.catch, frame, ruleName
+    ensure = @evaluateDirective directive.ensure, frame, ruleName
+
+    # Ensure attempt is a proper block
+    attemptNode = @toBlock(attempt)
+
+    # Process the catch clause - it should be a Catch node
+    recovery = if catchDirective instanceof nodes.Catch
+      catchDirective
+    else if catchDirective
+      # It might be a directive that needs to be evaluated into a Catch node
+      catchDirective
+    else
+      null
+
+    # Ensure ensure is a proper block if present
+    ensureNode = if ensure then @toBlock(ensure) else null
+
+    # Try expects (attempt, recovery, ensure) where recovery and ensure are optional
+    new nodes.Try attemptNode, recovery, ensureNode
+
+  createSwitchWhen: (directive, frame, ruleName) ->
+    conditions = @evaluateDirective directive.conditions, frame, ruleName
+    body = @evaluateDirective directive.body, frame, ruleName
+
+    # Process conditions - make sure they are proper nodes
+    conditionsNode = if Array.isArray(conditions)
+      processedConditions = []
+      for cond in conditions
+        if cond instanceof nodes.Base
+          processedConditions.push cond
+        else if cond?
+          converted = @ensureNode(cond)
+          processedConditions.push converted if converted instanceof nodes.Base
+      processedConditions
+    else if conditions instanceof nodes.Base
+      [conditions]
+    else if conditions?
+      converted = @ensureNode(conditions)
+      if converted instanceof nodes.Base then [converted] else []
+    else
+      []
+
+    # SwitchWhen expects 'block' not 'body'
+    blockNode = if Array.isArray(body)
+      new nodes.Block @filterNodes(body)
+    else if body
+      if body instanceof nodes.Block
+        body
+      else
+        new nodes.Block [body]
+    else
+      new nodes.Block []
+    new nodes.SwitchWhen conditionsNode, blockNode
 
   createFor: (directive, frame, ruleName) ->
     # For loops are complex - they're built incrementally via $ops
@@ -533,22 +657,7 @@ class ES5Backend
     return [] unless array?
     result = []
     for item in array
-      # Skip null/undefined
-      continue unless item?
-
-      # Already a proper node
-      if item instanceof nodes.Base
-        result.push item
-        continue
-
-      # Solar node that needs conversion
-      if item?.type
-        node = @solarNodeToClass item
-        result.push node if node?
-        continue
-
-      # Primitive that needs wrapping
-      node = @ensureNode item
+      node = @toNode(item)
       result.push node if node?
     result
 
@@ -653,25 +762,11 @@ class ES5Backend
                   # Handle nested arrays of properties (e.g., from :: operator)
                   if Array.isArray(prop)
                     for subProp in prop
-                      continue unless subProp?  # Skip null/undefined
-                      if subProp instanceof nodes.Base
-                        validProps.push subProp
-                      else if subProp?.type
-                        converted = @solarNodeToClass(subProp)
-                        if converted instanceof nodes.Base
-                          validProps.push converted
-                  else if prop?  # Skip null/undefined
-                    if prop instanceof nodes.Base
-                      validProps.push prop
-                    else if prop?.type
-                      converted = @solarNodeToClass(prop)
-                      if converted instanceof nodes.Base
-                        validProps.push converted
-                      else
-                        # Try to convert plain objects
-                        ensured = @ensureNode(prop)
-                        if ensured instanceof nodes.Base
-                          validProps.push ensured
+                      node = @toNode(subProp)
+                      validProps.push node if node instanceof nodes.Base
+                  else
+                    node = @toNode(prop)
+                    validProps.push node if node instanceof nodes.Base
                 # Only add non-null properties
                 if validProps.length > 0
                   valueNode.add validProps
@@ -684,29 +779,16 @@ class ES5Backend
             # Handle various forms of nameNode
             if not nameNode?
               # For shorthand (::), use "prototype" as the name
-              if directive.shorthand
-                nameNode = new nodes.PropertyName 'prototype'
+              nameNode = if directive.shorthand
+                new nodes.PropertyName 'prototype'
               else
-                nameNode = new nodes.PropertyName ''
-            else if nameNode instanceof nodes.Base
-              # Already a proper node, use as-is
-              nameNode = nameNode
-            else if nameNode?.type
-              # Has a type property, convert from solar node
-              nameNode = @solarNodeToClass(nameNode)
+                new nodes.PropertyName ''
             else if typeof nameNode is 'string'
-              # Plain string, convert to PropertyName
               nameNode = new nodes.PropertyName nameNode
-            else if nameNode?.value?
-              # Has a value property, convert to PropertyName
+            else if nameNode?.value? and not (nameNode instanceof nodes.Base)
               nameNode = new nodes.PropertyName String(nameNode.value)
             else
-              # Last resort, convert to empty PropertyName
-              nameNode = new nodes.PropertyName ''
-
-            # Final safety check - ensure nameNode is never null
-            if not nameNode?
-              nameNode = new nodes.PropertyName ''
+              nameNode = @toNode(nameNode) or new nodes.PropertyName ''
 
             new nodes.Access nameNode, soak: directive.soak, shorthand: directive.shorthand
 
@@ -780,14 +862,8 @@ class ES5Backend
               flattened = @deepFlatten(argsNode)
               argsNode = []
               for item in flattened
-                if item instanceof nodes.Base
-                  argsNode.push item
-                else if item?.type
-                  converted = @solarNodeToClass(item)
-                  argsNode.push converted if converted?
-                else if item?
-                  ensured = @ensureNode(item)
-                  argsNode.push ensured if ensured?
+                node = @toNode(item)
+                argsNode.push node if node?
             else
               argsNode = []
 
@@ -870,57 +946,13 @@ class ES5Backend
             @createIf directive, frame, ruleName, 'unless'
 
           when 'While'
-            condition = @evaluateDirective directive.condition, frame, ruleName
-            body = @evaluateDirective directive.body, frame, ruleName
-            guard = @evaluateDirective directive.guard, frame, ruleName
-            isLoop = @evaluateDirective directive.isLoop, frame, ruleName
-            invert = @evaluateDirective directive.invert, frame, ruleName
-
-            # Handle body - convert from Solar node if needed
-            bodyNode = if body?.type is 'Body' or body?.type is 'Block'
-              @solarNodeToClass body
-            else
-              @toBlock(body)
-
-            # While constructor expects (condition, opts)
-            opts = {}
-            opts.guard = guard if guard
-            opts.isLoop = isLoop if isLoop
-            opts.invert = invert if invert  # Handle 'until' loops
-            whileNode = new nodes.While condition, opts
-            # Set the body - ensure it's never null
-            finalBody = bodyNode or new nodes.Block []
-            # Debug: console.error "[While] body type:", finalBody?.constructor?.name, "has isEmpty:", typeof finalBody?.isEmpty
-            whileNode.body = finalBody
-            whileNode
+            @createWhile directive, frame, ruleName
 
           when 'For'
             @createFor directive, frame, ruleName
 
           when 'Try'
-            attempt = @evaluateDirective directive.attempt, frame, ruleName
-            # CS3 uses 'catch' not 'recovery' for the catch clause
-            catchDirective = @evaluateDirective directive.catch, frame, ruleName
-            ensure = @evaluateDirective directive.ensure, frame, ruleName
-
-            # Ensure attempt is a proper block
-            attemptNode = @toBlock(attempt)
-
-            # Process the catch clause - it should be a Catch node
-            # If catchDirective is not a Catch node, we may need to evaluate it
-            recovery = if catchDirective instanceof nodes.Catch
-              catchDirective
-            else if catchDirective
-              # It might be a directive that needs to be evaluated into a Catch node
-              catchDirective
-            else
-              null
-
-            # Ensure ensure is a proper block if present
-            ensureNode = if ensure then @toBlock(ensure) else null
-
-            # Try expects (attempt, recovery, ensure) where recovery and ensure are optional
-            new nodes.Try attemptNode, recovery, ensureNode
+            @createTry directive, frame, ruleName
 
           when 'Code'
             @createCode directive, frame, ruleName
@@ -1009,15 +1041,7 @@ class ES5Backend
 
             # Convert body to proper nodes
             if Array.isArray(body)
-              bodyNodes = body.map (b) =>
-                if b instanceof nodes.Base
-                  b
-                else if b?.type
-                  @solarNodeToClass(b)
-                else if b?
-                  @ensureNode(b)
-                else
-                  null
+              bodyNodes = body.map (b) => @toNode(b)
               bodyNode = new nodes.Block @filterNodes(bodyNodes)
             else if body instanceof nodes.Block
               bodyNode = body
@@ -1169,108 +1193,16 @@ class ES5Backend
             loopNode
 
           when 'Switch'
-            subject = @evaluateDirective directive.subject, frame, ruleName
-            cases = @evaluateDirective directive.cases, frame, ruleName
-            otherwise = @evaluateDirective directive.otherwise, frame, ruleName
-            casesNode = @filterNodes (if Array.isArray(cases) then cases else [])
-            # Ensure otherwise is a proper block or null
-            if otherwise
-              if Array.isArray(otherwise)
-                otherwise = new nodes.Block @filterNodes(otherwise)
-              else if not (otherwise instanceof nodes.Base)
-                otherwise = new nodes.Block [@ensureNode(otherwise)]
-            new nodes.Switch subject, casesNode, otherwise
+            @createSwitch directive, frame, ruleName
 
           when 'When', 'SwitchWhen'
-            conditions = @evaluateDirective directive.conditions, frame, ruleName
-            body = @evaluateDirective directive.body, frame, ruleName
-
-            # Process conditions - make sure they are proper nodes
-            conditionsNode = if Array.isArray(conditions)
-              processedConditions = []
-              for cond in conditions
-                if cond instanceof nodes.Base
-                  processedConditions.push cond
-                else if cond?
-                  converted = @ensureNode(cond)
-                  processedConditions.push converted if converted instanceof nodes.Base
-              processedConditions
-            else if conditions instanceof nodes.Base
-              [conditions]
-            else if conditions?
-              converted = @ensureNode(conditions)
-              if converted instanceof nodes.Base then [converted] else []
-            else
-              []
-
-            # SwitchWhen expects 'block' not 'body'
-            blockNode = if Array.isArray(body)
-              new nodes.Block @filterNodes(body)
-            else if body
-              if body instanceof nodes.Block
-                body
-              else
-                new nodes.Block [body]
-            else
-              new nodes.Block []
-            new nodes.SwitchWhen conditionsNode, blockNode
+            @createSwitchWhen directive, frame, ruleName
 
           when 'Case', 'SwitchCase'
-            conditions = @evaluateDirective directive.conditions, frame, ruleName
-            body = @evaluateDirective directive.body, frame, ruleName
-
-            # Process conditions - make sure they are proper nodes
-            conditionsNode = if Array.isArray(conditions)
-              processedConditions = []
-              for cond in conditions
-                if cond instanceof nodes.Base
-                  processedConditions.push cond
-                else if cond?
-                  converted = @ensureNode(cond)
-                  processedConditions.push converted if converted instanceof nodes.Base
-              processedConditions
-            else if conditions instanceof nodes.Base
-              [conditions]
-            else if conditions?
-              converted = @ensureNode(conditions)
-              if converted instanceof nodes.Base then [converted] else []
-            else
-              []
-
-            # SwitchCase expects 'block' not 'body'
-            blockNode = if Array.isArray(body)
-              new nodes.Block @filterNodes(body)
-            else if body
-              if body instanceof nodes.Block
-                body
-              else
-                new nodes.Block [body]
-            else
-              new nodes.Block []
-            # Use SwitchWhen for both - SwitchCase has a different signature
-            new nodes.SwitchWhen conditionsNode, blockNode
+            @createSwitchWhen directive, frame, ruleName
 
           when 'Catch'
-            # CS3 uses either 'recovery' or 'body' for the catch block
-            body = @evaluateDirective(directive.recovery, frame, ruleName) or @evaluateDirective(directive.body, frame, ruleName)
-            # CS3 uses 'variable' or 'errorVariable' for the error parameter
-            error = @evaluateDirective(directive.variable, frame, ruleName) or @evaluateDirective(directive.errorVariable, frame, ruleName)
-
-            # Ensure body is a proper Block
-            bodyNode = if Array.isArray(body)
-              new nodes.Block @filterNodes(body)
-            else if body instanceof nodes.Block
-              body
-            else if body
-              new nodes.Block [@ensureNode(body)]
-            else
-              new nodes.Block []
-
-            # Ensure error parameter is properly converted if present
-            errorNode = if error then @ensureNode(error) else null
-
-            # Catch constructor expects (recovery, errorVariable) not (errorVariable, recovery)!
-            new nodes.Catch bodyNode, errorNode
+            @createCatch directive, frame, ruleName
 
           when 'Finally'
             body = @evaluateDirective directive.body, frame, ruleName
@@ -1444,180 +1376,164 @@ class ES5Backend
     else
       @defaultLocationData()
 
-  # Apply $ops operations
-  applyOperation: (directive, frame, ruleName) ->
-    switch directive.$ops
-      when 'array'
-        if directive.append?
-          # First element is the target array, rest are items to append
-          target = @evaluateDirective directive.append[0], frame, ruleName
-          # Ensure target is an array
-          target = if Array.isArray(target) then target else []
+  # Operation handlers
+  applyArrayOperation: (directive, frame, ruleName) ->
+    if directive.append?
+      # First element is the target array, rest are items to append
+      target = @evaluateDirective directive.append[0], frame, ruleName
+      # Ensure target is an array
+      target = if Array.isArray(target) then target else []
 
-          for item in directive.append[1..]
-            value = @evaluateDirective item, frame, ruleName
-            # If value is already an array (from $ary), unwrap it
-            if Array.isArray(value) and value.length == 1
-              target.push value[0] if value[0]?
-            else
-              target.push value if value?
-          target
-        else if directive.gather?
-          result = []
-          for item in directive.gather
-            evaluated = @evaluateDirective item, frame, ruleName
-            if Array.isArray evaluated
-              result = result.concat evaluated
-            else
-              result.push evaluated if evaluated?
-          result
+      for item in directive.append[1..]
+        value = @evaluateDirective item, frame, ruleName
+        # If value is already an array (from $ary), unwrap it
+        if Array.isArray(value) and value.length == 1
+          target.push value[0] if value[0]?
+        else
+          target.push value if value?
+      target
+    else if directive.gather?
+      result = []
+      for item in directive.gather
+        evaluated = @evaluateDirective item, frame, ruleName
+        if Array.isArray evaluated
+          result = result.concat evaluated
+        else
+          result.push evaluated if evaluated?
+      result
 
-      when 'value'
-        # Add an accessor (Access/Index) to a Value
-        if directive.add?
-          targetRaw = @evaluateDirective directive.add[0], frame, ruleName
-          propRaw = @evaluateDirective directive.add[1], frame, ruleName
+  applyValueOperation: (directive, frame, ruleName) ->
+    # Add an accessor (Access/Index) to a Value
+    if directive.add?
+      targetRaw = @evaluateDirective directive.add[0], frame, ruleName
+      propRaw = @evaluateDirective directive.add[1], frame, ruleName
 
-          targetNode = if targetRaw?.compileToFragments or targetRaw instanceof nodes.Base then targetRaw else @ensureNode targetRaw
+      targetNode = if targetRaw?.compileToFragments or targetRaw instanceof nodes.Base then targetRaw else @ensureNode targetRaw
 
-          # Handle array of properties
-          propNodes = if Array.isArray(propRaw)
-            propRaw.map (p) => if p?.compileToFragments or p instanceof nodes.Base then p else @ensureNode p
+      # Handle array of properties
+      propNodes = if Array.isArray(propRaw)
+        propRaw.map (p) => if p?.compileToFragments or p instanceof nodes.Base then p else @ensureNode p
+      else
+        propNode = if propRaw?.compileToFragments or propRaw instanceof nodes.Base then propRaw else @ensureNode propRaw
+        [propNode] if propNode?
+
+      # Ensure we have valid nodes before proceeding
+      return null unless targetNode? and propNodes?.length > 0
+
+      if targetNode instanceof nodes.Value
+        # Clone the Value node to avoid mutation issues
+        clonedValue = Object.assign Object.create(Object.getPrototypeOf(targetNode)), targetNode
+        clonedValue.properties = (targetNode.properties or []).slice()
+        clonedValue.add propNodes
+        return clonedValue
+      else
+        return new nodes.Value targetNode, propNodes
+    @evaluateDirective directive.add?[0], frame, ruleName
+
+  applyIfOperation: (directive, frame, ruleName) ->
+    # If operations for adding else clauses
+    if directive.addElse?
+      # addElse: [ifNode, elseBody] - add else clause to if statement
+      ifNode = @evaluateDirective directive.addElse[0], frame, ruleName
+      elseBody = @evaluateDirective directive.addElse[1], frame, ruleName
+
+      if ifNode instanceof nodes.If
+        # Convert elseBody to proper node if needed
+        elseBody = @toNode(elseBody) if elseBody?.type
+
+        # Set the else body (alternate property)
+        elseBodyNode = if Array.isArray(elseBody)
+          block = new nodes.Block @filterNodes(elseBody)
+          block.locationData ?= @defaultLocationData()
+          block
+        else if elseBody instanceof nodes.Block
+          elseBody.locationData ?= @defaultLocationData()
+          elseBody
+        else if elseBody
+          if elseBody instanceof nodes.Base
+            elseBody.locationData ?= @defaultLocationData()
+            elseBody
           else
-            propNode = if propRaw?.compileToFragments or propRaw instanceof nodes.Base then propRaw else @ensureNode propRaw
-            [propNode] if propNode?
-
-          # Ensure we have valid nodes before proceeding
-          return null unless targetNode? and propNodes?.length > 0
-
-          if targetNode instanceof nodes.Value
-            # Clone the Value node to avoid mutation issues
-            clonedValue = Object.assign Object.create(Object.getPrototypeOf(targetNode)), targetNode
-            clonedValue.properties = (targetNode.properties or []).slice()
-            clonedValue.add propNodes
-            return clonedValue
-          else
-            return new nodes.Value targetNode, propNodes
-        @evaluateDirective directive.add?[0], frame, ruleName
-
-      when 'if'
-        # If operations for adding else clauses
-        if directive.addElse?
-          # addElse: [ifNode, elseBody] - add else clause to if statement
-          ifNode = @evaluateDirective directive.addElse[0], frame, ruleName
-          elseBody = @evaluateDirective directive.addElse[1], frame, ruleName
-
-          if ifNode instanceof nodes.If
-            # Convert elseBody to proper node if needed
-            if elseBody?.type
-              elseBody = @solarNodeToClass elseBody
-
-            # Set the else body (alternate property)
-            elseBodyNode = if Array.isArray(elseBody)
-              block = new nodes.Block @filterNodes(elseBody)
-              block.locationData ?= @defaultLocationData()
-              block
-            else if elseBody instanceof nodes.Block
-              elseBody.locationData ?= @defaultLocationData()
-              elseBody
-            else if elseBody
-              if elseBody instanceof nodes.Base
-                elseBody.locationData ?= @defaultLocationData()
-                elseBody
-              else
-                block = new nodes.Block [@ensureNode(elseBody)]
-                block.locationData ?= @defaultLocationData()
-                block
-            else
-              null
-
-            # Use addElse to properly handle else-if chains
-            if elseBodyNode?
-              ifNode.addElse elseBodyNode
-          ifNode
+            block = new nodes.Block [@ensureNode(elseBody)]
+            block.locationData ?= @defaultLocationData()
+            block
         else
           null
 
-      when 'loop'
-        # Loop operations for For/While loops
-        if directive.addSource?
-          # addSource: [loop, source] - add source to loop
-          loopNode = @evaluateDirective directive.addSource[0], frame, ruleName
-          sourceInfo = @evaluateDirective directive.addSource[1], frame, ruleName
+        # Use addElse to properly handle else-if chains
+        ifNode.addElse elseBodyNode if elseBodyNode?
+      ifNode
+    else
+      null
 
-          # Convert sourceInfo to proper node if needed
-          if sourceInfo?.type
-            sourceInfo = @solarNodeToClass sourceInfo
+  applyLoopOperation: (directive, frame, ruleName) ->
+    if directive.addSource?
+      # addSource: [loop, source] - add source to loop
+      loopNode = @evaluateDirective directive.addSource[0], frame, ruleName
+      sourceInfo = @evaluateDirective directive.addSource[1], frame, ruleName
 
-          # Ensure source has proper structure
-          if sourceInfo
-            # For addSource, we might get an object with source, name, index, etc.
-            if sourceInfo instanceof nodes.Base
-              # Already a node, ensure it has locationData
-              sourceInfo.locationData ?= @defaultLocationData()
-            else if typeof sourceInfo is 'object' and not Array.isArray(sourceInfo)
-              # It's a source object with properties
-              if sourceInfo.source and not (sourceInfo.source instanceof nodes.Base)
-                sourceInfo.source = @ensureNode sourceInfo.source
-              if sourceInfo.name and not (sourceInfo.name instanceof nodes.Base)
-                sourceInfo.name = @ensureNode sourceInfo.name
-              if sourceInfo.index and not (sourceInfo.index instanceof nodes.Base)
-                sourceInfo.index = @ensureNode sourceInfo.index
-            else
-              # Convert to node
-              sourceInfo = @ensureNode sourceInfo
+      # Convert sourceInfo to proper node if needed
+      sourceInfo = @toNode(sourceInfo) if sourceInfo?.type
 
-          if loopNode and sourceInfo
-            loopNode.addSource sourceInfo
-          loopNode
-        else if directive.addBody?
-          # addBody: [loop, body] - add body to loop
-          loopNode = @evaluateDirective directive.addBody[0], frame, ruleName
-          bodyArg = directive.addBody[1]
-
-          # Handle "Body $N" placeholder
-          if typeof bodyArg is 'string' and bodyArg.startsWith('Body $')
-            position = parseInt(bodyArg.slice(6))
-            bodyNode = @evaluateDirective position, frame, ruleName
-          else
-            bodyNode = @evaluateDirective bodyArg, frame, ruleName
-
-          # Convert body to proper node if needed
-          if bodyNode?.type
-            bodyNode = @solarNodeToClass bodyNode
-
-          # Ensure body is a proper Block node with locationData
-          if bodyNode
-            # Handle different body types
-            if Array.isArray(bodyNode)
-              # If it's an array, create a Block with the array's contents
-              bodyNode = new nodes.Block @filterNodes(bodyNode)
-            else if bodyNode instanceof nodes.Block
-              # Already a Block, use as-is
-              bodyNode = bodyNode
-            else if bodyNode instanceof nodes.Base
-              # Single node, wrap in Block
-              bodyNode = new nodes.Block [bodyNode]
-            else
-              # Not a node yet, ensure it becomes one
-              bodyNode = new nodes.Block [@ensureNode(bodyNode)]
-            # Ensure locationData exists
-            bodyNode.locationData ?= @defaultLocationData()
-          else
-            # Create empty block if no body
-            bodyNode = new nodes.Block []
-            bodyNode.locationData = @defaultLocationData()
-
-          if loopNode
-            loopNode.addBody bodyNode
-          loopNode
+      # Ensure source has proper structure
+      if sourceInfo
+        # For addSource, we might get an object with source, name, index, etc.
+        if sourceInfo instanceof nodes.Base
+          # Already a node, ensure it has locationData
+          sourceInfo.locationData ?= @defaultLocationData()
+        else if typeof sourceInfo is 'object' and not Array.isArray(sourceInfo)
+          # It's a source object with properties
+          sourceInfo.source = @ensureNode sourceInfo.source if sourceInfo.source and not (sourceInfo.source instanceof nodes.Base)
+          sourceInfo.name = @ensureNode sourceInfo.name if sourceInfo.name and not (sourceInfo.name instanceof nodes.Base)
+          sourceInfo.index = @ensureNode sourceInfo.index if sourceInfo.index and not (sourceInfo.index instanceof nodes.Base)
         else
-          @evaluateDirective directive.addBody?[0], frame, ruleName
+          # Convert to node
+          sourceInfo = @ensureNode sourceInfo
 
+      loopNode.addSource sourceInfo if loopNode and sourceInfo
+      loopNode
+    else if directive.addBody?
+      # addBody: [loop, body] - add body to loop
+      loopNode = @evaluateDirective directive.addBody[0], frame, ruleName
+      bodyArg = directive.addBody[1]
+
+      # Handle "Body $N" placeholder
+      if typeof bodyArg is 'string' and bodyArg.startsWith('Body $')
+        position = parseInt(bodyArg.slice(6))
+        bodyNode = @evaluateDirective position, frame, ruleName
+      else
+        bodyNode = @evaluateDirective bodyArg, frame, ruleName
+
+      # Convert body to proper node if needed
+      bodyNode = @toNode(bodyNode) if bodyNode?.type
+
+      # Ensure body is a proper Block node with locationData
+      if bodyNode
+        # Handle different body types
+        if Array.isArray(bodyNode)
+          bodyNode = new nodes.Block @filterNodes(bodyNode)
+        else if not (bodyNode instanceof nodes.Block)
+          bodyNode = new nodes.Block [if bodyNode instanceof nodes.Base then bodyNode else @ensureNode(bodyNode)]
+        bodyNode.locationData ?= @defaultLocationData()
+      else
+        bodyNode = new nodes.Block []
+        bodyNode.locationData = @defaultLocationData()
+
+      loopNode.addBody bodyNode if loopNode
+      loopNode
+    else
+      @evaluateDirective directive.addBody?[0], frame, ruleName
+
+  # Apply $ops operations
+  applyOperation: (directive, frame, ruleName) ->
+    switch directive.$ops
+      when 'array' then @applyArrayOperation directive, frame, ruleName
+      when 'value' then @applyValueOperation directive, frame, ruleName
+      when 'if' then @applyIfOperation directive, frame, ruleName
+      when 'loop' then @applyLoopOperation directive, frame, ruleName
       when 'prop'
         # TODO: Implement property operations (set)
         @evaluateDirective directive.set?.target, frame, ruleName
-
       else
         new nodes.Literal "/* TODO: $ops #{directive.$ops} */"
 

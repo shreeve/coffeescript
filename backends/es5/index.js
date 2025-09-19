@@ -149,6 +149,20 @@
       }
     }
 
+    // Helper to convert any value to a proper node
+    toNode(value) {
+      if (value == null) {
+        return null;
+      }
+      if (value instanceof nodes.Base) {
+        return value;
+      }
+      if (value != null ? value.type : void 0) {
+        return this.solarNodeToClass(value);
+      }
+      return this.ensureNode(value);
+    }
+
     // Helper to convert value to a Block node
     toBlock(value) {
       if (Array.isArray(value)) {
@@ -330,6 +344,120 @@
       var expression;
       expression = this.evaluateDirective(directive.expression, frame, ruleName);
       return new nodes.Existence(expression);
+    }
+
+    createSwitch(directive, frame, ruleName) {
+      var cases, casesNode, otherwise, subject;
+      subject = this.evaluateDirective(directive.subject, frame, ruleName);
+      cases = this.evaluateDirective(directive.cases, frame, ruleName);
+      otherwise = this.evaluateDirective(directive.otherwise, frame, ruleName);
+      casesNode = this.filterNodes((Array.isArray(cases) ? cases : []));
+      // Ensure otherwise is a proper block or null
+      if (otherwise) {
+        if (Array.isArray(otherwise)) {
+          otherwise = new nodes.Block(this.filterNodes(otherwise));
+        } else if (!(otherwise instanceof nodes.Base)) {
+          otherwise = new nodes.Block([this.ensureNode(otherwise)]);
+        }
+      }
+      return new nodes.Switch(subject, casesNode, otherwise);
+    }
+
+    createCatch(directive, frame, ruleName) {
+      var body, bodyNode, error, errorNode;
+      // CS3 uses either 'recovery' or 'body' for the catch block
+      body = this.evaluateDirective(directive.recovery, frame, ruleName) || this.evaluateDirective(directive.body, frame, ruleName);
+      // CS3 uses 'variable' or 'errorVariable' for the error parameter
+      error = this.evaluateDirective(directive.variable, frame, ruleName) || this.evaluateDirective(directive.errorVariable, frame, ruleName);
+      // Ensure body is a proper Block
+      bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body instanceof nodes.Block ? body : body ? new nodes.Block([this.ensureNode(body)]) : new nodes.Block([]);
+      // Ensure error parameter is properly converted if present
+      errorNode = error ? this.ensureNode(error) : null;
+      // Catch constructor expects (recovery, errorVariable) not (errorVariable, recovery)!
+      return new nodes.Catch(bodyNode, errorNode);
+    }
+
+    createWhile(directive, frame, ruleName) {
+      var body, bodyNode, condition, finalBody, guard, invert, isLoop, opts, whileNode;
+      condition = this.evaluateDirective(directive.condition, frame, ruleName);
+      body = this.evaluateDirective(directive.body, frame, ruleName);
+      guard = this.evaluateDirective(directive.guard, frame, ruleName);
+      isLoop = this.evaluateDirective(directive.isLoop, frame, ruleName);
+      invert = this.evaluateDirective(directive.invert, frame, ruleName);
+      // Handle body - convert from Solar node if needed
+      bodyNode = (body != null ? body.type : void 0) === 'Body' || (body != null ? body.type : void 0) === 'Block' ? this.solarNodeToClass(body) : this.toBlock(body);
+      // While constructor expects (condition, opts)
+      opts = {};
+      if (guard) {
+        opts.guard = guard;
+      }
+      if (isLoop) {
+        opts.isLoop = isLoop;
+      }
+      if (invert) { // Handle 'until' loops
+        opts.invert = invert;
+      }
+      whileNode = new nodes.While(condition, opts);
+      // Set the body - ensure it's never null
+      finalBody = bodyNode || new nodes.Block([]);
+      whileNode.body = finalBody;
+      return whileNode;
+    }
+
+    createTry(directive, frame, ruleName) {
+      var attempt, attemptNode, catchDirective, ensure, ensureNode, recovery;
+      attempt = this.evaluateDirective(directive.attempt, frame, ruleName);
+      // CS3 uses 'catch' not 'recovery' for the catch clause
+      catchDirective = this.evaluateDirective(directive.catch, frame, ruleName);
+      ensure = this.evaluateDirective(directive.ensure, frame, ruleName);
+      // Ensure attempt is a proper block
+      attemptNode = this.toBlock(attempt);
+      // Process the catch clause - it should be a Catch node
+      // It might be a directive that needs to be evaluated into a Catch node
+      recovery = catchDirective instanceof nodes.Catch ? catchDirective : catchDirective ? catchDirective : null;
+      // Ensure ensure is a proper block if present
+      ensureNode = ensure ? this.toBlock(ensure) : null;
+      // Try expects (attempt, recovery, ensure) where recovery and ensure are optional
+      return new nodes.Try(attemptNode, recovery, ensureNode);
+    }
+
+    createSwitchWhen(directive, frame, ruleName) {
+      var blockNode, body, cond, conditions, conditionsNode, converted, processedConditions;
+      conditions = this.evaluateDirective(directive.conditions, frame, ruleName);
+      body = this.evaluateDirective(directive.body, frame, ruleName);
+      // Process conditions - make sure they are proper nodes
+      conditionsNode = (function() {
+        var j, len;
+        if (Array.isArray(conditions)) {
+          processedConditions = [];
+          for (j = 0, len = conditions.length; j < len; j++) {
+            cond = conditions[j];
+            if (cond instanceof nodes.Base) {
+              processedConditions.push(cond);
+            } else if (cond != null) {
+              converted = this.ensureNode(cond);
+              if (converted instanceof nodes.Base) {
+                processedConditions.push(converted);
+              }
+            }
+          }
+          return processedConditions;
+        } else if (conditions instanceof nodes.Base) {
+          return [conditions];
+        } else if (conditions != null) {
+          converted = this.ensureNode(conditions);
+          if (converted instanceof nodes.Base) {
+            return [converted];
+          } else {
+            return [];
+          }
+        } else {
+          return [];
+        }
+      }).call(this);
+      // SwitchWhen expects 'block' not 'body'
+      blockNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body ? body instanceof nodes.Block ? body : new nodes.Block([body]) : new nodes.Block([]);
+      return new nodes.SwitchWhen(conditionsNode, blockNode);
     }
 
     createFor(directive, frame, ruleName) {
@@ -684,25 +812,7 @@
       result = [];
       for (j = 0, len = array.length; j < len; j++) {
         item = array[j];
-        if (item == null) {
-          // Skip null/undefined
-          continue;
-        }
-        // Already a proper node
-        if (item instanceof nodes.Base) {
-          result.push(item);
-          continue;
-        }
-        // Solar node that needs conversion
-        if (item != null ? item.type : void 0) {
-          node = this.solarNodeToClass(item);
-          if (node != null) {
-            result.push(node);
-          }
-          continue;
-        }
-        // Primitive that needs wrapping
-        node = this.ensureNode(item);
+        node = this.toNode(item);
         if (node != null) {
           result.push(node);
         }
@@ -735,7 +845,7 @@
 
     // Core directive evaluator - evaluates Solar directives against RHS frame
     evaluateDirective(directive, frame, ruleName = null) {
-      var accessor, actualExpression, arg, args, argsNode, array, atValue, attempt, attemptNode, blockNode, body, bodyItem, bodyNode, bodyNodes, cases, casesNode, catchDirective, clause, cond, condition, conditions, conditionsNode, converted, delimiter, directiveCopy, ensure, ensureNode, ensured, error, errorNode, evaluated, exclusive, exclusiveVal, expr, exprDirective, expression, expressionNode, expressions, filteredBody, finalBody, flags, flatExpressions, flattened, flip, from, fromNode, fullRegex, glyph, guard, i, idx, inner, innerDirective, invert, invertOperator, isLoop, item, itemCopy, j, k, key, l, left, len, len1, len2, len3, len4, len5, len6, len7, literal, loopNode, m, n, name, nameDirective, nameNode, negated, nodeType, obj, object, op, opNode, opts, originalOperator, otherwise, parent, pattern, processedConditions, prop, properties, q, quote, r, recovery, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, s, source, splat, step, subProp, subject, superNode, tag, tail, templateArg, test, to, toNode, vNode, validProps, value, valueNode, varName, varValue, variable, variableNode, whileNode;
+      var accessor, actualExpression, arg, args, argsNode, array, atValue, body, bodyItem, bodyNode, bodyNodes, clause, delimiter, directiveCopy, evaluated, exclusive, exclusiveVal, expr, exprDirective, expression, expressionNode, expressions, filteredBody, flags, flatExpressions, flattened, flip, from, fromNode, fullRegex, glyph, i, idx, inner, innerDirective, invertOperator, item, itemCopy, j, k, key, l, left, len, len1, len2, len3, len4, len5, len6, len7, literal, loopNode, m, n, name, nameDirective, nameNode, negated, node, nodeType, obj, object, op, opNode, originalOperator, parent, pattern, prop, properties, q, quote, r, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, right, s, source, splat, step, subProp, superNode, tag, tail, templateArg, test, to, toNode, vNode, validProps, value, valueNode, varName, varValue, variable, variableNode;
       // Handle position references (1, 2, 3, ...) FIRST
       if (typeof directive === 'number') {
         return (ref1 = frame.rhs[directive - 1]) != null ? ref1.value : void 0; // 1-based → 0-based
@@ -819,33 +929,16 @@
                     if (Array.isArray(prop)) {
                       for (k = 0, len1 = prop.length; k < len1; k++) {
                         subProp = prop[k];
-                        if (subProp == null) {
-                          continue; // Skip null/undefined
-                        }
-                        if (subProp instanceof nodes.Base) {
-                          validProps.push(subProp);
-                        } else if (subProp != null ? subProp.type : void 0) {
-                          converted = this.solarNodeToClass(subProp);
-                          if (converted instanceof nodes.Base) {
-                            validProps.push(converted);
-                          }
+                        node = this.toNode(subProp);
+                        if (node instanceof nodes.Base) {
+                          validProps.push(node);
                         }
                       }
-                    } else if (prop != null) {
-                      if (prop instanceof nodes.Base) {
-                        validProps.push(prop);
-                      } else if (prop != null ? prop.type : void 0) {
-                        converted = this.solarNodeToClass(prop);
-                        if (converted instanceof nodes.Base) {
-                          validProps.push(converted);
-                        } else {
-                          // Try to convert plain objects
-                          ensured = this.ensureNode(prop);
-                          if (ensured instanceof nodes.Base) {
-                            validProps.push(ensured);
-                          }
-                        }
-                      } // Skip null/undefined
+                    } else {
+                      node = this.toNode(prop);
+                      if (node instanceof nodes.Base) {
+                        validProps.push(node);
+                      }
                     }
                   }
                   // Only add non-null properties
@@ -861,30 +954,13 @@
               // Handle various forms of nameNode
               if (nameNode == null) {
                 // For shorthand (::), use "prototype" as the name
-                if (directive.shorthand) {
-                  nameNode = new nodes.PropertyName('prototype');
-                } else {
-                  nameNode = new nodes.PropertyName('');
-                }
-              } else if (nameNode instanceof nodes.Base) {
-                // Already a proper node, use as-is
-                nameNode = nameNode;
-              } else if (nameNode != null ? nameNode.type : void 0) {
-                // Has a type property, convert from solar node
-                nameNode = this.solarNodeToClass(nameNode);
+                nameNode = directive.shorthand ? new nodes.PropertyName('prototype') : new nodes.PropertyName('');
               } else if (typeof nameNode === 'string') {
-                // Plain string, convert to PropertyName
                 nameNode = new nodes.PropertyName(nameNode);
-              } else if ((nameNode != null ? nameNode.value : void 0) != null) {
-                // Has a value property, convert to PropertyName
+              } else if (((nameNode != null ? nameNode.value : void 0) != null) && !(nameNode instanceof nodes.Base)) {
                 nameNode = new nodes.PropertyName(String(nameNode.value));
               } else {
-                // Last resort, convert to empty PropertyName
-                nameNode = new nodes.PropertyName('');
-              }
-              // Final safety check - ensure nameNode is never null
-              if (nameNode == null) {
-                nameNode = new nodes.PropertyName('');
+                nameNode = this.toNode(nameNode) || new nodes.PropertyName('');
               }
               return new nodes.Access(nameNode, {
                 soak: directive.soak,
@@ -960,18 +1036,9 @@
                 argsNode = [];
                 for (l = 0, len2 = flattened.length; l < len2; l++) {
                   item = flattened[l];
-                  if (item instanceof nodes.Base) {
-                    argsNode.push(item);
-                  } else if (item != null ? item.type : void 0) {
-                    converted = this.solarNodeToClass(item);
-                    if (converted != null) {
-                      argsNode.push(converted);
-                    }
-                  } else if (item != null) {
-                    ensured = this.ensureNode(item);
-                    if (ensured != null) {
-                      argsNode.push(ensured);
-                    }
+                  node = this.toNode(item);
+                  if (node != null) {
+                    argsNode.push(node);
                   }
                 }
               } else {
@@ -1045,47 +1112,11 @@
             case 'unless':
               return this.createIf(directive, frame, ruleName, 'unless');
             case 'While':
-              condition = this.evaluateDirective(directive.condition, frame, ruleName);
-              body = this.evaluateDirective(directive.body, frame, ruleName);
-              guard = this.evaluateDirective(directive.guard, frame, ruleName);
-              isLoop = this.evaluateDirective(directive.isLoop, frame, ruleName);
-              invert = this.evaluateDirective(directive.invert, frame, ruleName);
-              // Handle body - convert from Solar node if needed
-              bodyNode = (body != null ? body.type : void 0) === 'Body' || (body != null ? body.type : void 0) === 'Block' ? this.solarNodeToClass(body) : this.toBlock(body);
-              // While constructor expects (condition, opts)
-              opts = {};
-              if (guard) {
-                opts.guard = guard;
-              }
-              if (isLoop) {
-                opts.isLoop = isLoop;
-              }
-              if (invert) { // Handle 'until' loops
-                opts.invert = invert;
-              }
-              whileNode = new nodes.While(condition, opts);
-              // Set the body - ensure it's never null
-              finalBody = bodyNode || new nodes.Block([]);
-              // Debug: console.error "[While] body type:", finalBody?.constructor?.name, "has isEmpty:", typeof finalBody?.isEmpty
-              whileNode.body = finalBody;
-              return whileNode;
+              return this.createWhile(directive, frame, ruleName);
             case 'For':
               return this.createFor(directive, frame, ruleName);
             case 'Try':
-              attempt = this.evaluateDirective(directive.attempt, frame, ruleName);
-              // CS3 uses 'catch' not 'recovery' for the catch clause
-              catchDirective = this.evaluateDirective(directive.catch, frame, ruleName);
-              ensure = this.evaluateDirective(directive.ensure, frame, ruleName);
-              // Ensure attempt is a proper block
-              attemptNode = this.toBlock(attempt);
-              // Process the catch clause - it should be a Catch node
-              // If catchDirective is not a Catch node, we may need to evaluate it
-              // It might be a directive that needs to be evaluated into a Catch node
-              recovery = catchDirective instanceof nodes.Catch ? catchDirective : catchDirective ? catchDirective : null;
-              // Ensure ensure is a proper block if present
-              ensureNode = ensure ? this.toBlock(ensure) : null;
-              // Try expects (attempt, recovery, ensure) where recovery and ensure are optional
-              return new nodes.Try(attemptNode, recovery, ensureNode);
+              return this.createTry(directive, frame, ruleName);
             case 'Code':
               return this.createCode(directive, frame, ruleName);
             case 'Param':
@@ -1173,15 +1204,7 @@
               // Convert body to proper nodes
               if (Array.isArray(body)) {
                 bodyNodes = body.map((b) => {
-                  if (b instanceof nodes.Base) {
-                    return b;
-                  } else if (b != null ? b.type : void 0) {
-                    return this.solarNodeToClass(b);
-                  } else if (b != null) {
-                    return this.ensureNode(b);
-                  } else {
-                    return null;
-                  }
+                  return this.toNode(b);
                 });
                 bodyNode = new nodes.Block(this.filterNodes(bodyNodes));
               } else if (body instanceof nodes.Block) {
@@ -1334,105 +1357,15 @@
               loopNode.body = bodyNode;
               return loopNode;
             case 'Switch':
-              subject = this.evaluateDirective(directive.subject, frame, ruleName);
-              cases = this.evaluateDirective(directive.cases, frame, ruleName);
-              otherwise = this.evaluateDirective(directive.otherwise, frame, ruleName);
-              casesNode = this.filterNodes((Array.isArray(cases) ? cases : []));
-              // Ensure otherwise is a proper block or null
-              if (otherwise) {
-                if (Array.isArray(otherwise)) {
-                  otherwise = new nodes.Block(this.filterNodes(otherwise));
-                } else if (!(otherwise instanceof nodes.Base)) {
-                  otherwise = new nodes.Block([this.ensureNode(otherwise)]);
-                }
-              }
-              return new nodes.Switch(subject, casesNode, otherwise);
+              return this.createSwitch(directive, frame, ruleName);
             case 'When':
             case 'SwitchWhen':
-              conditions = this.evaluateDirective(directive.conditions, frame, ruleName);
-              body = this.evaluateDirective(directive.body, frame, ruleName);
-              // Process conditions - make sure they are proper nodes
-              conditionsNode = (function() {
-                var len6, r;
-                if (Array.isArray(conditions)) {
-                  processedConditions = [];
-                  for (r = 0, len6 = conditions.length; r < len6; r++) {
-                    cond = conditions[r];
-                    if (cond instanceof nodes.Base) {
-                      processedConditions.push(cond);
-                    } else if (cond != null) {
-                      converted = this.ensureNode(cond);
-                      if (converted instanceof nodes.Base) {
-                        processedConditions.push(converted);
-                      }
-                    }
-                  }
-                  return processedConditions;
-                } else if (conditions instanceof nodes.Base) {
-                  return [conditions];
-                } else if (conditions != null) {
-                  converted = this.ensureNode(conditions);
-                  if (converted instanceof nodes.Base) {
-                    return [converted];
-                  } else {
-                    return [];
-                  }
-                } else {
-                  return [];
-                }
-              }).call(this);
-              // SwitchWhen expects 'block' not 'body'
-              blockNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body ? body instanceof nodes.Block ? body : new nodes.Block([body]) : new nodes.Block([]);
-              return new nodes.SwitchWhen(conditionsNode, blockNode);
+              return this.createSwitchWhen(directive, frame, ruleName);
             case 'Case':
             case 'SwitchCase':
-              conditions = this.evaluateDirective(directive.conditions, frame, ruleName);
-              body = this.evaluateDirective(directive.body, frame, ruleName);
-              // Process conditions - make sure they are proper nodes
-              conditionsNode = (function() {
-                var len6, r;
-                if (Array.isArray(conditions)) {
-                  processedConditions = [];
-                  for (r = 0, len6 = conditions.length; r < len6; r++) {
-                    cond = conditions[r];
-                    if (cond instanceof nodes.Base) {
-                      processedConditions.push(cond);
-                    } else if (cond != null) {
-                      converted = this.ensureNode(cond);
-                      if (converted instanceof nodes.Base) {
-                        processedConditions.push(converted);
-                      }
-                    }
-                  }
-                  return processedConditions;
-                } else if (conditions instanceof nodes.Base) {
-                  return [conditions];
-                } else if (conditions != null) {
-                  converted = this.ensureNode(conditions);
-                  if (converted instanceof nodes.Base) {
-                    return [converted];
-                  } else {
-                    return [];
-                  }
-                } else {
-                  return [];
-                }
-              }).call(this);
-              // SwitchCase expects 'block' not 'body'
-              blockNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body ? body instanceof nodes.Block ? body : new nodes.Block([body]) : new nodes.Block([]);
-              // Use SwitchWhen for both - SwitchCase has a different signature
-              return new nodes.SwitchWhen(conditionsNode, blockNode);
+              return this.createSwitchWhen(directive, frame, ruleName);
             case 'Catch':
-              // CS3 uses either 'recovery' or 'body' for the catch block
-              body = this.evaluateDirective(directive.recovery, frame, ruleName) || this.evaluateDirective(directive.body, frame, ruleName);
-              // CS3 uses 'variable' or 'errorVariable' for the error parameter
-              error = this.evaluateDirective(directive.variable, frame, ruleName) || this.evaluateDirective(directive.errorVariable, frame, ruleName);
-              // Ensure body is a proper Block
-              bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body instanceof nodes.Block ? body : body ? new nodes.Block([this.ensureNode(body)]) : new nodes.Block([]);
-              // Ensure error parameter is properly converted if present
-              errorNode = error ? this.ensureNode(error) : null;
-              // Catch constructor expects (recovery, errorVariable) not (errorVariable, recovery)!
-              return new nodes.Catch(bodyNode, errorNode);
+              return this.createCatch(directive, frame, ruleName);
             case 'Finally':
               body = this.evaluateDirective(directive.body, frame, ruleName);
               bodyNode = Array.isArray(body) ? new nodes.Block(this.filterNodes(body)) : body;
@@ -1622,190 +1555,197 @@
       }
     }
 
+    // Operation handlers
+    applyArrayOperation(directive, frame, ruleName) {
+      var evaluated, item, j, k, len, len1, ref1, ref2, result, target, value;
+      if (directive.append != null) {
+        // First element is the target array, rest are items to append
+        target = this.evaluateDirective(directive.append[0], frame, ruleName);
+        // Ensure target is an array
+        target = Array.isArray(target) ? target : [];
+        ref1 = directive.append.slice(1);
+        for (j = 0, len = ref1.length; j < len; j++) {
+          item = ref1[j];
+          value = this.evaluateDirective(item, frame, ruleName);
+          // If value is already an array (from $ary), unwrap it
+          if (Array.isArray(value) && value.length === 1) {
+            if (value[0] != null) {
+              target.push(value[0]);
+            }
+          } else {
+            if (value != null) {
+              target.push(value);
+            }
+          }
+        }
+        return target;
+      } else if (directive.gather != null) {
+        result = [];
+        ref2 = directive.gather;
+        for (k = 0, len1 = ref2.length; k < len1; k++) {
+          item = ref2[k];
+          evaluated = this.evaluateDirective(item, frame, ruleName);
+          if (Array.isArray(evaluated)) {
+            result = result.concat(evaluated);
+          } else {
+            if (evaluated != null) {
+              result.push(evaluated);
+            }
+          }
+        }
+        return result;
+      }
+    }
+
+    applyValueOperation(directive, frame, ruleName) {
+      var clonedValue, propNode, propNodes, propRaw, ref1, targetNode, targetRaw;
+      // Add an accessor (Access/Index) to a Value
+      if (directive.add != null) {
+        targetRaw = this.evaluateDirective(directive.add[0], frame, ruleName);
+        propRaw = this.evaluateDirective(directive.add[1], frame, ruleName);
+        targetNode = (targetRaw != null ? targetRaw.compileToFragments : void 0) || targetRaw instanceof nodes.Base ? targetRaw : this.ensureNode(targetRaw);
+        // Handle array of properties
+        propNodes = Array.isArray(propRaw) ? propRaw.map((p) => {
+          if ((p != null ? p.compileToFragments : void 0) || p instanceof nodes.Base) {
+            return p;
+          } else {
+            return this.ensureNode(p);
+          }
+        }) : (propNode = (propRaw != null ? propRaw.compileToFragments : void 0) || propRaw instanceof nodes.Base ? propRaw : this.ensureNode(propRaw), propNode != null ? [propNode] : void 0);
+        if (!((targetNode != null) && (propNodes != null ? propNodes.length : void 0) > 0)) {
+          // Ensure we have valid nodes before proceeding
+          return null;
+        }
+        if (targetNode instanceof nodes.Value) {
+          // Clone the Value node to avoid mutation issues
+          clonedValue = Object.assign(Object.create(Object.getPrototypeOf(targetNode)), targetNode);
+          clonedValue.properties = (targetNode.properties || []).slice();
+          clonedValue.add(propNodes);
+          return clonedValue;
+        } else {
+          return new nodes.Value(targetNode, propNodes);
+        }
+      }
+      return this.evaluateDirective((ref1 = directive.add) != null ? ref1[0] : void 0, frame, ruleName);
+    }
+
+    applyIfOperation(directive, frame, ruleName) {
+      var block, elseBody, elseBodyNode, ifNode;
+      // If operations for adding else clauses
+      if (directive.addElse != null) {
+        // addElse: [ifNode, elseBody] - add else clause to if statement
+        ifNode = this.evaluateDirective(directive.addElse[0], frame, ruleName);
+        elseBody = this.evaluateDirective(directive.addElse[1], frame, ruleName);
+        if (ifNode instanceof nodes.If) {
+          if (elseBody != null ? elseBody.type : void 0) {
+            // Convert elseBody to proper node if needed
+            elseBody = this.toNode(elseBody);
+          }
+          // Set the else body (alternate property)
+          elseBodyNode = Array.isArray(elseBody) ? (block = new nodes.Block(this.filterNodes(elseBody)), block.locationData != null ? block.locationData : block.locationData = this.defaultLocationData(), block) : elseBody instanceof nodes.Block ? (elseBody.locationData != null ? elseBody.locationData : elseBody.locationData = this.defaultLocationData(), elseBody) : elseBody ? elseBody instanceof nodes.Base ? (elseBody.locationData != null ? elseBody.locationData : elseBody.locationData = this.defaultLocationData(), elseBody) : (block = new nodes.Block([this.ensureNode(elseBody)]), block.locationData != null ? block.locationData : block.locationData = this.defaultLocationData(), block) : null;
+          if (elseBodyNode != null) {
+            // Use addElse to properly handle else-if chains
+            ifNode.addElse(elseBodyNode);
+          }
+        }
+        return ifNode;
+      } else {
+        return null;
+      }
+    }
+
+    applyLoopOperation(directive, frame, ruleName) {
+      var bodyArg, bodyNode, loopNode, position, ref1, sourceInfo;
+      if (directive.addSource != null) {
+        // addSource: [loop, source] - add source to loop
+        loopNode = this.evaluateDirective(directive.addSource[0], frame, ruleName);
+        sourceInfo = this.evaluateDirective(directive.addSource[1], frame, ruleName);
+        if (sourceInfo != null ? sourceInfo.type : void 0) {
+          // Convert sourceInfo to proper node if needed
+          sourceInfo = this.toNode(sourceInfo);
+        }
+        // Ensure source has proper structure
+        if (sourceInfo) {
+          // For addSource, we might get an object with source, name, index, etc.
+          if (sourceInfo instanceof nodes.Base) {
+            // Already a node, ensure it has locationData
+            if (sourceInfo.locationData == null) {
+              sourceInfo.locationData = this.defaultLocationData();
+            }
+          } else if (typeof sourceInfo === 'object' && !Array.isArray(sourceInfo)) {
+            if (sourceInfo.source && !(sourceInfo.source instanceof nodes.Base)) {
+              // It's a source object with properties
+              sourceInfo.source = this.ensureNode(sourceInfo.source);
+            }
+            if (sourceInfo.name && !(sourceInfo.name instanceof nodes.Base)) {
+              sourceInfo.name = this.ensureNode(sourceInfo.name);
+            }
+            if (sourceInfo.index && !(sourceInfo.index instanceof nodes.Base)) {
+              sourceInfo.index = this.ensureNode(sourceInfo.index);
+            }
+          } else {
+            // Convert to node
+            sourceInfo = this.ensureNode(sourceInfo);
+          }
+        }
+        if (loopNode && sourceInfo) {
+          loopNode.addSource(sourceInfo);
+        }
+        return loopNode;
+      } else if (directive.addBody != null) {
+        // addBody: [loop, body] - add body to loop
+        loopNode = this.evaluateDirective(directive.addBody[0], frame, ruleName);
+        bodyArg = directive.addBody[1];
+        // Handle "Body $N" placeholder
+        if (typeof bodyArg === 'string' && bodyArg.startsWith('Body $')) {
+          position = parseInt(bodyArg.slice(6));
+          bodyNode = this.evaluateDirective(position, frame, ruleName);
+        } else {
+          bodyNode = this.evaluateDirective(bodyArg, frame, ruleName);
+        }
+        if (bodyNode != null ? bodyNode.type : void 0) {
+          // Convert body to proper node if needed
+          bodyNode = this.toNode(bodyNode);
+        }
+        // Ensure body is a proper Block node with locationData
+        if (bodyNode) {
+          // Handle different body types
+          if (Array.isArray(bodyNode)) {
+            bodyNode = new nodes.Block(this.filterNodes(bodyNode));
+          } else if (!(bodyNode instanceof nodes.Block)) {
+            bodyNode = new nodes.Block([bodyNode instanceof nodes.Base ? bodyNode : this.ensureNode(bodyNode)]);
+          }
+          if (bodyNode.locationData == null) {
+            bodyNode.locationData = this.defaultLocationData();
+          }
+        } else {
+          bodyNode = new nodes.Block([]);
+          bodyNode.locationData = this.defaultLocationData();
+        }
+        if (loopNode) {
+          loopNode.addBody(bodyNode);
+        }
+        return loopNode;
+      } else {
+        return this.evaluateDirective((ref1 = directive.addBody) != null ? ref1[0] : void 0, frame, ruleName);
+      }
+    }
+
     // Apply $ops operations
     applyOperation(directive, frame, ruleName) {
-      var block, bodyArg, bodyNode, clonedValue, elseBody, elseBodyNode, evaluated, ifNode, item, j, k, len, len1, loopNode, position, propNode, propNodes, propRaw, ref1, ref2, ref3, ref4, ref5, result, sourceInfo, target, targetNode, targetRaw, value;
+      var ref1;
       switch (directive.$ops) {
         case 'array':
-          if (directive.append != null) {
-            // First element is the target array, rest are items to append
-            target = this.evaluateDirective(directive.append[0], frame, ruleName);
-            // Ensure target is an array
-            target = Array.isArray(target) ? target : [];
-            ref1 = directive.append.slice(1);
-            for (j = 0, len = ref1.length; j < len; j++) {
-              item = ref1[j];
-              value = this.evaluateDirective(item, frame, ruleName);
-              // If value is already an array (from $ary), unwrap it
-              if (Array.isArray(value) && value.length === 1) {
-                if (value[0] != null) {
-                  target.push(value[0]);
-                }
-              } else {
-                if (value != null) {
-                  target.push(value);
-                }
-              }
-            }
-            return target;
-          } else if (directive.gather != null) {
-            result = [];
-            ref2 = directive.gather;
-            for (k = 0, len1 = ref2.length; k < len1; k++) {
-              item = ref2[k];
-              evaluated = this.evaluateDirective(item, frame, ruleName);
-              if (Array.isArray(evaluated)) {
-                result = result.concat(evaluated);
-              } else {
-                if (evaluated != null) {
-                  result.push(evaluated);
-                }
-              }
-            }
-            return result;
-          }
-          break;
+          return this.applyArrayOperation(directive, frame, ruleName);
         case 'value':
-          // Add an accessor (Access/Index) to a Value
-          if (directive.add != null) {
-            targetRaw = this.evaluateDirective(directive.add[0], frame, ruleName);
-            propRaw = this.evaluateDirective(directive.add[1], frame, ruleName);
-            targetNode = (targetRaw != null ? targetRaw.compileToFragments : void 0) || targetRaw instanceof nodes.Base ? targetRaw : this.ensureNode(targetRaw);
-            // Handle array of properties
-            propNodes = Array.isArray(propRaw) ? propRaw.map((p) => {
-              if ((p != null ? p.compileToFragments : void 0) || p instanceof nodes.Base) {
-                return p;
-              } else {
-                return this.ensureNode(p);
-              }
-            }) : (propNode = (propRaw != null ? propRaw.compileToFragments : void 0) || propRaw instanceof nodes.Base ? propRaw : this.ensureNode(propRaw), propNode != null ? [propNode] : void 0);
-            if (!((targetNode != null) && (propNodes != null ? propNodes.length : void 0) > 0)) {
-              // Ensure we have valid nodes before proceeding
-              return null;
-            }
-            if (targetNode instanceof nodes.Value) {
-              // Clone the Value node to avoid mutation issues
-              clonedValue = Object.assign(Object.create(Object.getPrototypeOf(targetNode)), targetNode);
-              clonedValue.properties = (targetNode.properties || []).slice();
-              clonedValue.add(propNodes);
-              return clonedValue;
-            } else {
-              return new nodes.Value(targetNode, propNodes);
-            }
-          }
-          return this.evaluateDirective((ref3 = directive.add) != null ? ref3[0] : void 0, frame, ruleName);
+          return this.applyValueOperation(directive, frame, ruleName);
         case 'if':
-          // If operations for adding else clauses
-          if (directive.addElse != null) {
-            // addElse: [ifNode, elseBody] - add else clause to if statement
-            ifNode = this.evaluateDirective(directive.addElse[0], frame, ruleName);
-            elseBody = this.evaluateDirective(directive.addElse[1], frame, ruleName);
-            if (ifNode instanceof nodes.If) {
-              // Convert elseBody to proper node if needed
-              if (elseBody != null ? elseBody.type : void 0) {
-                elseBody = this.solarNodeToClass(elseBody);
-              }
-              // Set the else body (alternate property)
-              elseBodyNode = Array.isArray(elseBody) ? (block = new nodes.Block(this.filterNodes(elseBody)), block.locationData != null ? block.locationData : block.locationData = this.defaultLocationData(), block) : elseBody instanceof nodes.Block ? (elseBody.locationData != null ? elseBody.locationData : elseBody.locationData = this.defaultLocationData(), elseBody) : elseBody ? elseBody instanceof nodes.Base ? (elseBody.locationData != null ? elseBody.locationData : elseBody.locationData = this.defaultLocationData(), elseBody) : (block = new nodes.Block([this.ensureNode(elseBody)]), block.locationData != null ? block.locationData : block.locationData = this.defaultLocationData(), block) : null;
-              // Use addElse to properly handle else-if chains
-              if (elseBodyNode != null) {
-                ifNode.addElse(elseBodyNode);
-              }
-            }
-            return ifNode;
-          } else {
-            return null;
-          }
-          break;
+          return this.applyIfOperation(directive, frame, ruleName);
         case 'loop':
-          // Loop operations for For/While loops
-          if (directive.addSource != null) {
-            // addSource: [loop, source] - add source to loop
-            loopNode = this.evaluateDirective(directive.addSource[0], frame, ruleName);
-            sourceInfo = this.evaluateDirective(directive.addSource[1], frame, ruleName);
-            // Convert sourceInfo to proper node if needed
-            if (sourceInfo != null ? sourceInfo.type : void 0) {
-              sourceInfo = this.solarNodeToClass(sourceInfo);
-            }
-            // Ensure source has proper structure
-            if (sourceInfo) {
-              // For addSource, we might get an object with source, name, index, etc.
-              if (sourceInfo instanceof nodes.Base) {
-                // Already a node, ensure it has locationData
-                if (sourceInfo.locationData == null) {
-                  sourceInfo.locationData = this.defaultLocationData();
-                }
-              } else if (typeof sourceInfo === 'object' && !Array.isArray(sourceInfo)) {
-                // It's a source object with properties
-                if (sourceInfo.source && !(sourceInfo.source instanceof nodes.Base)) {
-                  sourceInfo.source = this.ensureNode(sourceInfo.source);
-                }
-                if (sourceInfo.name && !(sourceInfo.name instanceof nodes.Base)) {
-                  sourceInfo.name = this.ensureNode(sourceInfo.name);
-                }
-                if (sourceInfo.index && !(sourceInfo.index instanceof nodes.Base)) {
-                  sourceInfo.index = this.ensureNode(sourceInfo.index);
-                }
-              } else {
-                // Convert to node
-                sourceInfo = this.ensureNode(sourceInfo);
-              }
-            }
-            if (loopNode && sourceInfo) {
-              loopNode.addSource(sourceInfo);
-            }
-            return loopNode;
-          } else if (directive.addBody != null) {
-            // addBody: [loop, body] - add body to loop
-            loopNode = this.evaluateDirective(directive.addBody[0], frame, ruleName);
-            bodyArg = directive.addBody[1];
-            // Handle "Body $N" placeholder
-            if (typeof bodyArg === 'string' && bodyArg.startsWith('Body $')) {
-              position = parseInt(bodyArg.slice(6));
-              bodyNode = this.evaluateDirective(position, frame, ruleName);
-            } else {
-              bodyNode = this.evaluateDirective(bodyArg, frame, ruleName);
-            }
-            // Convert body to proper node if needed
-            if (bodyNode != null ? bodyNode.type : void 0) {
-              bodyNode = this.solarNodeToClass(bodyNode);
-            }
-            // Ensure body is a proper Block node with locationData
-            if (bodyNode) {
-              // Handle different body types
-              if (Array.isArray(bodyNode)) {
-                // If it's an array, create a Block with the array's contents
-                bodyNode = new nodes.Block(this.filterNodes(bodyNode));
-              } else if (bodyNode instanceof nodes.Block) {
-                // Already a Block, use as-is
-                bodyNode = bodyNode;
-              } else if (bodyNode instanceof nodes.Base) {
-                // Single node, wrap in Block
-                bodyNode = new nodes.Block([bodyNode]);
-              } else {
-                // Not a node yet, ensure it becomes one
-                bodyNode = new nodes.Block([this.ensureNode(bodyNode)]);
-              }
-              // Ensure locationData exists
-              if (bodyNode.locationData == null) {
-                bodyNode.locationData = this.defaultLocationData();
-              }
-            } else {
-              // Create empty block if no body
-              bodyNode = new nodes.Block([]);
-              bodyNode.locationData = this.defaultLocationData();
-            }
-            if (loopNode) {
-              loopNode.addBody(bodyNode);
-            }
-            return loopNode;
-          } else {
-            return this.evaluateDirective((ref4 = directive.addBody) != null ? ref4[0] : void 0, frame, ruleName);
-          }
-          break;
+          return this.applyLoopOperation(directive, frame, ruleName);
         case 'prop':
           // TODO: Implement property operations (set)
-          return this.evaluateDirective((ref5 = directive.set) != null ? ref5.target : void 0, frame, ruleName);
+          return this.evaluateDirective((ref1 = directive.set) != null ? ref1.target : void 0, frame, ruleName);
         default:
           return new nodes.Literal(`/* TODO: $ops ${directive.$ops} */`);
       }
