@@ -28,7 +28,6 @@ class ES5Backend
 
     # CRITICAL FIX for #4889: Track unique variable allocation for nested for-loops
     @loopVarCounter = 0
-    @usedLoopVars = new Set()
 
   # Main entry point - convert Solar directive or CoffeeScript node to JavaScript
   generate: (node) ->
@@ -54,21 +53,21 @@ class ES5Backend
     last_column_exclusive: 0
     range: [0, 0]
 
-  # CRITICAL FIX for #4889: Generate unique loop variables like CoffeeScript's scope.freeVariable
+  # CRITICAL FIX for #4889: Generate unique loop variables to avoid conflicts
   getUniqueLoopVar: ->
-    # Generate unique variable names for loop iterators
-    # We'll use a pattern that won't conflict with common user variables
-    # Start with less common letters: k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
-    # Skip i and j as they're commonly used by users
-    letters = ['k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-
-    letterIndex = @loopVarCounter % letters.length
-    num = Math.floor(@loopVarCounter / letters.length)
-    varName = "#{letters[letterIndex]}#{num or ''}"
-
-    @loopVarCounter++
-    @usedLoopVars.add varName
-    varName
+    # Simple and predictable: use underscore prefix to avoid any user variable conflicts
+    # Pattern: _i, _j, _k, ..., _z, _i1, _j1, _k1, ...
+    # The underscore prefix ensures we never collide with typical user variables
+    letters = 'ijklmnopqrstuvwxyz'
+    index = @loopVarCounter++
+    
+    if index < letters.length
+      "_#{letters[index]}"
+    else
+      # After exhausting single letters, add numbers: _i1, _j1, etc.
+      letterIndex = (index - letters.length) % letters.length
+      num = Math.floor((index - letters.length) / letters.length) + 1
+      "_#{letters[letterIndex]}#{num}"
 
   # Helper to strip common indentation from heredoc strings
   stripHeredocIndentation: (value, quote) ->
