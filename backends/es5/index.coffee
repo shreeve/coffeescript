@@ -73,6 +73,55 @@ class ES5Backend
     @usedLoopVars.add varName
     varName
 
+  # Helper to strip common indentation from heredoc strings
+  stripHeredocIndentation: (value, quote) ->
+    return value unless quote in ['"""', "'''"] and typeof value is 'string'
+
+    lines = value.split('\n')
+    return value if lines.length <= 1
+
+    # Find minimum indentation (excluding empty lines)
+    minIndent = Infinity
+    for line in lines[1..]  # Skip first line
+      if line.trim().length > 0
+        leadingSpaces = line.match(/^[ \t]*/)[0].length
+        minIndent = Math.min(minIndent, leadingSpaces)
+
+    # Strip common indentation from all lines except the first
+    if minIndent > 0 and minIndent < Infinity
+      for i in [1...lines.length]
+        lines[i] = lines[i].slice(minIndent)
+      lines.join('\n')
+    else
+      value
+
+  # Helper to deep flatten arrays recursively
+  deepFlatten: (arr) ->
+    result = []
+    for item in arr
+      if Array.isArray(item)
+        flattened = @deepFlatten(item)
+        for sub in flattened
+          result.push sub
+      else
+        result.push item
+    result
+
+  # Helper to ensure value is an array
+  toArray: (value) ->
+    if Array.isArray(value) then value else (if value? then [value] else [])
+
+  # Helper to convert value to a Block node
+  toBlock: (value) ->
+    if Array.isArray(value)
+      new nodes.Block @filterNodes(value)
+    else if value instanceof nodes.Block
+      value
+    else if value?
+      new nodes.Block [@ensureNode(value)]
+    else
+      new nodes.Block []
+
   # Helper to ensure value is a proper node
   ensureNode: (value) ->
     return null unless value?
@@ -194,7 +243,7 @@ class ES5Backend
         switch nodeType
           when 'Root'
             body = @evaluateDirective directive.body, frame, ruleName
-            body = if Array.isArray(body) then body else (if body? then [body] else [])
+            body = @toArray(body)
             filteredBody = @filterNodes body
             new nodes.Root new nodes.Block filteredBody
 
@@ -350,18 +399,8 @@ class ES5Backend
 
           when 'Arguments'
             args = @evaluateDirective (if directive.args? then directive.args else if directive.$ary? then directive.$ary else directive), frame, ruleName
-            args = @filterNodes (if Array.isArray(args) then args else [])
-            deepFlatten = (arr) ->
-              result = []
-              for item in arr
-                if Array.isArray(item)
-                  flattened = deepFlatten(item)
-                  for sub in flattened
-                    result.push sub
-                else
-                  result.push item
-              result
-            args = deepFlatten(args)
+            args = @filterNodes @toArray(args)
+            args = @deepFlatten(args)
             args.implicit = !!directive.implicit
             args
 
@@ -371,22 +410,18 @@ class ES5Backend
 
             # Ensure args are proper nodes
             if Array.isArray argsNode
-              # Deep-flatten and convert to nodes, removing null/undefined
-              deepFlattenToNodes = (arr) =>
-                out = []
-                for item in arr
-                  if Array.isArray(item)
-                    out = out.concat deepFlattenToNodes(item)
-                  else if item instanceof nodes.Base
-                    out.push item
-                  else if item?.type
-                    converted = @solarNodeToClass(item)
-                    out.push converted if converted?
-                  else if item?
-                    ensured = @ensureNode(item)
-                    out.push ensured if ensured?
-                out
-              argsNode = deepFlattenToNodes argsNode
+              # Flatten and convert to nodes
+              flattened = @deepFlatten(argsNode)
+              argsNode = []
+              for item in flattened
+                if item instanceof nodes.Base
+                  argsNode.push item
+                else if item?.type
+                  converted = @solarNodeToClass(item)
+                  argsNode.push converted if converted?
+                else if item?
+                  ensured = @ensureNode(item)
+                  argsNode.push ensured if ensured?
             else
               argsNode = []
 
@@ -451,22 +486,8 @@ class ES5Backend
                  (value[0] is "'" and value[value.length - 1] is "'")
                 value = value.slice(1, -1)
 
-            # Handle triple-quoted strings (heredocs) - strip common leading whitespace
-            if quote is '"""' or quote is "'''"
-              lines = value.split('\n')
-              if lines.length > 1
-                # Find minimum indentation (excluding empty lines)
-                minIndent = Infinity
-                for line in lines[1..]  # Skip first line
-                  if line.trim().length > 0
-                    leadingSpaces = line.match(/^[ \t]*/)[0].length
-                    minIndent = Math.min(minIndent, leadingSpaces)
-
-                # Strip common indentation from all lines except the first
-                if minIndent > 0 and minIndent < Infinity
-                  for i in [1...lines.length]
-                    lines[i] = lines[i].slice(minIndent)
-                  value = lines.join('\n')
+            # Handle triple-quoted strings (heredocs) - use helper method
+            value = @stripHeredocIndentation(value, quote)
 
             node = new nodes.StringLiteral value, {quote}
             node.locationData ?= @defaultLocationData()
@@ -578,21 +599,10 @@ class ES5Backend
 
             # The type will be the string 'unless' from the IF/POST_IF token for unless statements
 
-            bodyNode = if Array.isArray(body)
-              block = new nodes.Block @filterNodes(body)
-              block.locationData ?= @defaultLocationData()
-              block
-            else
-              body
-            elseNode = if elseBody
-              if Array.isArray(elseBody)
-                block = new nodes.Block @filterNodes(elseBody)
-                block.locationData ?= @defaultLocationData()
-                block
-              else
-                elseBody
-            else
-              null
+            bodyNode = @toBlock(body)
+            bodyNode.locationData ?= @defaultLocationData() if bodyNode
+            elseNode = if elseBody then @toBlock(elseBody) else null
+            elseNode.locationData ?= @defaultLocationData() if elseNode
 
             # Pass the type to the If constructor - it handles 'unless' internally
             opts = {}
@@ -613,21 +623,10 @@ class ES5Backend
             elseBody = @evaluateDirective directive.elseBody, frame, ruleName
             postfix = @evaluateDirective directive.postfix, frame, ruleName
 
-            bodyNode = if Array.isArray(body)
-              block = new nodes.Block @filterNodes(body)
-              block.locationData ?= @defaultLocationData()
-              block
-            else
-              body
-            elseNode = if elseBody
-              if Array.isArray(elseBody)
-                block = new nodes.Block @filterNodes(elseBody)
-                block.locationData ?= @defaultLocationData()
-                block
-              else
-                elseBody
-            else
-              null
+            bodyNode = @toBlock(body)
+            bodyNode.locationData ?= @defaultLocationData() if bodyNode
+            elseNode = if elseBody then @toBlock(elseBody) else null
+            elseNode.locationData ?= @defaultLocationData() if elseNode
 
             # Create an If node with type: 'unless' for unless
             opts = {type: 'unless'}
@@ -648,17 +647,10 @@ class ES5Backend
             invert = @evaluateDirective directive.invert, frame, ruleName
 
             # Handle body - convert from Solar node if needed
-            if body?.type is 'Body' or body?.type is 'Block'
-              # Convert the Solar Body/Block node to CoffeeScript Block
-              bodyNode = @solarNodeToClass body
-            else if Array.isArray(body)
-              bodyNode = new nodes.Block @filterNodes(body)
-            else if body instanceof nodes.Block
-              bodyNode = body
-            else if body
-              bodyNode = new nodes.Block [@ensureNode(body)]
+            bodyNode = if body?.type is 'Body' or body?.type is 'Block'
+              @solarNodeToClass body
             else
-              bodyNode = new nodes.Block []
+              @toBlock(body)
 
             # While constructor expects (condition, opts)
             opts = {}
@@ -686,15 +678,11 @@ class ES5Backend
             isAwait = @evaluateDirective directive.await, frame, ruleName
 
             # Handle body
-            if body?.expressions
+            bodyNode = if body?.expressions
               # Body node with expressions - preserve full list and order
-              bodyNode = new nodes.Block @filterNodes(body.expressions)
-            else if Array.isArray(body)
-              bodyNode = new nodes.Block @filterNodes(body)
-            else if body
-              bodyNode = body
+              new nodes.Block @filterNodes(body.expressions)
             else
-              bodyNode = new nodes.Block []
+              @toBlock(body)
 
             # Handle name/index - they often come as arrays
             # Special case: for own k, v of obj - name comes as [k, v]
@@ -790,14 +778,7 @@ class ES5Backend
             ensure = @evaluateDirective directive.ensure, frame, ruleName
 
             # Ensure attempt is a proper block
-            attemptNode = if Array.isArray(attempt)
-              new nodes.Block @filterNodes(attempt)
-            else if attempt instanceof nodes.Block
-              attempt
-            else if attempt
-              new nodes.Block [@ensureNode(attempt)]
-            else
-              new nodes.Block []
+            attemptNode = @toBlock(attempt)
 
             # Process the catch clause - it should be a Catch node
             # If catchDirective is not a Catch node, we may need to evaluate it
@@ -810,15 +791,7 @@ class ES5Backend
               null
 
             # Ensure ensure is a proper block if present
-            ensureNode = if ensure
-              if Array.isArray(ensure)
-                new nodes.Block @filterNodes(ensure)
-              else if ensure instanceof nodes.Block
-                ensure
-              else
-                new nodes.Block [@ensureNode(ensure)]
-            else
-              null
+            ensureNode = if ensure then @toBlock(ensure) else null
 
             # Try expects (attempt, recovery, ensure) where recovery and ensure are optional
             new nodes.Try attemptNode, recovery, ensureNode
@@ -857,24 +830,15 @@ class ES5Backend
               paramsNode = []
 
             # Ensure body is a proper Block with converted nodes
-            if Array.isArray(body)
+            bodyNode = if Array.isArray(body)
               bodyNodes = body.map (b) =>
                 # Check for nodes.Base FIRST to avoid re-processing existing nodes
-                if b instanceof nodes.Base
-                  b
-                else if b?.type
-                  @solarNodeToClass(b)
-                else
-                  @ensureNode(b)
-              bodyNode = new nodes.Block @filterNodes(bodyNodes)
-            else if body?.type
-              bodyNode = new nodes.Block [@solarNodeToClass(body)]
-            else if body instanceof nodes.Block
-              bodyNode = body
-            else if body
-              bodyNode = new nodes.Block [@ensureNode(body)]
+                if b instanceof nodes.Base then b
+                else if b?.type then @solarNodeToClass(b)
+                else @ensureNode(b)
+              new nodes.Block @filterNodes(bodyNodes)
             else
-              bodyNode = new nodes.Block []
+              @toBlock(body)
 
             # Create proper FuncGlyph for bound/unbound functions
             funcGlyph = if bound then new nodes.FuncGlyph('=>') else new nodes.FuncGlyph('->')
@@ -1433,22 +1397,8 @@ class ES5Backend
              (value[0] is "'" and value[value.length - 1] is "'")
             value = value.slice(1, -1)
 
-        # Handle triple-quoted strings (heredocs) - strip common leading whitespace
-        if quote is '"""' or quote is "'''"
-          lines = value.split('\n')
-          if lines.length > 1
-            # Find minimum indentation (excluding empty lines)
-            minIndent = Infinity
-            for line in lines[1..]  # Skip first line
-              if line.trim().length > 0
-                leadingSpaces = line.match(/^[ \t]*/)[0].length
-                minIndent = Math.min(minIndent, leadingSpaces)
-
-            # Strip common indentation from all lines except the first
-            if minIndent > 0 and minIndent < Infinity
-              for i in [1...lines.length]
-                lines[i] = lines[i].slice(minIndent)
-              value = lines.join('\n')
+        # Handle triple-quoted strings (heredocs) - use helper method
+        value = @stripHeredocIndentation(value, quote)
 
         node = new nodes.StringLiteral value, {quote}
         node.locationData = solarNode.locationData or @defaultLocationData()
