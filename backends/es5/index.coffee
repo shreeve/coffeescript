@@ -122,6 +122,96 @@ class ES5Backend
     else
       new nodes.Block []
 
+  # ==============================================================================
+  # NODE CREATION METHODS - Extracted from main switch for clarity
+  # ==============================================================================
+
+  createLiteral: (directive, frame, ruleName) ->
+    value = @evaluateDirective directive.value, frame, ruleName
+    new nodes.Literal value
+
+  createIdentifierLiteral: (directive, frame, ruleName) ->
+    value = @evaluateDirective directive.value, frame, ruleName
+    node = new nodes.IdentifierLiteral value
+    node.locationData ?= @defaultLocationData()
+    node
+
+  createNumberLiteral: (directive, frame, ruleName) ->
+    value = @evaluateDirective directive.value, frame, ruleName
+    parsedValue = @evaluateDirective directive.parsedValue, frame, ruleName
+    # Strip underscores from numeric literals for compatibility
+    cleanValue = if typeof value is 'string' then value.replace(/_/g, '') else value
+    node = new nodes.NumberLiteral cleanValue, parsedValue
+    node.locationData ?= @defaultLocationData()
+    node
+
+  createBooleanLiteral: (directive, frame, ruleName) ->
+    value = @evaluateDirective directive.value, frame, ruleName
+    new nodes.BooleanLiteral value
+
+  createNullLiteral: ->
+    new nodes.NullLiteral()
+
+  createUndefinedLiteral: ->
+    new nodes.UndefinedLiteral()
+
+  createThisLiteral: ->
+    node = new nodes.ThisLiteral()
+    node.locationData ?= @defaultLocationData()
+    node
+
+  createStringLiteral: (directive, frame, ruleName) ->
+    value = @evaluateDirective directive.value, frame, ruleName
+    quote = @evaluateDirective directive.quote, frame, ruleName
+    
+    # Strip the surrounding quotes from the value if present
+    if value and typeof value is 'string' and value.length >= 2
+      if (value[0] is '"' and value[value.length - 1] is '"') or
+         (value[0] is "'" and value[value.length - 1] is "'")
+        value = value.slice(1, -1)
+    
+    # Handle triple-quoted strings (heredocs)
+    value = @stripHeredocIndentation(value, quote)
+    
+    node = new nodes.StringLiteral value, {quote}
+    node.locationData ?= @defaultLocationData()
+    node
+
+  createArr: (directive, frame, ruleName) ->
+    objects = @evaluateDirective directive.objects, frame, ruleName
+    objects = @filterNodes @toArray(objects)
+    arr = new nodes.Arr objects
+    arr.locationData ?= @defaultLocationData()
+    arr
+
+  createPropertyName: (directive, frame, ruleName) ->
+    value = @evaluateDirective directive.value, frame, ruleName
+    new nodes.PropertyName(value or '')
+
+  createIf: (directive, frame, ruleName, defaultType = 'if') ->
+    condition = @evaluateDirective directive.condition, frame, ruleName
+    body = @evaluateDirective directive.body, frame, ruleName
+    elseBody = @evaluateDirective directive.elseBody, frame, ruleName
+    type = @evaluateDirective(directive.type, frame, ruleName) or defaultType
+    postfix = @evaluateDirective directive.postfix, frame, ruleName
+    
+    bodyNode = @toBlock(body)
+    bodyNode.locationData ?= @defaultLocationData() if bodyNode
+    elseNode = if elseBody then @toBlock(elseBody) else null
+    elseNode.locationData ?= @defaultLocationData() if elseNode
+    
+    opts = {}
+    opts.type = type if type is 'unless'
+    opts.postfix = postfix if postfix
+    
+    ifNode = new nodes.If condition, bodyNode, opts
+    ifNode.locationData ?= @defaultLocationData()
+    
+    if elseNode
+      ifNode.addElse elseNode
+    
+    ifNode
+
   # Helper to ensure value is a proper node
   ensureNode: (value) ->
     return null unless value?
@@ -248,24 +338,13 @@ class ES5Backend
             new nodes.Root new nodes.Block filteredBody
 
           when 'IdentifierLiteral'
-            value = @evaluateDirective directive.value, frame, ruleName
-            node = new nodes.IdentifierLiteral value
-            node.locationData ?= @defaultLocationData()
-            node
+            @createIdentifierLiteral directive, frame, ruleName
 
           when 'Literal'
-            value = @evaluateDirective directive.value, frame, ruleName
-            new nodes.Literal value
+            @createLiteral directive, frame, ruleName
 
           when 'NumberLiteral'
-            value = @evaluateDirective directive.value, frame, ruleName
-            parsedValue = @evaluateDirective directive.parsedValue, frame, ruleName
-            # Strip underscores from numeric literals for compatibility
-            # Modern JS supports them but older runtimes and some contexts don't
-            cleanValue = if typeof value is 'string' then value.replace(/_/g, '') else value
-            node = new nodes.NumberLiteral cleanValue, parsedValue
-            node.locationData ?= @defaultLocationData()
-            node
+            @createNumberLiteral directive, frame, ruleName
 
           when 'Value'
             # directive.val or directive.value can be a position reference (number) or actual value
@@ -346,10 +425,7 @@ class ES5Backend
             new nodes.Index @ensureNode idx
 
           when 'PropertyName'
-            value = @evaluateDirective directive.value, frame, ruleName
-            # Ensure value is not null
-            value = '' unless value?
-            new nodes.PropertyName value
+            @createPropertyName directive, frame, ruleName
 
           when 'Op'
             op = @evaluateDirective (if directive.operator? then directive.operator else directive.args?[0]), frame, ruleName
@@ -478,24 +554,10 @@ class ES5Backend
               new nodes.Assign variable, value, context, options
 
           when 'StringLiteral'
-            value = @evaluateDirective directive.value, frame, ruleName
-            quote = @evaluateDirective directive.quote, frame, ruleName
-            # Strip the surrounding quotes from the value if present
-            if value and typeof value is 'string' and value.length >= 2
-              if (value[0] is '"' and value[value.length - 1] is '"') or
-                 (value[0] is "'" and value[value.length - 1] is "'")
-                value = value.slice(1, -1)
-
-            # Handle triple-quoted strings (heredocs) - use helper method
-            value = @stripHeredocIndentation(value, quote)
-
-            node = new nodes.StringLiteral value, {quote}
-            node.locationData ?= @defaultLocationData()
-            node
+            @createStringLiteral directive, frame, ruleName
 
           when 'BooleanLiteral'
-            value = @evaluateDirective directive.value, frame, ruleName
-            new nodes.BooleanLiteral value
+            @createBooleanLiteral directive, frame, ruleName
 
           when 'StatementLiteral'
             # Handle break, continue, debugger statements
@@ -512,17 +574,13 @@ class ES5Backend
                 new nodes.Literal value
 
           when 'NullLiteral'
-            new nodes.NullLiteral()
+            @createNullLiteral()
 
           when 'UndefinedLiteral'
-            new nodes.UndefinedLiteral()
+            @createUndefinedLiteral()
 
           when 'Arr'
-            objects = @evaluateDirective directive.objects, frame, ruleName
-            objects = @filterNodes (if Array.isArray(objects) then objects else [])
-            arr = new nodes.Arr objects
-            arr.locationData ?= @defaultLocationData()
-            arr
+            @createArr directive, frame, ruleName
 
           when 'Obj'
             properties = @evaluateDirective directive.properties, frame, ruleName
@@ -1248,10 +1306,7 @@ class ES5Backend
             new nodes.YieldFrom expression
 
           when 'ThisLiteral', 'This'
-            # Create a This node
-            thisNode = new nodes.ThisLiteral()
-            thisNode.locationData ?= @defaultLocationData()
-            thisNode
+            @createThisLiteral()
 
           when 'Elision'
             # Elisions in array destructuring are placeholders for skipped elements
