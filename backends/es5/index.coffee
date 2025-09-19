@@ -995,7 +995,12 @@ class ES5Backend
             args = @evaluateDirective (if directive.args? then directive.args else if directive.$ary? then directive.$ary else directive), frame, ruleName
             args = @filterNodes @toArray(args)
             args = @deepFlatten(args)
-            args.implicit = !!directive.implicit
+            # Handle implicit property if provided
+            if directive.implicit?
+              implicitValue = @evaluateDirective directive.implicit, frame, ruleName
+              args.implicit = !!implicitValue
+            else
+              args.implicit = !!directive.implicit
             args
 
           when 'Call'
@@ -1289,18 +1294,29 @@ class ES5Backend
 
       # $ary directive (array creation)
       else if directive.$ary?
-        result = []
-        for item in directive.$ary
-          # If item is a number, it's a position reference
-          if typeof item is 'number'
-            evaluated = @evaluateDirective item, frame, ruleName
-          else
-            # Item is an object, might have a $pos directive - evaluate without it
-            itemCopy = Object.assign {}, item
-            delete itemCopy.$pos if itemCopy.$pos?
-            evaluated = @evaluateDirective itemCopy, frame, ruleName
-          # Skip null/undefined items
-          result.push evaluated if evaluated?
+        # If $ary is a number, it's a position reference to an existing array
+        if typeof directive.$ary is 'number'
+          result = @evaluateDirective directive.$ary, frame, ruleName
+          result = @toArray(result)
+        else
+          # Create new array from elements
+          result = []
+          for item in directive.$ary
+            # If item is a number, it's a position reference
+            if typeof item is 'number'
+              evaluated = @evaluateDirective item, frame, ruleName
+            else
+              # Item is an object, might have a $pos directive - evaluate without it
+              itemCopy = Object.assign {}, item
+              delete itemCopy.$pos if itemCopy.$pos?
+              evaluated = @evaluateDirective itemCopy, frame, ruleName
+            # Skip null/undefined items
+            result.push evaluated if evaluated?
+
+        # Handle additional properties (like implicit)
+        for key, value of directive when key isnt '$ary' and not key.startsWith '$'
+          result[key] = @evaluateDirective value, frame, ruleName
+
         result
 
       # $ops directive (operations)
@@ -1328,13 +1344,6 @@ class ES5Backend
             result = @evaluateDirective step, frame, ruleName
         result
 
-      # $ite directive (conditionals)
-      else if directive.$ite?
-        test = @evaluateDirective directive.$ite.test, frame, ruleName
-        if test
-          @evaluateDirective directive.$ite.then, frame, ruleName
-        else
-          @evaluateDirective directive.$ite.else, frame, ruleName
 
       # Plain object (evaluate properties)
       else
@@ -1533,7 +1542,13 @@ class ES5Backend
       loopNode.addBody bodyNode if loopNode
       loopNode
     else
-      @evaluateDirective directive.addBody?[0], frame, ruleName
+      loopNode = @evaluateDirective directive.addBody?[0], frame, ruleName
+
+    # Handle postfix property if specified
+    if directive.postfix? and loopNode?
+      loopNode.postfix = @evaluateDirective directive.postfix, frame, ruleName
+
+    loopNode
 
   # Apply $ops operations
   applyOperation: (directive, frame, ruleName) ->
