@@ -933,50 +933,18 @@ class ES5Backend
               # Ensure name has locationData (needed for destructuring)
               name.locationData = @defaultLocationData()
 
-            # For destructured params with Obj, ensure it's not marked as generated
-            # Handle {@x, @y} destructuring by transforming CS3's Assign nodes to CS2-style Value nodes
-            if name instanceof nodes.Obj
-              name.generated = false
-              # Transform Assign nodes with value.this=true into Value nodes with this=true
-              if Array.isArray(name.properties)
-                fixedProps = []
-                for prop in name.properties or []
-                  if prop instanceof nodes.Assign and prop.value?.this and prop.context is 'object'
-                    # This is an @ parameter - create a CS2-style Value node
-                    # CS2 expects: Value with this=true, base=ThisLiteral, properties=[Access(PropertyName)]
-                    atValue = new nodes.Value(new nodes.ThisLiteral())
-                    # Use PropertyName instead of IdentifierLiteral for property access
-                    propName = new nodes.PropertyName(prop.variable.base.value)
-                    atValue.properties = [new nodes.Access(propName)]
-                    atValue.this = true
-                    atValue.locationData = prop.locationData or @defaultLocationData()
-                    fixedProps.push atValue
-                  else
-                    fixedProps.push prop
-                name.properties = fixedProps
-                # CRITICAL: eachName looks at 'objects' not 'properties' for parameter destructuring!
-                name.objects = fixedProps
-            else if name instanceof nodes.Value and name.base instanceof nodes.Obj
-              name.base.generated = false
-              # Same transformation for Value-wrapped Obj
-              if Array.isArray(name.base.properties)
-                fixedProps = []
-                for prop in name.base.properties or []
-                  if prop instanceof nodes.Assign and prop.value?.this and prop.context is 'object'
-                    # This is an @ parameter - create a CS2-style Value node
-                    # CS2 expects: Value with this=true, base=ThisLiteral, properties=[Access(PropertyName)]
-                    atValue = new nodes.Value(new nodes.ThisLiteral())
-                    # Use PropertyName instead of IdentifierLiteral for property access
-                    propName = new nodes.PropertyName(prop.variable.base.value)
-                    atValue.properties = [new nodes.Access(propName)]
-                    atValue.this = true
-                    atValue.locationData = prop.locationData or @defaultLocationData()
-                    fixedProps.push atValue
-                  else
-                    fixedProps.push prop
-                name.base.properties = fixedProps
-                # CRITICAL: eachName looks at 'objects' not 'properties' for parameter destructuring!
-                name.base.objects = fixedProps
+            # Handle {@x, @y} destructuring - convert CS3 Assigns to CS2-style Values  
+            # eachParamName expects Value nodes with this=true for @ params
+            if name instanceof nodes.Obj or (name instanceof nodes.Value and name.base instanceof nodes.Obj)
+              obj = if name instanceof nodes.Obj then name else name.base
+              obj.generated = false
+              if obj.properties
+                for prop, i in obj.properties when prop instanceof nodes.Assign and prop.value?.this
+                  # Create the CS2-style Value node for @param
+                  obj.properties[i] = atValue = new nodes.Value(new nodes.ThisLiteral())
+                  atValue.properties = [new nodes.Access(new nodes.PropertyName(prop.variable.base.value))]
+                  atValue.this = true
+                obj.objects = obj.properties # eachName uses 'objects' not 'properties'
 
             new nodes.Param name, value, splat
 
