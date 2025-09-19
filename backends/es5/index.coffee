@@ -59,16 +59,15 @@ class ES5Backend
 
   # CRITICAL FIX for #4889: Generate unique loop variables like CoffeeScript's scope.freeVariable
   getUniqueLoopVar: ->
-    # Use the same algorithm as CoffeeScript's scope.temporary with single=true
-    # Generate: i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, then i1, j1, etc.
-    startCode = 'i'.charCodeAt(0)  # 105
-    endCode = 'z'.charCodeAt(0)    # 122
-    diff = endCode - startCode     # 17
-
-    newCode = startCode + @loopVarCounter % (diff + 1)
-    letter = String.fromCharCode(newCode)
-    num = Math.floor(@loopVarCounter / (diff + 1))
-    varName = "#{letter}#{num or ''}"
+    # Generate unique variable names for loop iterators
+    # We'll use a pattern that won't conflict with common user variables
+    # Start with less common letters: k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
+    # Skip i and j as they're commonly used by users
+    letters = ['k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+    
+    letterIndex = @loopVarCounter % letters.length
+    num = Math.floor(@loopVarCounter / letters.length)
+    varName = "#{letters[letterIndex]}#{num or ''}"
 
     @loopVarCounter++
     @usedLoopVars.add varName
@@ -764,12 +763,12 @@ class ES5Backend
                 catch e then userName = null
 
                 o.scope.freeVariable = (name, options = {}) =>
-                  if options.single and (name is 'i' or name in ['i','j','k','l'])
-                    # If requested temp matches the user loop variable, defer to original allocator
-                    if userName? and name is userName
-                      return originalFreeVariable.call(o.scope, name, options)
+                  # When nodes.For requests 'i' with single:true, it's asking for an iterator temp
+                  # ALWAYS return our pre-allocated var for these iterator requests
+                  if options.single and name is 'i'
                     if varCounter < preAllocatedVars.length
-                      return preAllocatedVars[varCounter++]
+                      result = preAllocatedVars[varCounter++]
+                      return result
                     else
                       return @getUniqueLoopVar()
                   else
