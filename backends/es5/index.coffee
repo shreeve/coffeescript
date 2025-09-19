@@ -528,16 +528,6 @@ class ES5Backend
       return node
     null
 
-  # CRITICAL: Enhanced null-safe node conversion
-  safeDataToClass: (node) ->
-    return null unless node?
-    try
-      result = @dataToClass node
-      return result or null
-    catch error
-      console.error "CS3 Backend node conversion error:", error.message
-      return new nodes.Literal "/* conversion error */"
-
   # Helper to filter and ensure all items are nodes
   filterNodes: (array) ->
     return [] unless array?

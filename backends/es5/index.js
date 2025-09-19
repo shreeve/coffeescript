@@ -675,22 +675,6 @@
       return null;
     }
 
-    // CRITICAL: Enhanced null-safe node conversion
-    safeDataToClass(node) {
-      var error, result;
-      if (node == null) {
-        return null;
-      }
-      try {
-        result = this.dataToClass(node);
-        return result || null;
-      } catch (error1) {
-        error = error1;
-        console.error("CS3 Backend node conversion error:", error.message);
-        return new nodes.Literal("/* conversion error */");
-      }
-    }
-
     // Helper to filter and ensure all items are nodes
     filterNodes(array) {
       var item, j, len, node, result;
