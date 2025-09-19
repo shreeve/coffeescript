@@ -16,10 +16,7 @@
 nodes = require '../../coffeescript/nodes'
 
 class ES5Backend
-  constructor: (@options = {}, @nodes = nodes) ->
-    @variableContext = {}  # Store for $var/$use variables
-    # Allow nodes to be passed in or use the require
-    nodes = @nodes
+  constructor: (@options = {}) ->
     @compileOptions =
       bare: @options.bare ? true
       header: @options.header ? false
@@ -29,7 +26,7 @@ class ES5Backend
       # early "this-before-super" checks to let our lowering run.
       cs3: true
 
-    # CRITICAL FIX for #4889: Track unique variable allocation for nested for-loops
+    # Track unique variable allocation for nested for-loops
     @loopVarCounter = 0
     @usedLoopVars = new Set()
 
@@ -57,21 +54,17 @@ class ES5Backend
     last_column_exclusive: 0
     range: [0, 0]
 
-  # CRITICAL FIX for #4889: Generate unique loop variables like CoffeeScript's scope.freeVariable
+  # Generate unique variable names for loop iterators
   getUniqueLoopVar: ->
-    # Generate unique variable names for loop iterators
-    # We'll use a pattern that won't conflict with common user variables
-    # Start with less common letters: k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
-    # Skip i and j as they're commonly used by users
-    letters = ['k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-
-    letterIndex = @loopVarCounter % letters.length
-    num = Math.floor(@loopVarCounter / letters.length)
-    varName = "#{letters[letterIndex]}#{num or ''}"
+    # Start with less common letters, since i and j are commonly used by users
+    set = 'klmnopqrstuvwxyz'
+    idx = @loopVarCounter % set.length
+    num = Math.floor(@loopVarCounter / set.length)
+    use = "#{set[idx]}#{num or ''}"
 
     @loopVarCounter++
-    @usedLoopVars.add varName
-    varName
+    @usedLoopVars.add use
+    use
 
   # Helper to strip common indentation from heredoc strings
   stripHeredocIndentation: (value, quote) ->
@@ -575,7 +568,6 @@ class ES5Backend
     forNode = new nodes.For bodyNode, sourceObj
     forNode.locationData ?= @defaultLocationData()
 
-    # CRITICAL FIX for nested loop var conflicts (#4889):
     # Pre-allocate unique loop variables and override scope.freeVariable
     loopVar = @getUniqueLoopVar()
     incrementVar = @getUniqueLoopVar()
@@ -1340,20 +1332,6 @@ class ES5Backend
           directiveCopy = Object.assign {}, directive
           delete directiveCopy.$ops
           @evaluateDirective directiveCopy, frame, ruleName
-
-      # $seq directive (sequences)
-      else if directive.$seq?
-        result = null
-        for step in directive.$seq
-          # Handle $var directives to store variables
-          if step?.$var?
-            varName = step.$var
-            varValue = @evaluateDirective step.value, frame, ruleName
-            @variableContext[varName] = varValue
-          else
-            result = @evaluateDirective step, frame, ruleName
-        result
-
 
       # Plain object (evaluate properties)
       else

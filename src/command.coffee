@@ -171,11 +171,7 @@ class CS3DebugBackend
 
         # Unknown operation - return as-is for debugging
         return {$ops: op, data: d}
-      if d.$seq?
-        r = null
-        for s in d.$seq
-          r = @evaluate s, fr, rn
-        return r
+      # Plain object - evaluate all non-directive properties
       o = {}
       for k,v of d when not k.startsWith '$'
         o[k] = @evaluate v, fr, rn

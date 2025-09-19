@@ -90,9 +90,8 @@ compileCS3Real = (code, options = {}) ->
     setInput: -> i = 0
     upcomingInput: -> ''
 
-  # Set up parser with ES5 backend - pass nodes module
-  nodes = require '../lib/coffeescript/nodes'
-  backend = new ES5Backend(options, nodes)
+  # Set up parser with ES5 backend
+  backend = new ES5Backend(options)
   parserCS3.parser.lexer = lexIface
   parserCS3.parser.yy = { backend }
 
