@@ -1368,14 +1368,7 @@ exports.Value = class Value extends Base
 
   # Add a property (or *properties* ) `Access` to the list.
   add: (props) ->
-    # Filter out null/undefined properties to avoid traverseChildren errors
-    filteredProps = if Array.isArray(props) 
-      props.filter (p) -> p?
-    else if props?
-      [props]
-    else
-      []
-    @properties = @properties.concat filteredProps
+    @properties = @properties.concat props
     @forceUpdateLocation = yes
     this
 
@@ -5549,8 +5542,7 @@ exports.Switch = class Switch extends Base
       break if i is @cases.length - 1 and not @otherwise
       expr = @lastNode block.expressions
       continue if expr instanceof Return or expr instanceof Throw or (expr instanceof Literal and expr.jumps() and expr.value isnt 'debugger')
-      # Only add break if there was at least one condition
-      fragments.push cond.makeCode(idt2 + 'break;\n') if cond?
+      fragments.push cond.makeCode(idt2 + 'break;\n')
     if @otherwise and @otherwise.expressions.length
       fragments.push @makeCode(idt1 + "default:\n"), (@otherwise.compileToFragments o, LEVEL_TOP)..., @makeCode("\n")
     fragments.push @makeCode @tab + '}'
