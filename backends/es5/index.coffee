@@ -17,7 +17,6 @@ nodes = require '../../coffeescript/nodes'
 
 class ES5Backend
   constructor: (@options = {}, @nodes = nodes) ->
-    @variableContext = {}  # Store for $var/$use variables
     # Allow nodes to be passed in or use the require
     nodes = @nodes
     @compileOptions =
@@ -1340,20 +1339,6 @@ class ES5Backend
           directiveCopy = Object.assign {}, directive
           delete directiveCopy.$ops
           @evaluateDirective directiveCopy, frame, ruleName
-
-      # $seq directive (sequences)
-      else if directive.$seq?
-        result = null
-        for step in directive.$seq
-          # Handle $var directives to store variables
-          if step?.$var?
-            varName = step.$var
-            varValue = @evaluateDirective step.value, frame, ruleName
-            @variableContext[varName] = varValue
-          else
-            result = @evaluateDirective step, frame, ruleName
-        result
-
 
       # Plain object (evaluate properties)
       else
