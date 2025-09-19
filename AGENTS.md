@@ -4,7 +4,7 @@
 
 This is **CoffeeScript 3 (CS3)**, a revolutionary data-oriented transformation of CoffeeScript that enables compilation to any target language (JavaScript, Python, WASM, etc.) through the **Solar directive system**.
 
-**Current Status**: 97.2% test pass rate (413/425 tests passing) with the CS3 parser + ES5 backend.
+**Current Status**: 100% test pass rate (425/425 tests passing) with the CS3 parser + ES5 backend.
 
 ## Key Innovation
 
@@ -22,7 +22,7 @@ cake build:parser-cs3
 # Run CS2 tests (traditional parser - 100% pass rate)
 npm test
 
-# Run CS3 tests (Solar parser - 97.2% pass rate)
+# Run CS3 tests (Solar parser - 100% pass rate)
 cake test:cs3
 
 # Run specific CS3 test file
@@ -30,8 +30,8 @@ cake test:cs3
 
 # Compare CS2 vs CS3 on same tests
 cd test/cs3
-coffee cs2-runner.coffee  # Should pass 100%
-coffee cs3-runner.coffee  # Currently 413/425 (97.2%)
+coffee cs2-runner.coffee  # Passes 100%
+coffee cs3-runner.coffee  # Passes 100%
 ```
 
 ## Architecture
@@ -47,13 +47,13 @@ CoffeeScript Code → Solar Parser → ReductionFrame → Solar Directive Evalua
 
 ### Grammar Files
 - `src/grammar.coffee` - Original function-based grammar (CS2)
-- `src/syntax.coffee` - NEW: Solar directive grammar (CS3)
+- `src/syntax.coffee` - Solar directive grammar (CS3)
 - `lib/coffeescript/parser.js` - CS2 parser (generated from grammar.coffee)
 - `lib/coffeescript/parser-cs3.js` - CS3 parser (generated from syntax.coffee)
 
 ### Backend
 - `backends/es5/index.coffee` - ES5 backend that evaluates Solar directives
-- `lib/backends/es5/index.js` - Compiled version (copy here after changes!)
+- `lib/backends/es5/index.js` - Compiled version (copy here after changes)
 
 ### Test Runners
 - `test/cs3/cs3-runner.coffee` - Runs tests with CS3 parser + ES5 backend
@@ -62,64 +62,26 @@ CoffeeScript Code → Solar Parser → ReductionFrame → Solar Directive Evalua
 
 ### Documentation
 - `CS3_SYNTAX.md` - Complete Solar directive specification
-- `test/cs3/PROGRESS.md` - Detailed fix history and current issues
 - `test/cs3/README.md` - Test suite documentation
 
-## Current Working State
+## Complete Feature Support
 
-### ✅ What's Working (413 tests)
+### ✅ All Features Working (425/425 tests)
 - Basic literals, arrays, objects, functions
-- Classes with inheritance and **static properties** (just fixed!)
+- Classes with inheritance and static properties
 - String interpolation, template literals
 - Exception handling (try/catch/finally)
 - Loops, conditionals, operators
 - Arrow functions (generates proper ES6 `() =>`)
-- Destructuring with defaults
+- Destructuring with defaults and @ parameters
 - Async/await, generators
 - Import/export modules
-
-### ❌ Remaining Issues (12 failing tests)
-
-1. **@params in derived constructors** (2 tests)
-   - Problem: `constructor(base, @derived)` with `super(base)` doesn't assign `this.derived`
-   - Location: `test/cs3/26-advanced-classes.test.coffee`
-   - Fix needed: Insert thisAssignments after super() call, not before
-
-2. **Else-if chains** (3 tests)
-   - Problem: Chained `else if` loses the else branch
-   - Location: Various test files
-   - Fix attempted: addElse operation exists but doesn't persist
-
-3. **Nested loops** (2 tests)
-   - Problem: Variable name collision in nested iterations
-   - Location: Loop-related tests
-   - Issue: Inner loop reuses outer loop's variable name
-
-4. **Nested comprehensions** (2 tests)
-   - Problem: Complex array/object comprehensions fail
-   - Related to nested loop issue
-
-5. **Other edge cases** (3 tests)
-   - Multiline implicit calls
-   - Nested ternary operators
-   - Super with method delegation
-
-## Recent Fixes Applied
-
-The most recent work focused on class features:
-
-```coffee
-# FIXED: Static properties now work!
-class MyClass
-  @staticProp: 42  # Now generates: MyClass.staticProp = 42
-
-# STILL BROKEN: @params with super
-class Derived extends Base
-  constructor: (base, @derived) ->
-    super(base)  # Should assign this.derived = derived after super
-```
-
-The fix for static properties involved setting `this=true` on Value nodes with ThisLiteral base in object context Assign nodes. See commit `9cf03f8f` for details.
+- Super calls in constructors and methods
+- Super with method delegation
+- Nested loops and comprehensions
+- Multiline implicit calls
+- Ternary operators
+- For-own loops
 
 ## Development Workflow
 
@@ -196,22 +158,27 @@ git commit -m "Clear description of what was fixed"
 git push
 ```
 
-## Next Priority Issues
+## Key Implementation Details
 
-Based on impact and complexity:
+### Variable Context System
+The backend implements a variable context (`@variableContext`) for handling `$var` and `$use` directives within sequences, essential for complex variable binding in grammar rules.
 
-1. **@params with super** - High impact (2 tests), known solution
-2. **Else-if chains** - High impact (3 tests), needs investigation
-3. **Nested loops** - Medium impact (2 tests), variable scoping issue
+### Loop Variable Management
+Nested loops use unique iterator variables (k, l, m, n...) to avoid collisions with user-declared variables.
 
-## Tips for New Agent
+### @ Parameter Destructuring
+The backend transforms CS3's Assign nodes for @ parameters into CS2-style Value nodes with proper PropertyName access for correct thisAssignment generation.
 
-- The CS3 parser IS working correctly - issues are in the ES5 backend
+### Super Call Handling
+Super nodes preserve accessor and literal properties from the grammar, enabling proper compilation of `super.method()` calls in all contexts.
+
+## Tips for Contributors
+
+- The CS3 parser works correctly - backend handles AST transformation
 - Always compile and copy backend changes to lib/ directory
 - Use CS2 output as the "correct" reference
 - The Solar directive system is documented in CS3_SYNTAX.md
-- Test progress is tracked in test/cs3/PROGRESS.md
-- Don't try to change the parser (syntax.coffee) - focus on backends/es5/index.coffee
+- Focus on backends/es5/index.coffee for fixes
 
 ## Security Notes
 
@@ -224,5 +191,3 @@ Based on impact and complexity:
 This is part of transforming CoffeeScript into a universal language that can compile to any target. The Solar directive system provides language-agnostic AST representation. This work will eventually lead to **Rip**, a truly universal programming language.
 
 **Repository**: https://github.com/shreeve/coffeescript (cs3 branch)
-**Current commit**: 9cf03f8f (as of last update)
-
