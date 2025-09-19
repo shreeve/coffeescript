@@ -45,7 +45,7 @@ test "description", ->
 The test runner (`cs3-runner.coffee`) coordinates:
 
 1. **Parser**: CS3 Solar parser (`lib/coffeescript/parser-cs3.js`)
-2. **Backend**: ES5 backend (`lib/backends/es5/index.js`) - optimized to 1,569 lines
+2. **Backend**: ES5 backend (`backends/es5/index.coffee`) - 1,587 lines
 3. **Compilation**: Transforms CS3 → Solar directives → JavaScript
 
 ## Performance

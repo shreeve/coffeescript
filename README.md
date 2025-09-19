@@ -15,23 +15,21 @@ CoffeeScript 3 (CS3) represents a **paradigm shift** in parser architecture: tra
 
 ## The Solar Directive System
 
-CS3 uses Solar's universal directive system - 6 language-agnostic directives that work for any grammar:
+CS3 uses Solar's universal directive system with just 4 core directives:
 
 1. **`$ast`** - Creates AST nodes (universal)
-2. **`$ary`** - Creates arrays (universal)
+2. **`$ary`** - Creates arrays with optional properties (universal)
 3. **`$ops`** - Performs operations (categorized by type)
-4. **`$use`** - Universal references (stack elements, properties, methods, variables)
-5. **`$seq`** - Sequences of operations (universal)
-6. **`$ite`** - If-Then-Else conditionals (universal)
+4. **`$use`** - Universal references (stack elements, properties, methods)
 
-Plus **`$pos`** for position tracking and **`$var`** for temporary variables.
+Plus **`$pos`** for position tracking. No special cases or auxiliary directives needed.
 
 **Note:** Plain objects need no directive - just use properties directly!
 
 ### 📖 Full Specification
 
 For the complete directive system, examples, and technical details, see:
-**[CS3_SYNTAX.md](CS3_SYNTAX.md)** - The authoritative CS3 specification document
+**[CS3_DIRECTIVES.md](CS3_DIRECTIVES.md)** - The authoritative CS3 specification document
 
 ## Quick Example
 
@@ -81,7 +79,7 @@ coffeescript/
 │   ├── es6/                  # JavaScript backend
 │   ├── python/               # Python backend (planned)
 │   └── wasm/                 # WebAssembly backend (planned)
-└── CS3_SYNTAX.md            # Full CS3 specification
+└── CS3_DIRECTIVES.md        # Full CS3 specification
 ```
 
 ## Implementation Status
@@ -140,11 +138,8 @@ CoffeeScript 3 is a stepping stone toward **Rip**, a truly universal programming
 ## Getting Started
 
 ```bash
-# Build the CS3 Solar parser
-cake build:parser-cs3
-
-# Test CS2 CoffeeScript (1470/1473 tests passing)
-npm test
+# Build everything (parsers and backend)
+cake build
 
 # Test CS3 pipeline (425/425 tests passing - 100%!)
 cake test:cs3
@@ -153,12 +148,12 @@ cake test:cs3
 cat src/syntax.coffee
 
 # Read the full specification
-open CS3_SYNTAX.md
+open CS3_DIRECTIVES.md
 ```
 
 ### Quick Start for New Contributors
 
-1. **Understand the transformation**: Read `CS3_SYNTAX.md` for the complete directive system
+1. **Understand the transformation**: Read `CS3_DIRECTIVES.md` for the complete directive system
 2. **Compare the grammars**: Open `src/grammar.coffee` (old) and `src/syntax.coffee` (new) side by side
 3. **See it in action**: Look at the `Class` rule transformation as a representative example
 4. **Key insight**: We're not changing WHAT the grammar does, just HOW it's expressed (functions → data)
@@ -182,7 +177,7 @@ CS3 is an ambitious project that needs community involvement:
 
 ## Learn More
 
-- **[CS3_SYNTAX.md](CS3_SYNTAX.md)** - Complete CS3 directive system specification
+- **[CS3_DIRECTIVES.md](CS3_DIRECTIVES.md)** - Complete CS3 directive system specification
 - **[src/syntax.coffee](src/syntax.coffee)** - The transformed data-oriented grammar
 
 ---

@@ -76,9 +76,20 @@ buildExceptParser = (callback) ->
   files = ('src/' + file for file in files when file.match(/\.(lit)?coffee$/) and file not in ['grammar.coffee', 'syntax.coffee'])
   run ['-c', '-o', 'lib/coffeescript'].concat(files), callback
 
+buildBackend = (callback) ->
+  # Build CS3 ES5 backend
+  if fs.existsSync 'backends/es5/index.coffee'
+    console.log "Building CS3 ES5 backend..."
+    # Ensure output directory exists
+    fs.mkdirSync 'lib/backends/es5', {recursive: true}
+    run ['-c', '-o', 'lib/backends/es5', 'backends/es5/index.coffee'], callback
+  else
+    callback?()
+
 build = (callback) ->
   buildParser()
-  buildExceptParser callback
+  buildBackend ->
+    buildExceptParser callback
 
 transpile = (code, options = {}) ->
   options.minify =      process.env.MINIFY    isnt 'false'

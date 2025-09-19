@@ -172,8 +172,6 @@ class CS3DebugBackend
         # Unknown operation - return as-is for debugging
         return {$ops: op, data: d}
       if d.$seq? then r=null; for s in d.$seq then r=@evaluate s, fr, rn; return r
-      if d.$ite?
-        return if @evaluate(d.$ite.test,fr,rn) then @evaluate(d.$ite.then,fr,rn) else @evaluate(d.$ite.else,fr,rn)
       o={}; for k,v of d when not k.startsWith '$' then o[k]=@evaluate v, fr, rn; return o
     d
 

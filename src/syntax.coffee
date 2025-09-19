@@ -182,8 +182,8 @@ grammar =
   ]
 
   ObjSpreadIdentifier: [
-    o 'SimpleObjAssignable Accessor', $seq: [{$ast: 'Value', val: 1, $var: 'v'}, {$ops: 'value', add: [{$use: 'v'}, 2]}, {$use: 'v'}]
-    o 'ObjSpreadExpr Accessor'      , $seq: [{$ast: 'Value', val: 1, $var: 'v'}, {$ops: 'value', add: [{$use: 'v'}, 2]}, {$use: 'v'}]
+    o 'SimpleObjAssignable Accessor', $ops: 'value', add: [1, 2]
+    o 'ObjSpreadExpr Accessor'      , $ops: 'value', add: [1, 2]
   ]
 
   # A return statement from a function body.
@@ -262,7 +262,7 @@ grammar =
   SimpleAssignable: [
     o 'Identifier'    , $ast: 'Value', val: 1
     o 'Value Accessor', $ops: 'value', add: [1, 2]
-    o 'Code Accessor' , $seq: [{$ast: 'Value', val: 1, $var: 'v'}, {$ops: 'value', add: [{$use: 'v'}, 2]}, {$use: 'v'}]
+    o 'Code Accessor' , $ops: 'value', add: [1, 2]
     o 'ThisProperty'
   ]
 
@@ -438,7 +438,7 @@ grammar =
   # The list of arguments to a function call.
   Arguments: [
     o 'CALL_START CALL_END'                 , $ary: [{}]
-    o 'CALL_START ArgList OptComma CALL_END', $seq: [{$ops: 'prop', set: {target: 2, property: 'implicit', value: {$use: 1, prop: 'generated'}}}, 2]
+    o 'CALL_START ArgList OptComma CALL_END', $ary: 2, implicit: {$use: 1, prop: 'generated'}
   ]
 
   # A reference to the *this* current object.
@@ -591,8 +591,8 @@ grammar =
   While: [
     o 'WhileSource Block'     , $ops: 'loop', addBody: [1, 'Body $2']
     o 'WhileLineSource Block' , $ops: 'loop', addBody: [1, 'Body $2']
-    o 'Statement  WhileSource', $seq: [{$ops: 'prop', set: {target: 2, property: 'postfix', value: true}}, {$ops: 'loop', addBody: [2, [1]]}, 2]
-    o 'Expression WhileSource', $seq: [{$ops: 'prop', set: {target: 2, property: 'postfix', value: true}}, {$ops: 'loop', addBody: [2, [1]]}, 2]
+    o 'Statement  WhileSource', $ops: 'loop', addBody: [2, [1]], postfix: true
+    o 'Expression WhileSource', $ops: 'loop', addBody: [2, [1]], postfix: true
     o 'Loop'                  , $use: 1
   ]
 
@@ -605,8 +605,8 @@ grammar =
   # Comprehensions can either be normal, with a block of expressions to execute,
   # or postfix, with a single expression.
   For: [
-    o 'Statement    ForBody', $seq: [{$ops: 'prop', set: {target: 2, property: 'postfix', value: true}}, {$ops: 'loop', addBody: [2, 1]}, 2]
-    o 'Expression   ForBody', $seq: [{$ops: 'prop', set: {target: 2, property: 'postfix', value: true}}, {$ops: 'loop', addBody: [2, 1]}, 2]
+    o 'Statement    ForBody', $ops: 'loop', addBody: [2, 1], postfix: true
+    o 'Expression   ForBody', $ops: 'loop', addBody: [2, 1], postfix: true
     o 'ForBody      Block'  , $ops: 'loop', addBody: [1, 'Body $2']
     o 'ForLineBody  Block'  , $ops: 'loop', addBody: [1, 'Body $2']
   ]
@@ -624,8 +624,8 @@ grammar =
 
   ForStart: [
     o 'FOR ForVariables'      , $ast: 'For', body: {$ary: [{}]}, name: {$use: 2, index: 0}, index: {$use: 2, index: 1}
-    o 'FOR AWAIT ForVariables', $seq: [{$var: 'name', value: {$use: 3, index: 0}}, {$var: 'index', value: {$use: 3, index: 1}}, {$ast: 'For', body: {$ary: []}, name: {$use: 'name'}, index: {$use: 'index'}, await: true, awaitTag: {$ast: 'Literal', value: 2, $pos: 2}}]
-    o 'FOR OWN ForVariables'  , $seq: [{$var: 'name', value: {$use: 3, index: 0}}, {$var: 'index', value: {$use: 3, index: 1}}, {$ast: 'For', body: {$ary: []}, name: {$use: 'name'}, index: {$use: 'index'}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}}]
+    o 'FOR AWAIT ForVariables', $ast: 'For', body: {$ary: []}, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, await: true, awaitTag: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'FOR OWN ForVariables'  , $ast: 'For', body: {$ary: []}, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}
   ]
 
   # An array of all accepted values for a variable inside the loop.
