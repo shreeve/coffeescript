@@ -623,8 +623,8 @@ class ES5Backend
 
     # For body, check if it's a position reference to an already-processed array or Block
     # This preserves modifications made by operations like addElse
-    if typeof directive.body is 'number' and frame?.rhs?[directive.body - 1]
-      frameValue = frame.rhs[directive.body - 1].value
+    if typeof directive.body is 'number' and frame?[directive.body - 1]
+      frameValue = frame[directive.body - 1].value
       # If it's already a Block or an array of nodes, use it directly
       # This preserves any modifications made by operations
       if frameValue instanceof nodes.Block or (Array.isArray(frameValue) and frameValue.some((v) -> v instanceof nodes.Base))
@@ -819,15 +819,24 @@ class ES5Backend
     range: [first.range[0], last.range[1]]
 
   # ReductionFrame-based Solar directive evaluation
-  reduce: (ruleName, directive, frame) ->
+  reduce: (values, positions, stackTop, symbolCount, directive) ->
+    # Build frame directly from parser stacks using indices as a flat array
+    frame = []
+    for i in [0...symbolCount]
+      offset = stackTop - symbolCount + i + 1
+      frame.push {
+        value: values[offset]
+        pos: positions[offset]
+      }
+    
     # Evaluate Solar directive against ReductionFrame
-    @evaluateDirective directive, frame, ruleName
+    @evaluateDirective directive, frame, null
 
   # Core directive evaluator - evaluates Solar directives against RHS frame
   evaluateDirective: (directive, frame, ruleName = null) ->
     # Handle position references (1, 2, 3, ...) FIRST
     if typeof directive is 'number'
-      return frame.rhs[directive - 1]?.value  # 1-based → 0-based
+      return frame[directive - 1]?.value  # 1-based → 0-based
 
     # Handle primitives (except numbers, handled above)
     return directive if typeof directive in ['string', 'boolean']
@@ -843,7 +852,7 @@ class ES5Backend
       if directive.$use?
         ref = directive.$use
         value = if typeof ref is 'number'
-          frame.rhs[ref - 1]?.value  # Position reference
+          frame[ref - 1]?.value  # Position reference
         else if typeof ref is 'string' and @variableContext[ref]?
           @variableContext[ref]  # Lookup stored variable
         else
@@ -872,7 +881,8 @@ class ES5Backend
 
       # $ast directive (AST node creation)
       else if directive.$ast?
-        nodeType = if directive.$ast is '@' then ruleName else directive.$ast
+        # @ is now replaced with actual rule name at parser generation time
+        nodeType = directive.$ast
 
         # Directly create CoffeeScript node with evaluated properties
         switch nodeType
@@ -1380,12 +1390,12 @@ class ES5Backend
   resolvePosition: (posDirective, frame) ->
     if typeof posDirective is 'number'
       # $pos: 1 → copy slot 1's position
-      frame.rhs[posDirective - 1]?.pos or @defaultLocationData()
+      frame[posDirective - 1]?.pos or @defaultLocationData()
     else if Array.isArray posDirective
       if posDirective.length is 2
         # $pos: [1, 3] → span from slot 1 to slot 3
-        start = frame.rhs[posDirective[0] - 1]?.pos
-        end = frame.rhs[posDirective[1] - 1]?.pos
+        start = frame[posDirective[0] - 1]?.pos
+        end = frame[posDirective[1] - 1]?.pos
         @mergeLocationData(start, end) if start and end
       else if posDirective.length is 4
         # $pos: [sl, sc, el, ec] → explicit position

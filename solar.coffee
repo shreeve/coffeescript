@@ -247,22 +247,13 @@ class Generator
       .replace(/\$(-?\d+)/g, (_, n) -> "$$[$0" + (parseInt(n, 10) - symbols.length || '') + "]") # Like $1
       .replace( /@(-?\d+)/g, (_, n) -> "_$[$0" +               (n - symbols.length || '') + "]") # Like @1
 
+  # Call reduce function with count then directive
   _generateDataAction: (directive, symbols) ->
-    # CS3 mode: generate backend.reduce() call with ReductionFrame
-    # Input: CS3 directive like {$ast: 'Value', val: 1}
-    # Output: JavaScript like "return backend.reduce(ruleName, directive, frame);"
-
-    # Generate ReductionFrame with RHS slots
-    frameSlots = []
     len = symbols.length
-    for i in [1..len]
-      offset = len - i
-      frameSlots.push "{value: $$[$0-#{offset}], token: $$[$0-#{offset}], pos: _$[$0-#{offset}]}"
+    dir = @_objectToJSUnresolved(directive)
+    "return r(#{len}, #{dir});"
 
-    frameJS = "{ruleName: '#{@currentType}', rhs: [#{frameSlots.join(', ')}]}"
-    directiveJS = @_objectToJSUnresolved(directive)
-
-    "return yy.backend.reduce('#{@currentType}', #{directiveJS}, #{frameJS});"
+  _needsQuotes: (key) -> not /^[$_a-zA-Z][$_a-zA-Z0-9]*$/.test(key)
 
   # Generate directive object with unresolved position references
   _objectToJSUnresolved: (obj) ->
@@ -276,17 +267,23 @@ class Generator
     else if typeof obj is 'boolean'
       JSON.stringify(obj)
     else if Array.isArray(obj)
-      items = (if typeof item is 'object' then @_objectToJSUnresolved(item) else JSON.stringify(item) for item in obj)
+      items = (if typeof item is 'object' and item? then @_objectToJSUnresolved(item) else JSON.stringify(item) for item in obj)
       "[#{items.join(', ')}]"
     else if typeof obj is 'object'
       props = []
       for key, value of obj
-        if typeof value is 'number'
-          props.push "#{JSON.stringify(key)}: #{value}"  # Keep as position number
+        # Format key - only quote if necessary
+        keyStr = if @_needsQuotes(key) then JSON.stringify(key) else key
+
+        # Replace $ast: '@' with the actual rule name
+        if key is '$ast' and value is '@'
+          props.push "#{keyStr}: #{JSON.stringify(@currentType)}"
+        else if typeof value is 'number'
+          props.push "#{keyStr}: #{value}"  # Keep as position number
         else if typeof value is 'object' and value?
-          props.push "#{JSON.stringify(key)}: #{@_objectToJSUnresolved(value)}"
+          props.push "#{keyStr}: #{@_objectToJSUnresolved(value)}"
         else
-          props.push "#{JSON.stringify(key)}: #{JSON.stringify(value)}"
+          props.push "#{keyStr}: #{JSON.stringify(value)}"
       "{#{props.join(', ')}}"
     else
       JSON.stringify(obj)
@@ -331,14 +328,25 @@ class Generator
           break
 
   _generateActionCode: (actionGroups) ->
-    actions = [
-      '/* this == yyval */'
-      @actionInclude or ''
-      'var $0 = $$.length - 1;'
-      'hasProp = {}.hasOwnProperty;'
-      'switch (yystate) {'
-    ]
-    actions.push labels.join(' '), action, 'break;' for action, labels of actionGroups
+    actions = []
+
+    # Add mode-specific setup
+    if @mode is 'cs3'
+      # CS3: Add reduce function (r) - curried with $$, _$ for efficient backend calls
+      actions.push @actionInclude or ''
+      actions.push 'var r = yy.backend && function(count, directive) { return yy.backend.reduce($$, _$, $$.length - 1, count, directive); };'
+    else
+      # CS2: Add comment about this context and $0 variable
+      actions.push '/* this == yyval */'
+      actions.push @actionInclude or ''
+      actions.push 'var $0 = $$.length - 1;'
+
+    actions.push 'switch (yystate) {'
+    for action, labels of actionGroups
+      actions.push labels.join(' ')
+      actions.push action
+      # Only add break if the action doesn't start with 'return' (all CS3 actions return)
+      actions.push 'break;' unless action.trim().startsWith('return')
     actions.push '}'
 
     actions.join('\n')
