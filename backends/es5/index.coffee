@@ -740,8 +740,20 @@ class ES5Backend
                 varCounter = 0
                 preAllocatedVars = [loopVar, incrementVar]
 
+                # Determine user-declared value variable name to avoid collisions
+                userName = null
+                try
+                  if forNode.name? and forNode.name instanceof nodes.IdentifierLiteral
+                    userName = forNode.name.value
+                  else if forNode.name? and forNode.name instanceof nodes.Value and forNode.name.base instanceof nodes.IdentifierLiteral
+                    userName = forNode.name.base.value
+                catch e then userName = null
+
                 o.scope.freeVariable = (name, options = {}) =>
                   if options.single and (name is 'i' or name in ['i','j','k','l'])
+                    # If requested temp matches the user loop variable, defer to original allocator
+                    if userName? and name is userName
+                      return originalFreeVariable.call(o.scope, name, options)
                     if varCounter < preAllocatedVars.length
                       return preAllocatedVars[varCounter++]
                     else
@@ -909,9 +921,21 @@ class ES5Backend
               name.locationData = @defaultLocationData()
 
             # For destructured params with Obj, ensure it's not marked as generated
-            # to avoid operatorToken error check in Param constructor
+            # and mark any {@x, @y} inner properties as this-params
             if name instanceof nodes.Obj
               name.generated = false
+              if Array.isArray(name.properties)
+                for prop in name.properties when prop?
+                  if prop.variable instanceof nodes.Value and prop.variable.base instanceof nodes.ThisLiteral
+                    prop.variable.this = true
+            else if name instanceof nodes.Value and name.base instanceof nodes.Obj
+              obj = name.base
+              obj.generated = false
+              if Array.isArray(obj.properties)
+                for prop in obj.properties when prop?
+                  if prop.variable instanceof nodes.Value and prop.variable.base instanceof nodes.ThisLiteral
+                    prop.variable.this = true
+
             new nodes.Param name, value, splat
 
           when 'Return'
