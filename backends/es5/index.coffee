@@ -64,7 +64,7 @@ class ES5Backend
     # Start with less common letters: k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
     # Skip i and j as they're commonly used by users
     letters = ['k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-    
+
     letterIndex = @loopVarCounter % letters.length
     num = Math.floor(@loopVarCounter / letters.length)
     varName = "#{letters[letterIndex]}#{num or ''}"
