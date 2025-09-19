@@ -2,14 +2,14 @@
 
 ## Add CoffeeScript 3 (CS3) - Data-Oriented Parser with Universal Backend Support
 
-Introduces CS3, a revolutionary data-oriented transformation that enables 
-CoffeeScript to compile to any target language through the Solar directive 
+Introduces CS3, a revolutionary data-oriented transformation that enables
+CoffeeScript to compile to any target language through the Solar directive
 system, while maintaining 100% backward compatibility.
 
 ### Key Features:
 - **Data-oriented architecture**: Transforms function-based grammar to pure data
 - **Solar directive system**: 6 universal directives for any language
-- **100x faster parser generation**: 100ms vs 12+ seconds  
+- **100x faster parser generation**: 100ms vs 12+ seconds
 - **Universal compilation**: JavaScript today, Python/WASM/etc tomorrow
 - **100% compatibility**: All 425 tests passing
 
@@ -36,8 +36,8 @@ system, while maintaining 100% backward compatibility.
 - CS2 tests: 1472/1473 passing (expected)
 - Full backward compatibility verified
 
-CS3 operates completely alongside CS2 without interference, providing a 
-foundation for CoffeeScript's evolution into a universal source language 
+CS3 operates completely alongside CS2 without interference, providing a
+foundation for CoffeeScript's evolution into a universal source language
 that can target any platform.
 
 Co-authored-by: Steve Shreeve <steve.shreeve@gmail.com>

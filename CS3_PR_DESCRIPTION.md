@@ -37,7 +37,7 @@ SimpleAssignable: [
 
 ### Build Integration
 - `cake build:parser-cs3` - Build the CS3 parser
-- `cake test:cs3` - Run CS3 test suite  
+- `cake test:cs3` - Run CS3 test suite
 - `cake test:cs2` - Run same tests with CS2 for comparison
 
 ## Technical Achievements
@@ -58,7 +58,7 @@ SimpleAssignable: [
 ### 🎯 100% Test Compatibility
 ```
 Parser:       CS3 (parser-cs3.js - Solar parser)
-Backend:      ES5 (backends/es5/)  
+Backend:      ES5 (backends/es5/)
 Tests Run:    425
 Pass Rate:    100.0%
 ```
