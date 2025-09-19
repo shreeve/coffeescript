@@ -389,7 +389,7 @@ class ES5Backend
     name = @evaluateDirective directive.name, frame, ruleName
     value = @evaluateDirective directive.value, frame, ruleName
     splat = @evaluateDirective directive.splat, frame, ruleName
-    
+
     # Param requires at least a name
     name = new nodes.IdentifierLiteral 'param' unless name
 
@@ -444,7 +444,7 @@ class ES5Backend
   createRegexLiteral: (directive, frame, ruleName) ->
     value = @evaluateDirective directive.value, frame, ruleName
     delimiter = @evaluateDirective directive.delimiter, frame, ruleName
-    
+
     # RegexLiteral expects the full regex string including delimiters
     if value and typeof value is 'string' and value[0] is '/'
       new nodes.RegexLiteral value, {delimiter: delimiter or '/'}
@@ -1415,13 +1415,13 @@ class ES5Backend
       targetRaw = @evaluateDirective directive.add[0], frame, ruleName
       propRaw = @evaluateDirective directive.add[1], frame, ruleName
 
-      targetNode = if targetRaw?.compileToFragments or targetRaw instanceof nodes.Base then targetRaw else @ensureNode targetRaw
+      targetNode = @toNode(targetRaw) or @ensureNode targetRaw
 
       # Handle array of properties
       propNodes = if Array.isArray(propRaw)
-        propRaw.map (p) => if p?.compileToFragments or p instanceof nodes.Base then p else @ensureNode p
+        propRaw.map (p) => @toNode(p) or @ensureNode p
       else
-        propNode = if propRaw?.compileToFragments or propRaw instanceof nodes.Base then propRaw else @ensureNode propRaw
+        propNode = @toNode(propRaw) or @ensureNode propRaw
         [propNode] if propNode?
 
       # Ensure we have valid nodes before proceeding

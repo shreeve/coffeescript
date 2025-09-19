@@ -469,7 +469,6 @@
       value = this.evaluateDirective(directive.value, frame, ruleName);
       splat = this.evaluateDirective(directive.splat, frame, ruleName);
       if (!name) {
-        
         // Param requires at least a name
         name = new nodes.IdentifierLiteral('param');
       }
@@ -548,7 +547,6 @@
       var delimiter, flags, fullRegex, pattern, value;
       value = this.evaluateDirective(directive.value, frame, ruleName);
       delimiter = this.evaluateDirective(directive.delimiter, frame, ruleName);
-      
       // RegexLiteral expects the full regex string including delimiters
       if (value && typeof value === 'string' && value[0] === '/') {
         return new nodes.RegexLiteral(value, {
@@ -1615,15 +1613,11 @@
       if (directive.add != null) {
         targetRaw = this.evaluateDirective(directive.add[0], frame, ruleName);
         propRaw = this.evaluateDirective(directive.add[1], frame, ruleName);
-        targetNode = (targetRaw != null ? targetRaw.compileToFragments : void 0) || targetRaw instanceof nodes.Base ? targetRaw : this.ensureNode(targetRaw);
+        targetNode = this.toNode(targetRaw) || this.ensureNode(targetRaw);
         // Handle array of properties
         propNodes = Array.isArray(propRaw) ? propRaw.map((p) => {
-          if ((p != null ? p.compileToFragments : void 0) || p instanceof nodes.Base) {
-            return p;
-          } else {
-            return this.ensureNode(p);
-          }
-        }) : (propNode = (propRaw != null ? propRaw.compileToFragments : void 0) || propRaw instanceof nodes.Base ? propRaw : this.ensureNode(propRaw), propNode != null ? [propNode] : void 0);
+          return this.toNode(p) || this.ensureNode(p);
+        }) : (propNode = this.toNode(propRaw) || this.ensureNode(propRaw), propNode != null ? [propNode] : void 0);
         if (!((targetNode != null) && (propNodes != null ? propNodes.length : void 0) > 0)) {
           // Ensure we have valid nodes before proceeding
           return null;
