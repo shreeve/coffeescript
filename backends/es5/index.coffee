@@ -16,9 +16,7 @@
 nodes = require '../../coffeescript/nodes'
 
 class ES5Backend
-  constructor: (@options = {}, @nodes = nodes) ->
-    # Allow nodes to be passed in or use the require
-    nodes = @nodes
+  constructor: (@options = {}) ->
     @compileOptions =
       bare: @options.bare ? true
       header: @options.header ? false
