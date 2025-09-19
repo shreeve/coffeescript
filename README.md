@@ -132,7 +132,18 @@ This means:
 
 The CS3 Solar Directive System provides a universal, language-agnostic approach to AST representation using just 4 core directives.
 
+**Key Insight**: These directives are **imperative instructions** to the backend - they tell it what to DO with the data, not what the data IS. This is fundamental to CS3's data-oriented architecture.
+
 ### Core Directives
+
+Each directive is an **action verb** that instructs the backend:
+
+- **`$ast`** → "**Create** an AST node"
+- **`$ary`** → "**Build** an array"
+- **`$ops`** → "**Perform** an operation"
+- **`$use`** → "**Use** this value"
+
+This imperative design makes the transformation pipeline explicit and universal.
 
 #### 1. `$ast` - Create AST Nodes
 
@@ -304,6 +315,7 @@ $ops: 'loop', addBody: [2, 1], postfix: true
 3. **Composability**: Directives combine naturally
 4. **Readability**: Intent is always clear
 5. **Consistency**: Uniform patterns throughout
+6. **Imperative Nature**: Directives are instructions ("do this"), not descriptions ("this is")
 
 ### Grammar Rule Examples
 
@@ -368,7 +380,7 @@ The CS3 Solar Directive System achieves complete AST transformation with minimal
 - **Ultra-compact output** - Single-line rules with efficient `r` function aliasing
 - **Optimized frame construction** - Flattened arrays without redundant wrappers
 
-This architecture enables CoffeeScript 3 to maintain 100% compatibility while providing a clean, maintainable, and extensible foundation for future development. The optimized parser output demonstrates that data-oriented design can be both elegant and efficient.
+This architecture enables CoffeeScript 3 to maintain 100% compatibility while providing a clean, maintainable, and extensible foundation for future development. The imperative directive system makes it crystal clear that we're building **data structures that describe transformations**, not executing code during parsing. This architectural honesty is what enables CS3 to target any backend - the directives are universal instructions that any language can interpret and execute.
 
 ## The Future: Rip
 
