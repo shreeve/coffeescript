@@ -212,6 +212,35 @@ class ES5Backend
     
     ifNode
 
+  createReturn: (directive, frame, ruleName) ->
+    expression = @evaluateDirective directive.expression, frame, ruleName
+    new nodes.Return expression
+
+  createYield: (directive, frame, ruleName) ->
+    expression = @evaluateDirective directive.expression, frame, ruleName
+    from = @evaluateDirective directive.from, frame, ruleName
+    new nodes.Yield expression, from
+
+  createSlice: (directive, frame, ruleName) ->
+    range = @evaluateDirective directive.range, frame, ruleName
+    new nodes.Slice range
+
+  createThrow: (directive, frame, ruleName) ->
+    expression = @evaluateDirective directive.expression, frame, ruleName
+    new nodes.Throw(@ensureNode(expression) or new nodes.Literal 'undefined')
+
+  createAwait: (directive, frame, ruleName) ->
+    expression = @evaluateDirective directive.expression, frame, ruleName
+    new nodes.Await expression
+
+  createYieldFrom: (directive, frame, ruleName) ->
+    expression = @evaluateDirective directive.expression, frame, ruleName
+    new nodes.YieldFrom expression
+
+  createExistence: (directive, frame, ruleName) ->
+    expression = @evaluateDirective directive.expression, frame, ruleName
+    new nodes.Existence expression
+
   # Helper to ensure value is a proper node
   ensureNode: (value) ->
     return null unless value?
@@ -649,53 +678,10 @@ class ES5Backend
             new nodes.Range fromNode, toNode, tag
 
           when 'If', 'if'
-            condition = @evaluateDirective directive.condition, frame, ruleName
-            body = @evaluateDirective directive.body, frame, ruleName
-            elseBody = @evaluateDirective directive.elseBody, frame, ruleName
-            type = @evaluateDirective directive.type, frame, ruleName
-            postfix = @evaluateDirective directive.postfix, frame, ruleName
-
-            # The type will be the string 'unless' from the IF/POST_IF token for unless statements
-
-            bodyNode = @toBlock(body)
-            bodyNode.locationData ?= @defaultLocationData() if bodyNode
-            elseNode = if elseBody then @toBlock(elseBody) else null
-            elseNode.locationData ?= @defaultLocationData() if elseNode
-
-            # Pass the type to the If constructor - it handles 'unless' internally
-            opts = {}
-            opts.type = type if type  # Will be 'unless' for unless statements
-            opts.postfix = postfix if postfix
-            ifNode = new nodes.If condition, bodyNode, opts
-            ifNode.locationData ?= @defaultLocationData()
-            # Use addElse for proper else-if chaining
-            if elseNode
-              elseNode.locationData ?= @defaultLocationData()
-              ifNode.addElse elseNode
-            ifNode
+            @createIf directive, frame, ruleName, 'if'
 
           when 'Unless', 'unless'
-            # Unless is an inverted If
-            condition = @evaluateDirective directive.condition, frame, ruleName
-            body = @evaluateDirective directive.body, frame, ruleName
-            elseBody = @evaluateDirective directive.elseBody, frame, ruleName
-            postfix = @evaluateDirective directive.postfix, frame, ruleName
-
-            bodyNode = @toBlock(body)
-            bodyNode.locationData ?= @defaultLocationData() if bodyNode
-            elseNode = if elseBody then @toBlock(elseBody) else null
-            elseNode.locationData ?= @defaultLocationData() if elseNode
-
-            # Create an If node with type: 'unless' for unless
-            opts = {type: 'unless'}
-            opts.postfix = postfix if postfix
-            ifNode = new nodes.If condition, bodyNode, opts
-            ifNode.locationData ?= @defaultLocationData()
-            # Use addElse for proper else-if chaining
-            if elseNode
-              elseNode.locationData ?= @defaultLocationData()
-              ifNode.addElse elseNode
-            ifNode
+            @createIf directive, frame, ruleName, 'unless'
 
           when 'While'
             condition = @evaluateDirective directive.condition, frame, ruleName
@@ -971,13 +957,10 @@ class ES5Backend
             new nodes.Param name, value, splat
 
           when 'Return'
-            expression = @evaluateDirective directive.expression, frame, ruleName
-            new nodes.Return expression
+            @createReturn directive, frame, ruleName
 
           when 'Yield'
-            expression = @evaluateDirective directive.expression, frame, ruleName
-            from = @evaluateDirective directive.from, frame, ruleName
-            new nodes.Yield expression, from
+            @createYield directive, frame, ruleName
 
           when 'Class'
             variable = @evaluateDirective directive.variable, frame, ruleName
@@ -987,9 +970,7 @@ class ES5Backend
             new nodes.Class variable, parent, bodyNode
 
           when 'Slice'
-            # Handle array/string slicing operations
-            range = @evaluateDirective directive.range, frame, ruleName
-            new nodes.Slice range
+            @createSlice directive, frame, ruleName
 
           when 'Super'
             # Handle Super nodes which may have accessor for super.method() calls
@@ -1128,9 +1109,7 @@ class ES5Backend
             new nodes.PassthroughLiteral value, {here: directive.here, generated: directive.generated}
 
           when 'Throw'
-            expression = @evaluateDirective directive.expression, frame, ruleName
-            # Throw needs a valid expression
-            new nodes.Throw (expression or new nodes.Literal 'undefined')
+            @createThrow directive, frame, ruleName
 
           when 'Splat'
             # Check for 'name' or 'body' field (@ directive uses 'body')
@@ -1169,8 +1148,7 @@ class ES5Backend
             new nodes.ExportNamedDeclaration clause, source
 
           when 'Existence'
-            expression = @evaluateDirective directive.expression, frame, ruleName
-            new nodes.Existence expression
+            @createExistence directive, frame, ruleName
 
           when 'Loop'
             body = @evaluateDirective directive.body, frame, ruleName
@@ -1298,12 +1276,10 @@ class ES5Backend
             new nodes.Finally bodyNode
 
           when 'Await'
-            expression = @evaluateDirective directive.expression, frame, ruleName
-            new nodes.Await expression
+            @createAwait directive, frame, ruleName
 
           when 'YieldFrom'
-            expression = @evaluateDirective directive.expression, frame, ruleName
-            new nodes.YieldFrom expression
+            @createYieldFrom directive, frame, ruleName
 
           when 'ThisLiteral', 'This'
             @createThisLiteral()
