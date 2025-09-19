@@ -934,20 +934,11 @@ class ES5Backend
               name.locationData = @defaultLocationData()
 
             # For destructured params with Obj, ensure it's not marked as generated
-            # and mark any {@x, @y} inner properties as this-params
+            # TODO: Handle {@x, @y} destructuring - this is complex and needs more work
             if name instanceof nodes.Obj
               name.generated = false
-              if Array.isArray(name.properties)
-                for prop in name.properties when prop?
-                  if prop.variable instanceof nodes.Value and prop.variable.base instanceof nodes.ThisLiteral
-                    prop.variable.this = true
             else if name instanceof nodes.Value and name.base instanceof nodes.Obj
-              obj = name.base
-              obj.generated = false
-              if Array.isArray(obj.properties)
-                for prop in obj.properties when prop?
-                  if prop.variable instanceof nodes.Value and prop.variable.base instanceof nodes.ThisLiteral
-                    prop.variable.this = true
+              name.base.generated = false
 
             new nodes.Param name, value, splat
 
