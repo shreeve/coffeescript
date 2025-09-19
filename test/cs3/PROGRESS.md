@@ -18,7 +18,7 @@ All 32 test files pass completely:
 ## Key Implementation Features
 
 - **Variable Context System** - Handles `$var` and `$use` directives for complex variable binding
-- **Loop Variable Management** - Unique iterator variables prevent nested loop collisions  
+- **Loop Variable Management** - Unique iterator variables prevent nested loop collisions
 - **@ Parameter Destructuring** - Proper transformation to CS2-style nodes
 - **Super Call Handling** - Complete support for super in all contexts
 - **Comprehensive Node Support** - All CoffeeScript AST node types fully implemented
