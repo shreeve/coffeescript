@@ -704,7 +704,7 @@ exports.Block = class Block extends Base
       if declars or assigns
         fragments.push @makeCode '\n' if i
         if o.es6
-          # In ES6, all hoisted variables use 'let' since CoffeeScript hoists declarations
+          # In ES6, all hoisted variables must use 'let' (const requires initialization)
           declaredVariables = scope.declaredVariables()
 
           if declaredVariables.length > 0
@@ -3631,12 +3631,20 @@ exports.Assign = class Assign extends Base
         compiledName.push @makeCode ']'
       return compiledName.concat @makeCode(': '), val
 
-    # Check if this is a const declaration opportunity in ES6
-    if o.es6 and @canBeConst and not @context and @variable.base?.isDeclaration
-      # This variable is never reassigned - use const inline
-      answer = [@makeCode('const ')].concat compiledName, @makeCode(' = '), val
-      # Mark as already declared to prevent hoisting
-      @variable.base.alreadyDeclared = yes
+    # In ES6, use const for function and class assignments (they're immutable)
+    if o.es6 and not @context and @variable.base?.isDeclaration and 
+       @variable.base instanceof IdentifierLiteral and o.level <= LEVEL_LIST
+      # Check if we're assigning a function or class
+      isFunction = @value instanceof Code or @value instanceof Class
+      if isFunction and not o.scope.parent
+        # Use const for top-level function/class declarations
+        answer = [@makeCode('const ')].concat compiledName, @makeCode(' = '), val
+        # Mark variable as declared inline to avoid hoisting
+        varName = @variable.base.value
+        variable = o.scope.getVariable(varName)
+        variable.declaredInline = yes if variable
+      else
+        answer = compiledName.concat @makeCode(" #{ @context or '=' } "), val
     else
       answer = compiledName.concat @makeCode(" #{ @context or '=' } "), val
 

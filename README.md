@@ -123,12 +123,13 @@ The CS3 implementation is **complete and optimized**:
 CS3 defaults to modern ES6+ JavaScript output with full support for:
 
 ### Variable Declarations
-- **`let` instead of `var`** - All variables use `let` for proper block scoping
+- **`const` for functions and classes** - Function and class declarations use `const` for immutability
+- **`let` instead of `var`** - All other variables use `let` for proper block scoping
 - **Block scoping** - Variables respect block boundaries
 
-### Modern JavaScript Features  
+### Modern JavaScript Features
 - **ES6 Classes** - Native `class` syntax with constructors and methods
-- **Arrow functions** - Fat arrow methods compile to ES6 arrow functions  
+- **Arrow functions** - Fat arrow methods compile to ES6 arrow functions
 - **Template literals** - Backtick strings with `${interpolation}`
 - **`for...of` loops** - Clean iteration over arrays and iterable objects
   ```javascript

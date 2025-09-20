@@ -134,7 +134,7 @@ Return the list of variables first declared in this scope.
 
       declaredVariables: ->
         # Exclude variables declared inline as const
-        (v.name for v in @variables when v.type is 'var' and not v.alreadyDeclared).sort()
+        (v.name for v in @variables when v.type is 'var' and not v.declaredInline).sort()
 
 Return the list of assignments that are supposed to be made at the top
 of this scope.
