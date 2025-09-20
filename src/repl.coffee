@@ -197,7 +197,7 @@ module.exports =
 
     CoffeeScript.register()
     process.argv = ['coffee'].concat process.argv[2..]
-    
+
     # Update prompt if CS3 mode is enabled
     if opts.cs3
       replDefaults.prompt = 'coffee:cs3> '
