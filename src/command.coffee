@@ -286,7 +286,7 @@ directivesCS3 = (code, options={}) ->
     console.error "[CS3 No Root found]"
   null
 
-compileCS3 = (code, options={}) ->
+exports.compileCS3 = compileCS3 = (code, options={}) ->
   throw new Error 'CS3 backend not available' unless ES5Backend? and parserCS3?
   tokens = tokensCS3 code, options
   i = 0
@@ -400,6 +400,7 @@ exports.run = ->
   opts.prelude = makePrelude opts.require       if opts.require
   replCliOpts.prelude = opts.prelude
   replCliOpts.transpile = opts.transpile
+  replCliOpts.cs3 = opts['cs3']
   return forkNode()                             if opts.nodejs
   return usage()                                if opts.help
   return version()                              if opts.version
