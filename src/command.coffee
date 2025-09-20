@@ -336,7 +336,6 @@ SWITCHES = [
   [      '--ast',               'generate an abstract syntax tree of nodes']
   ['-b', '--bare',              'compile without a top-level function wrapper']
   ['-c', '--compile',           'compile to JavaScript and save as .js files']
-  [      '--es6',               'compile to ES6 JavaScript instead of ES5']
   ['-e', '--eval',              'pass a string from the command line as input']
   ['-h', '--help',              'display this help message']
   ['-i', '--interactive',       'run an interactive CoffeeScript REPL']
@@ -353,11 +352,11 @@ SWITCHES = [
   ['-s', '--stdio',             'listen for and compile scripts over stdio']
   ['-t', '--transpile',         'pipe generated JavaScript through Babel']
   [      '--tokens',            'print out the tokens that the lexer/rewriter produce']
+  [      '--cs3',               'compile with CS3 pipeline']
   [      '--cs3-tokens',        'print CS3 lexer tokens (via cs3 lexer)']
   [      '--cs3-ast',           'print CS3 AST data nodes (Solar directives)']
   [      '--cs3-trace',         'enable debug tracing for CS3 parser reductions']
   [      '--format [FORMAT]',   'output format for --cs3-ast (json, yaml)']
-  [      '--cs3',               'compile with CS3 pipeline']
   ['-v', '--version',           'display the version number']
   ['-w', '--watch',             'watch scripts for changes and rerun commands']
 ]
@@ -831,7 +830,6 @@ compileOptions = (filename, base) ->
     filename: filename
     literate: opts.literate or helpers.isLiterate(filename)
     bare: opts.bare
-    es6: opts.es6
     header: opts.compile and not opts['no-header']
     transpile: opts.transpile
     sourceMap: opts.map
