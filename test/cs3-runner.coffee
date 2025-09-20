@@ -19,7 +19,7 @@ catch err
   process.exit 1
 
 try
-  ES5Backend = require '../lib/backends/es5'
+  ES5Backend = require '../lib/coffeescript/es6'
 catch err
   console.error "ES5 backend not available: #{err.message}"
   process.exit 1
@@ -166,7 +166,7 @@ console.log "#{bold}CS3 Parser Summary:#{reset}"
 console.log "#{bold}========================================#{reset}\n"
 console.log "Parser:       CS3 (syntax.coffee -> parser-cs3.js) [Solar parser]"
 backendMode = if '--es6' in process.argv then "ES5 (ES6 mode)" else "ES5"
-console.log "Backend:      #{backendMode} (backends/es5/)"
+console.log "Backend:      #{backendMode} (ES6 backend)"
 console.log "Pass Rate:    #{successRate}%"
 
 process.exit(if failed > 0 then 1 else 0)

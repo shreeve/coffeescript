@@ -76,16 +76,8 @@ buildSources = (callback) ->
   files = fs.readdirSync 'src'
   files = ('src/' + file for file in files when file.match(/\.(lit)?coffee$/) and file not in ['grammar.coffee', 'syntax.coffee'])
 
-  # Compile the main source files
-  run ['-c', '-o', 'lib/coffeescript'].concat(files), ->
-    # Build CS3 ES5 backend
-    if fs.existsSync 'backends/es5/index.coffee'
-      console.log "Building CS3 ES5 backend..."
-      # Ensure output directory exists
-      fs.mkdirSync 'lib/backends/es5', {recursive: true}
-      run ['-c', '-o', 'lib/backends/es5', 'backends/es5/index.coffee'], callback
-    else
-      callback?()
+  # Compile all source files (including es6.coffee)
+  run ['-c', '-o', 'lib/coffeescript'].concat(files), callback
 
 build = (callback) ->
   # Build both parsers (super fast with Solar - ~100ms each)

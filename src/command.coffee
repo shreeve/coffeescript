@@ -16,7 +16,7 @@ CoffeeScript   = require './'
 # CS3 plumbing (lexer/parser/backends) for new CLI switches
 {Lexer}        = require './lexer'
 try parserCS3  = require './parser-cs3' catch err then parserCS3 = null
-try ES5Backend = require '../backends/es5/index' catch err then ES5Backend = null
+try ES5Backend = require './es6' catch err then ES5Backend = null
 
 class CS3DebugBackend
   constructor: (@options = {}) ->

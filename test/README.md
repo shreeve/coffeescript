@@ -45,7 +45,7 @@ test "description", ->
 The test runner (`cs3-runner.coffee`) coordinates:
 
 1. **Parser**: CS3 Solar parser (`lib/coffeescript/parser-cs3.js`)
-2. **Backend**: ES5 backend (`backends/es5/index.coffee`) - 1,587 lines
+2. **Backend**: ES6 backend (`src/es6.coffee`) - 1,629 lines
 3. **Compilation**: Transforms CS3 → Solar directives → JavaScript
 
 ## Performance
@@ -75,7 +75,7 @@ To debug a specific test:
 cat > debug.coffee << 'EOF'
 {Lexer} = require '../../lib/coffeescript/lexer'
 parserCS3 = require '../../lib/coffeescript/parser-cs3'
-ES5Backend = require '../../lib/backends/es5'
+ES5Backend = require '../../lib/coffeescript/es6'
 
 code = '''
 # Your test code here
