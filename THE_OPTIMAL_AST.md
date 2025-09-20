@@ -10,7 +10,7 @@ S-expressions (symbolic expressions) are the simplest possible universal data st
 
 ```lisp
 ; Only TWO constructs:
-atom              ; 42, x, "hello"  
+atom              ; 42, x, "hello"
 (operator args)   ; (+ 1 2), (if test then else)
 ```
 
@@ -58,7 +58,7 @@ CS3 directives ARE s-expressions, just in JSON:
 (assign x (+ y 1))
 
 // CS3 directive (JSON s-expression!)
-{$ast: "Assign", 
+{$ast: "Assign",
  variable: "x",
  value: {$ast: "Op", op: "+", args: ["y", 1]}}
 ```
@@ -99,7 +99,7 @@ CS3's directives are that ONE data structure!
 
 ```javascript
 // JavaScript AST (Babel): ~140 node types
-// TypeScript AST: ~300+ node types  
+// TypeScript AST: ~300+ node types
 // CS3 Directives: Just objects with $ast field!
 ```
 
@@ -126,7 +126,7 @@ This insight suggests Rip could:
 ### Option 1: Pure S-expressions
 ```lisp
 (= x 42)
-(if (> x 10) 
+(if (> x 10)
   (print "big")
   (print "small"))
 ```
@@ -151,7 +151,7 @@ Keep CS3's approach - it's already optimal!
 
 S-expressions are to programming languages what:
 - **E = mc²** is to physics
-- **f(x) = x** is to functions  
+- **f(x) = x** is to functions
 - **0 and 1** are to computing
 
 They represent the **irreducible essence** of computation.
