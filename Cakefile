@@ -58,7 +58,7 @@ buildParserCS2 = ->
     operators: grammar.operators
   {Generator} = require './solar.coffee'
   parser = Generator(language).generate(compress: !true)
-  fs.writeFileSync 'lib/coffeescript/parser.js', parser
+  fs.writeFileSync 'lib/coffeescript/parser-cs2.js', parser
 
 # Build the CS3 parser from syntax.coffee using Solar
 buildParserCS3 = ->
@@ -76,16 +76,8 @@ buildSources = (callback) ->
   files = fs.readdirSync 'src'
   files = ('src/' + file for file in files when file.match(/\.(lit)?coffee$/) and file not in ['grammar.coffee', 'syntax.coffee'])
 
-  # Compile the main source files
-  run ['-c', '-o', 'lib/coffeescript'].concat(files), ->
-    # Build CS3 ES5 backend
-    if fs.existsSync 'backends/es5/index.coffee'
-      console.log "Building CS3 ES5 backend..."
-      # Ensure output directory exists
-      fs.mkdirSync 'lib/backends/es5', {recursive: true}
-      run ['-c', '-o', 'lib/backends/es5', 'backends/es5/index.coffee'], callback
-    else
-      callback?()
+  # Compile all source files (including es6.coffee)
+  run ['-c', '-o', 'lib/coffeescript'].concat(files), callback
 
 build = (callback) ->
   # Build both parsers (super fast with Solar - ~100ms each)

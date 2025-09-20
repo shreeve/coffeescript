@@ -16,7 +16,7 @@ CoffeeScript   = require './'
 # CS3 plumbing (lexer/parser/backends) for new CLI switches
 {Lexer}        = require './lexer'
 try parserCS3  = require './parser-cs3' catch err then parserCS3 = null
-try ES5Backend = require '../backends/es5/index' catch err then ES5Backend = null
+try ES5Backend = require './es6' catch err then ES5Backend = null
 
 class CS3DebugBackend
   constructor: (@options = {}) ->
@@ -286,7 +286,7 @@ directivesCS3 = (code, options={}) ->
     console.error "[CS3 No Root found]"
   null
 
-compileCS3 = (code, options={}) ->
+exports.compileCS3 = compileCS3 = (code, options={}) ->
   throw new Error 'CS3 backend not available' unless ES5Backend? and parserCS3?
   tokens = tokensCS3 code, options
   i = 0
@@ -352,11 +352,11 @@ SWITCHES = [
   ['-s', '--stdio',             'listen for and compile scripts over stdio']
   ['-t', '--transpile',         'pipe generated JavaScript through Babel']
   [      '--tokens',            'print out the tokens that the lexer/rewriter produce']
+  [      '--cs3',               'compile with CS3 pipeline']
   [      '--cs3-tokens',        'print CS3 lexer tokens (via cs3 lexer)']
   [      '--cs3-ast',           'print CS3 AST data nodes (Solar directives)']
   [      '--cs3-trace',         'enable debug tracing for CS3 parser reductions']
   [      '--format [FORMAT]',   'output format for --cs3-ast (json, yaml)']
-  [      '--cs3',               'compile with CS3 pipeline']
   ['-v', '--version',           'display the version number']
   ['-w', '--watch',             'watch scripts for changes and rerun commands']
 ]
@@ -400,6 +400,7 @@ exports.run = ->
   opts.prelude = makePrelude opts.require       if opts.require
   replCliOpts.prelude = opts.prelude
   replCliOpts.transpile = opts.transpile
+  replCliOpts.cs3 = opts['cs3']
   return forkNode()                             if opts.nodejs
   return usage()                                if opts.help
   return version()                              if opts.version

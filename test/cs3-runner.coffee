@@ -19,7 +19,7 @@ catch err
   process.exit 1
 
 try
-  ES5Backend = require '../lib/backends/es5'
+  ES5Backend = require '../lib/coffeescript/es6'
 catch err
   console.error "ES5 backend not available: #{err.message}"
   process.exit 1
@@ -72,6 +72,9 @@ global.deepEqual = (actual, expected) ->
 
 # ACTUAL CS3 compilation using parser-cs3 and ES5 backend
 compileCS3Real = (code, options = {}) ->
+  # Add ES6 flag from command line arguments if present
+  options.es6 = true if '--es6' in process.argv
+
   # Tokenize using CS3 lexer
   lexer = new Lexer()
   tokens = lexer.tokenize code, options
@@ -162,7 +165,7 @@ console.log "\n#{bold}========================================#{reset}"
 console.log "#{bold}CS3 Parser Summary:#{reset}"
 console.log "#{bold}========================================#{reset}\n"
 console.log "Parser:       CS3 (syntax.coffee -> parser-cs3.js) [Solar parser]"
-console.log "Backend:      ES5 (backends/es5/)"
+console.log "Backend:      ES6 (AST data nodes)"
 console.log "Pass Rate:    #{successRate}%"
 
 process.exit(if failed > 0 then 1 else 0)

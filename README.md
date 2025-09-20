@@ -118,6 +118,42 @@ The CS3 implementation is **complete and optimized**:
 - Plugin system for custom backends
 - Performance benchmarking suite
 
+## ES6 Output Support
+
+CS3 defaults to modern ES6+ JavaScript output with full support for:
+
+### Variable Declarations
+- **`const` for functions and classes** - Function and class declarations use `const` for immutability
+- **`let` instead of `var`** - All other variables use `let` for proper block scoping
+- **Block scoping** - Variables respect block boundaries
+
+### Modern JavaScript Features
+- **ES6 Classes** - Native `class` syntax with constructors and methods
+- **Arrow functions** - Fat arrow methods compile to ES6 arrow functions
+- **Template literals** - Backtick strings with `${interpolation}`
+- **`for...of` loops** - Clean iteration over arrays and iterable objects
+  ```javascript
+  // CS3 compiles to:
+  for (x of array) { ... }
+  for (key of Object.keys(obj)) { ... }
+  ```
+
+### Destructuring & Spread
+- **Object destructuring** - `{a, b} = obj`
+- **Array destructuring** - `[first, ...rest] = array`
+- **Spread operator** - Works in arrays, objects, and function calls
+
+### Async Programming
+- **Async/await** - First-class support for async functions
+- **Promises** - Full promise chain support
+
+### Usage
+The ES6 backend is enabled by default in CS3. For explicit control:
+```bash
+coffee --cs3 --es6 script.coffee  # Explicit ES6 output
+coffee --cs3 script.coffee        # Default (ES6)
+```
+
 ## Key Innovation
 
 CS3's approach is **revolutionary**: **Solar directives** provide universal, language-agnostic AST representation!
