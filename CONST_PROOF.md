@@ -26,7 +26,7 @@ coffee -c --cs3 script.coffee
 ```coffee
 class MyClass
   constructor: ->
-  
+
 add = (a, b) -> a + b
 
 x = 5
