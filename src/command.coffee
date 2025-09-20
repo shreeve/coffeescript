@@ -336,6 +336,7 @@ SWITCHES = [
   [      '--ast',               'generate an abstract syntax tree of nodes']
   ['-b', '--bare',              'compile without a top-level function wrapper']
   ['-c', '--compile',           'compile to JavaScript and save as .js files']
+  [      '--es6',               'compile to ES6 JavaScript instead of ES5']
   ['-e', '--eval',              'pass a string from the command line as input']
   ['-h', '--help',              'display this help message']
   ['-i', '--interactive',       'run an interactive CoffeeScript REPL']
@@ -830,6 +831,7 @@ compileOptions = (filename, base) ->
     filename: filename
     literate: opts.literate or helpers.isLiterate(filename)
     bare: opts.bare
+    es6: opts.es6
     header: opts.compile and not opts['no-header']
     transpile: opts.transpile
     sourceMap: opts.map

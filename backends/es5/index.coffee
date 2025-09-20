@@ -19,6 +19,7 @@ class ES5Backend
   constructor: (@options = {}) ->
     @compileOptions =
       bare: @options.bare ? true
+      es6: @options.es6 ? true  # Default to ES6 for CS3!
       header: @options.header ? false
       sourceMap: @options.sourceMap ? false
       inlineMap: @options.inlineMap ? false
@@ -37,6 +38,10 @@ class ES5Backend
       result = node.compile @compileOptions
       return result or ''
 
+    # For ES6 mode with data nodes, do variable analysis first
+    if @compileOptions.es6 and node? and typeof node is 'object' and not node.compile
+      @variableInfo = @analyzeVariables(node)
+    
     # Otherwise, convert via legacy dataToClass method
     classNode = @dataToClass node
     return '' unless classNode?
@@ -53,6 +58,47 @@ class ES5Backend
     last_line_exclusive: 0
     last_column_exclusive: 0
     range: [0, 0]
+
+  # Analyze variables in the directive tree for const/let determination
+  analyzeVariables: (directive, info = {declarations: {}, assignments: {}, scopes: []}) ->
+    return info unless directive?
+    
+    # Handle arrays
+    if Array.isArray directive
+      for item in directive
+        @analyzeVariables item, info
+      return info
+    
+    # Handle objects/directives
+    if typeof directive is 'object'
+      # Check for variable assignments
+      if directive.type is 'Assign'
+        varName = directive.variable?.base?.value
+        if varName and typeof varName is 'string'
+          if directive.context  # Compound assignment (+=, -=, etc.)
+            info.assignments[varName] = (info.assignments[varName] or 0) + 1
+          else if info.declarations[varName]
+            # Reassignment
+            info.assignments[varName] = (info.assignments[varName] or 0) + 1
+          else
+            # First assignment (declaration)
+            info.declarations[varName] = true
+      
+      # Check for loop variables
+      else if directive.type is 'For'
+        # Loop variables are always mutable in CoffeeScript due to hoisting
+        if directive.name?.value
+          info.declarations[directive.name.value] = true
+          info.assignments[directive.name.value] = 1  # Mark as reassigned
+        if directive.index?.value
+          info.declarations[directive.index.value] = true  
+          info.assignments[directive.index.value] = 1  # Mark as reassigned
+      
+      # Recursively analyze all properties
+      for key, value of directive when not key.startsWith '$pos'
+        @analyzeVariables value, info
+    
+    info
 
   # Generate unique variable names for loop iterators
   getUniqueLoopVar: ->
@@ -771,8 +817,19 @@ class ES5Backend
       options = {}
       if directive.originalContext?
         options.originalContext = @evaluateDirective directive.originalContext, frame, ruleName
+      
       # Create the Assign node with the correct context for compound assignments
-      new nodes.Assign variable, value, context, options
+      assignNode = new nodes.Assign variable, value, context, options
+      
+      # For ES6, mark if this variable can be const based on our analysis
+      if @compileOptions.es6 and @variableInfo and variable instanceof nodes.Value
+        varName = variable.base?.value
+        if varName and typeof varName is 'string'
+          # Variable can be const if it's declared but never reassigned
+          canBeConst = @variableInfo.declarations[varName] and not @variableInfo.assignments[varName]
+          assignNode.canBeConst = canBeConst
+      
+      assignNode
 
   # Helper to ensure value is a proper node
   ensureNode: (value) ->
