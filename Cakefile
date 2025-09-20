@@ -58,7 +58,7 @@ buildParserCS2 = ->
     operators: grammar.operators
   {Generator} = require './solar.coffee'
   parser = Generator(language).generate(compress: !true)
-  fs.writeFileSync 'lib/coffeescript/parser.js', parser
+  fs.writeFileSync 'lib/coffeescript/parser-cs2.js', parser
 
 # Build the CS3 parser from syntax.coffee using Solar
 buildParserCS3 = ->

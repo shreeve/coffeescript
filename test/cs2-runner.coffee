@@ -118,7 +118,7 @@ else
 console.log "\n#{bold}========================================#{reset}"
 console.log "#{bold}CS2 Parser Summary:#{reset}"
 console.log "#{bold}========================================#{reset}\n"
-console.log "Parser:       CS2 (grammar.coffee -> parser.js) [Solar parser]"
+console.log "Parser:       CS2 (grammar.coffee -> parser-cs2.js) [Solar parser]"
 console.log "Backend:      ES5 (AST instances)"
 console.log "Pass Rate:    #{successRate}%"
 
