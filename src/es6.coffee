@@ -18,7 +18,7 @@ nodes = require './nodes'
 class ES5Backend
   constructor: (@options = {}) ->
     @compileOptions =
-      bare: @options.bare ? true
+      bare: true  # CS3 always outputs bare (no wrapper) - modern JS doesn't need it
       cs3: true  # CS3 always uses ES6 features
       header: @options.header ? false
       sourceMap: @options.sourceMap ? false
