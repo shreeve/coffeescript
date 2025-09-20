@@ -3632,7 +3632,7 @@ exports.Assign = class Assign extends Base
       return compiledName.concat @makeCode(': '), val
 
     # In ES6, use const for function and class assignments (they're immutable)
-    if o.es6 and not @context and @variable.base?.isDeclaration and 
+    if o.es6 and not @context and @variable.base?.isDeclaration and
        @variable.base instanceof IdentifierLiteral and o.level <= LEVEL_LIST
       # Check if we're assigning a function or class
       isFunction = @value instanceof Code or @value instanceof Class
