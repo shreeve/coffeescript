@@ -703,7 +703,7 @@ exports.Block = class Block extends Base
       assigns = scope.hasAssignments
       if declars or assigns
         fragments.push @makeCode '\n' if i
-        if o.es6
+        if o.cs3
           # In ES6, all hoisted variables must use 'let' (const requires initialization)
           declaredVariables = scope.declaredVariables()
 
@@ -2360,7 +2360,7 @@ exports.Range = class Range extends Base
     idx      = del o, 'index'
     idxName  = del o, 'name'
     namedIndex = idxName and idxName isnt idx
-    varKeyword = if o.es6 then 'let' else 'var'
+    varKeyword = if o.cs3 then 'let' else 'var'
     varPart  =
       if known and not namedIndex
         "#{varKeyword} #{idx} = #{@fromC}"
@@ -3330,7 +3330,7 @@ exports.ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
 
     if @ not instanceof ExportDefaultDeclaration and
        (@clause instanceof Assign or @clause instanceof Class)
-      varKeyword = if o.es6 then 'let' else 'var'
+      varKeyword = if o.cs3 then 'let' else 'var'
       code.push @makeCode "#{varKeyword} "
       @clause.moduleDeclaration = 'export'
 
@@ -3632,7 +3632,7 @@ exports.Assign = class Assign extends Base
       return compiledName.concat @makeCode(': '), val
 
     # In ES6, use const for function and class assignments (they're immutable)
-    if o.es6 and not @context and @variable.base?.isDeclaration and
+    if o.cs3 and not @context and @variable.base?.isDeclaration and
        @variable.base instanceof IdentifierLiteral and o.level <= LEVEL_LIST
       # Check if we're assigning a function or class
       isFunction = @value instanceof Code or @value instanceof Class
@@ -5477,7 +5477,7 @@ exports.For = class For extends While
         namePart   = "#{name} = #{svar}[#{kvar}]"
       if not @object and not @from
         # Use for...of loop in ES6 mode when no step is specified and no index/pattern is needed
-        if o.es6 and not @step and not @index and not @pattern
+        if o.cs3 and not @step and not @index and not @pattern
           forPartFragments = [@makeCode("#{name} of #{svar}")]
           namePart = null  # Don't need to assign inside the loop body
         else
@@ -5515,7 +5515,7 @@ exports.For = class For extends While
 
     varPart = "\n#{idt1}#{namePart};" if namePart
     if @object
-      if o.es6 and not @own
+      if o.cs3 and not @own
         # Use for...of with Object.keys() in ES6 mode
         forPartFragments = [@makeCode("#{kvar} of Object.keys(#{svar})")]
       else

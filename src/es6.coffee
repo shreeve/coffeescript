@@ -19,7 +19,7 @@ class ES5Backend
   constructor: (@options = {}) ->
     @compileOptions =
       bare: @options.bare ? true
-      es6: @options.es6 ? true  # Default to ES6 for CS3!
+      cs3: true  # CS3 always uses ES6 features
       header: @options.header ? false
       sourceMap: @options.sourceMap ? false
       inlineMap: @options.inlineMap ? false
@@ -39,7 +39,7 @@ class ES5Backend
       return result or ''
 
     # For ES6 mode with data nodes, do variable analysis first
-    if @compileOptions.es6 and node? and typeof node is 'object' and not node.compile
+    if @compileOptions.cs3 and node? and typeof node is 'object' and not node.compile
       @variableInfo = @analyzeVariables(node)
 
     # Otherwise, convert via legacy dataToClass method
@@ -821,8 +821,8 @@ class ES5Backend
       # Create the Assign node with the correct context for compound assignments
       assignNode = new nodes.Assign variable, value, context, options
 
-      # For ES6, mark if this variable can be const based on our analysis
-      if @compileOptions.es6 and @variableInfo and variable instanceof nodes.Value
+      # For CS3, mark if this variable can be const based on our analysis
+      if @compileOptions.cs3 and @variableInfo and variable instanceof nodes.Value
         varName = variable.base?.value
         if varName and typeof varName is 'string'
           # Variable can be const if it's declared but never reassigned
