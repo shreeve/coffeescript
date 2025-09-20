@@ -41,7 +41,7 @@ class ES5Backend
     # For ES6 mode with data nodes, do variable analysis first
     if @compileOptions.es6 and node? and typeof node is 'object' and not node.compile
       @variableInfo = @analyzeVariables(node)
-    
+
     # Otherwise, convert via legacy dataToClass method
     classNode = @dataToClass node
     return '' unless classNode?
@@ -62,13 +62,13 @@ class ES5Backend
   # Analyze variables in the directive tree for const/let determination
   analyzeVariables: (directive, info = {declarations: {}, assignments: {}, scopes: []}) ->
     return info unless directive?
-    
+
     # Handle arrays
     if Array.isArray directive
       for item in directive
         @analyzeVariables item, info
       return info
-    
+
     # Handle objects/directives
     if typeof directive is 'object'
       # Check for variable assignments
@@ -83,7 +83,7 @@ class ES5Backend
           else
             # First assignment (declaration)
             info.declarations[varName] = true
-      
+
       # Check for loop variables
       else if directive.type is 'For'
         # Loop variables are always mutable in CoffeeScript due to hoisting
@@ -91,13 +91,13 @@ class ES5Backend
           info.declarations[directive.name.value] = true
           info.assignments[directive.name.value] = 1  # Mark as reassigned
         if directive.index?.value
-          info.declarations[directive.index.value] = true  
+          info.declarations[directive.index.value] = true
           info.assignments[directive.index.value] = 1  # Mark as reassigned
-      
+
       # Recursively analyze all properties
       for key, value of directive when not key.startsWith '$pos'
         @analyzeVariables value, info
-    
+
     info
 
   # Generate unique variable names for loop iterators
@@ -817,10 +817,10 @@ class ES5Backend
       options = {}
       if directive.originalContext?
         options.originalContext = @evaluateDirective directive.originalContext, frame, ruleName
-      
+
       # Create the Assign node with the correct context for compound assignments
       assignNode = new nodes.Assign variable, value, context, options
-      
+
       # For ES6, mark if this variable can be const based on our analysis
       if @compileOptions.es6 and @variableInfo and variable instanceof nodes.Value
         varName = variable.base?.value
@@ -828,7 +828,7 @@ class ES5Backend
           # Variable can be const if it's declared but never reassigned
           canBeConst = @variableInfo.declarations[varName] and not @variableInfo.assignments[varName]
           assignNode.canBeConst = canBeConst
-      
+
       assignNode
 
   # Helper to ensure value is a proper node
