@@ -166,7 +166,7 @@ test "requiring 'CoffeeScript' doesn't change `Error.prepareStackTrace`", ->
     # executing without indirection.
     proc = spawn 'node', [
       '--eval', """
-        require('../lib/coffeescript/coffeescript.js');
+        require('./lib/coffeescript/coffeescript.js');
         process.stdout.write(Error.prepareStackTrace === undefined ? 'unused' : 'defined');
       """
     ]
