@@ -5,7 +5,7 @@
   // the syntax tree into a string of JavaScript code, call `compile()` on the root.
 
 // Import the helpers we plan to use.
-var HEREGEX_OMIT, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, NEGATE, NO, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, SwitchCase, TAB, THIS, TRAILING_BLANK_LINE, UTILITIES, YES, astAsBlockIfNeeded, emptyExpressionLocationData, extractSameLineLocationDataFirst, extractSameLineLocationDataLast, fragmentsToText, greater, hasLineComments, indentInitial, isAstLocGreater, isLiteralArguments, isLiteralThis, isLocationDataEndGreater, isLocationDataStartGreater, jisonLocationDataToAstLocationData, lesser, makeDelimitedLiteral, moveComments, multident, shouldCacheOrIsAssignable, sniffDirectives, unfoldSoak, unshiftAfterComments, utility, zeroWidthLocationDataFromEndLocation,
+var HEREGEX_OMIT, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, NEGATE, NO, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, SwitchCase, TAB, THIS, TRAILING_BLANK_LINE, UTILITIES, YES, astAsBlockIfNeeded, emptyExpressionLocationData, extractSameLineLocationDataFirst, extractSameLineLocationDataLast, fragmentsToText, greater, hasLineComments, indentInitial, isAstLocGreater, isLiteralArguments, isLiteralThis, isLocationDataEndGreater, isLocationDataStartGreater, lesser, makeDelimitedLiteral, moveComments, multident, shouldCacheOrIsAssignable, sniffDirectives, unfoldSoak, unshiftAfterComments, utility, zeroWidthLocationDataFromEndLocation,
   indexOf = [].indexOf,
   splice = [].splice,
   slice1 = [].slice;
@@ -9379,7 +9379,7 @@ export var mergeAstLocationData = function(nodeA, nodeB, {justLeading, justEndin
 };
 
 // Convert node class location data to Babel-style location data
-exports.jisonLocationDataToAstLocationData = jisonLocationDataToAstLocationData = function({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) {
+export var jisonLocationDataToAstLocationData = function({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) {
   return {
     loc: {
       start: {
