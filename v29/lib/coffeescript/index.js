@@ -30,7 +30,6 @@ CoffeeScript = Object.assign({}, CoffeeScriptCore, {
     compiled = CoffeeScriptCore.compile(code, Object.assign({
       bare: true
     }, options));
-    
     // Use eval to execute the compiled code
     func = eval;
     return func((ref = compiled.js) != null ? ref : compiled);

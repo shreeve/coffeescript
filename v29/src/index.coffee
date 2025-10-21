@@ -19,7 +19,7 @@ CoffeeScript = Object.assign {}, CoffeeScriptCore,
     # Simplified eval for compatibility
     return unless code = code.trim()
     compiled = CoffeeScriptCore.compile code, Object.assign({bare: true}, options)
-    
+
     # Use eval to execute the compiled code
     func = eval
     return func(compiled.js ? compiled)

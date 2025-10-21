@@ -20,7 +20,6 @@ export var resolve = function(specifier, context, nextResolve) {
       shortCircuit: true
     };
   }
-  
   // Pass through all other imports
   return nextResolve(specifier, context);
 };
@@ -41,7 +40,6 @@ export var load = function(url, context, nextLoad) {
       shortCircuit: true
     };
   }
-  
   // Pass through all other files
   return nextLoad(url, context);
 };

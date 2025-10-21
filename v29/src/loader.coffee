@@ -16,7 +16,7 @@ export resolve = (specifier, context, nextResolve) ->
       format: 'module'
       shortCircuit: true
     }
-  
+
   # Pass through all other imports
   nextResolve specifier, context
 
@@ -28,12 +28,12 @@ export load = (url, context, nextLoad) ->
     compiled = CoffeeScript.compile source,
       bare: true
       filename: url
-    
+
     return {
       format: 'module'
       source: compiled
       shortCircuit: true
     }
-  
+
   # Pass through all other files
   nextLoad url, context
