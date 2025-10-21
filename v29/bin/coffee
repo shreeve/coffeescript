@@ -1,0 +1,4 @@
+#!/usr/bin/env node --no-warnings
+
+import { run } from '../lib/coffeescript/command.js';
+run();
