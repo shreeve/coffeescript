@@ -1,7 +1,6 @@
 # Basic tests for CoffeeScript v29
-# Tests fundamental language features using our simple test framework
+# No imports needed - runner provides test, code, fail
 
-# Test runtime behavior - code executes and returns expected value
 test 'basic arithmetic', '''
   2 + 2
 ''', 4
