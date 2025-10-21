@@ -30,10 +30,10 @@
     "lib"
   ],
   "scripts": {
-    "parser":  "coffee ../solar-es6.coffee -o lib/coffeescript/parser.js src/grammar.coffee",
-    "build":   "coffee -c -o lib/coffeescript src/*.coffee",
-    "test":    "coffee test/runner.coffee",
-    "version": "coffee --version"
+    "parser":  "./bin/coffee ../solar-es6.coffee -o lib/coffeescript/parser.js src/grammar.coffee",
+    "build":   "./bin/coffee -c -o lib/coffeescript src/*.coffee",
+    "test":    "./bin/coffee test/runner.coffee",
+    "version": "./bin/coffee coffee --version"
   },
   "homepage": "https://coffeescript.org",
   "bugs": "https://github.com/jashkenas/coffeescript/issues",
