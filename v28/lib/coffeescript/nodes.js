@@ -4400,7 +4400,10 @@
           }
         }
         if (this.variable) {
-          node = new Assign(this.variable, node, null, {moduleDeclaration: this.moduleDeclaration});
+          // For export default class, don't create assignment
+          if (!this.exportDefault) {
+            node = new Assign(this.variable, node, null, {moduleDeclaration: this.moduleDeclaration});
+          }
         }
         this.compileNode = this.compileClassDeclaration;
         try {
@@ -5021,7 +5024,7 @@
 
   exports.ImportDeclaration = ImportDeclaration = class ImportDeclaration extends ModuleDeclaration {
     compileNode(o) {
-      var code, ref1;
+      var cleanPath, code, ref1, sourcePath;
       this.checkScope(o, 'import');
       o.importedSymbols = [];
       code = [];
@@ -5033,8 +5036,24 @@
         if (this.clause !== null) {
           code.push(this.makeCode(' from '));
         }
-        code.push(this.makeCode(this.source.value));
-        if (this.assertions != null) {
+        // Add .js extension to relative imports (not packages or files with extensions)
+        sourcePath = this.source.value;
+        // Remove quotes from the source path for processing
+        cleanPath = sourcePath.replace(/^['"`]|['"`]$/g, '');
+        // Add .js extension for relative paths without extension
+        if (cleanPath.match(/^\.\.?\//) && !cleanPath.match(/\.\w+$/)) {
+          // Add .js before the closing quote
+          sourcePath = sourcePath.replace(/(['"`])$/, ".js$1");
+        }
+        // Add import assertion for JSON files
+        if (cleanPath.match(/\.json$/i)) {
+          this.jsonImport = true;
+        }
+        code.push(this.makeCode(sourcePath));
+        // Handle import assertions (including JSON)
+        if (this.jsonImport) {
+          code.push(this.makeCode(' with { type: "json" }'));
+        } else if (this.assertions != null) {
           code.push(this.makeCode(' assert '));
           code.push(...this.assertions.compileToFragments(o));
         }
@@ -5103,7 +5122,7 @@
 
   exports.ExportDeclaration = ExportDeclaration = class ExportDeclaration extends ModuleDeclaration {
     compileNode(o) {
-      var code, ref1;
+      var cleanPath, code, ref1, sourcePath;
       this.checkScope(o, 'export');
       this.checkForAnonymousClassExport();
       code = [];
@@ -5115,13 +5134,23 @@
         code.push(this.makeCode('var '));
         this.clause.moduleDeclaration = 'export';
       }
+      // For export default class, don't create assignment
+      if (this instanceof ExportDefaultDeclaration && this.clause instanceof Class) {
+        this.clause.exportDefault = true;
+      }
       if ((this.clause.body != null) && this.clause.body instanceof Block) {
         code = code.concat(this.clause.compileToFragments(o, LEVEL_TOP));
       } else {
         code = code.concat(this.clause.compileNode(o));
       }
       if (((ref1 = this.source) != null ? ref1.value : void 0) != null) {
-        code.push(this.makeCode(` from ${this.source.value}`));
+        sourcePath = this.source.value;
+        cleanPath = sourcePath.replace(/^['"`]|['"`]$/g, '');
+        // Add .js extension to relative paths without an extension
+        if (cleanPath.match(/^\.\.?\//) && !cleanPath.match(/\.\w+$/)) {
+          sourcePath = sourcePath.replace(/(['"`])$/, ".js$1");
+        }
+        code.push(this.makeCode(` from ${sourcePath}`));
         if (this.assertions != null) {
           code.push(this.makeCode(' assert '));
           code.push(...this.assertions.compileToFragments(o));
@@ -5195,9 +5224,8 @@
       }
 
       compileNode(o) {
-        var code, compiledList, fragments, index, j, len1, specifier;
+        var code, compiledList, fragment, fragments, index, itemLength, j, k, l, len1, len2, len3, len4, len5, len6, lineFragment, lineFragments, lineIndex, lineLength, p, q, r, singleLine, specifier, totalLength;
         code = [];
-        o.indent += TAB;
         compiledList = (function() {
           var j, len1, ref1, results1;
           ref1 = this.specifiers;
@@ -5209,15 +5237,76 @@
           return results1;
         }).call(this);
         if (this.specifiers.length !== 0) {
-          code.push(this.makeCode(`{\n${o.indent}`));
+          // Try single-line format first
+          singleLine = [];
+          singleLine.push(this.makeCode('{ '));
           for (index = j = 0, len1 = compiledList.length; j < len1; index = ++j) {
             fragments = compiledList[index];
             if (index) {
-              code.push(this.makeCode(`,\n${o.indent}`));
+              singleLine.push(this.makeCode(', '));
             }
-            code.push(...fragments);
+            singleLine.push(...fragments);
           }
-          code.push(this.makeCode("\n}"));
+          singleLine.push(this.makeCode(' }'));
+          // Calculate total length of single-line version
+          totalLength = 0;
+          for (k = 0, len2 = singleLine.length; k < len2; k++) {
+            fragment = singleLine[k];
+            if (fragment.code) {
+              totalLength += fragment.code.length;
+            }
+          }
+          // Use multi-line if the content alone exceeds 80 chars
+          // This helps keep lines readable
+          if (totalLength > 80) {
+            // Multi-line format with packing up to 80 chars per line
+            o.indent += TAB;
+            code.push(this.makeCode(`{\n${o.indent}`));
+            lineFragments = [];
+            lineLength = o.indent.length;
+            for (index = l = 0, len3 = compiledList.length; l < len3; index = ++l) {
+              fragments = compiledList[index];
+              // Calculate length of this item (with comma and space)
+              itemLength = 0;
+              for (p = 0, len4 = fragments.length; p < len4; p++) {
+                fragment = fragments[p];
+                if (fragment.code) {
+                  itemLength += fragment.code.length;
+                }
+              }
+              if (index) { // Account for ", "
+                itemLength += 2;
+              }
+              
+              // Start new line if this item would exceed 80 chars
+              if (lineLength + itemLength > 80 && lineFragments.length > 0) {
+// Output current line
+                for (lineIndex = q = 0, len5 = lineFragments.length; q < len5; lineIndex = ++q) {
+                  lineFragment = lineFragments[lineIndex];
+                  if (lineIndex) {
+                    code.push(this.makeCode(', '));
+                  }
+                  code.push(...lineFragment);
+                }
+                code.push(this.makeCode(`,\n${o.indent}`));
+                lineFragments = [];
+                lineLength = o.indent.length;
+              }
+              lineFragments.push(fragments);
+              lineLength += itemLength;
+            }
+// Output remaining fragments
+            for (lineIndex = r = 0, len6 = lineFragments.length; r < len6; lineIndex = ++r) {
+              lineFragment = lineFragments[lineIndex];
+              if (lineIndex) {
+                code.push(this.makeCode(', '));
+              }
+              code.push(...lineFragment);
+            }
+            code.push(this.makeCode("\n}"));
+          } else {
+            code = singleLine;
+          }
         } else {
           code.push(this.makeCode('{}'));
         }
