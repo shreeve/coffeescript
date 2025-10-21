@@ -32,9 +32,9 @@
     "test":    "coffee test/runner.coffee",
     "version": "coffee --version",
 
-    "parser6": "ES6=1 ./bin/coffee ../solar-es6.coffee -o ../rip/lib/coffeescript/parser.js src/grammar.coffee",
-    "build6":  "ES6=1 ./bin/coffee -bc -o ../rip/lib/coffeescript ../rip/src/*.coffee",
-    "test6":   "../rip/bin/coffee ../rip/test/runner.coffee"
+    "parser6": "ES6=1 ./bin/coffee ../solar-es6.coffee -o ../v29/lib/coffeescript/parser.js src/grammar.coffee",
+    "build6":  "ES6=1 ./bin/coffee -bc -o ../v29/lib/coffeescript ../v29/src/*.coffee",
+    "test6":   "../v29/bin/coffee ../v29/test/runner.coffee"
   },
   "homepage": "https://coffeescript.org",
   "bugs": "https://github.com/jashkenas/coffeescript/issues",
