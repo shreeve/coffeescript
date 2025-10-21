@@ -272,6 +272,12 @@ runTests = ->
     literate = helpers.isLiterate file
     currentFile = global.currentFile = file  # Update both local and global
 
+    # Skip test fixture files in the importing directory
+    # These are helpers used by other tests, not test files themselves
+    # (importing.coffee is at the parent level, not inside /importing/)
+    if file.includes('/importing/')
+      continue
+
     console.log "#{bold}Running: #{file}#{reset}"
 
     code = fs.readFileSync file
