@@ -2940,7 +2940,9 @@ exports.Class = class Class extends Base
       [@variable, @variableRef] = @variable.cache o unless @variableRef?
 
     if @variable
-      node = new Assign @variable, node, null, { @moduleDeclaration }
+      # For export default class, don't create assignment
+      unless @exportDefault
+        node = new Assign @variable, node, null, { @moduleDeclaration }
 
     @compileNode = @compileClassDeclaration
     try
@@ -3368,8 +3370,27 @@ exports.ImportDeclaration = class ImportDeclaration extends ModuleDeclaration
 
     if @source?.value?
       code.push @makeCode ' from ' unless @clause is null
-      code.push @makeCode @source.value
-      if @assertions?
+
+      # Add .js extension to relative imports (not packages or files with extensions)
+      sourcePath = @source.value
+      # Remove quotes from the source path for processing
+      cleanPath = sourcePath.replace(/^['"`]|['"`]$/g, '')
+
+      # Add .js extension for relative paths without extension
+      if cleanPath.match(/^\.\.?\//) and not cleanPath.match(/\.\w+$/)
+        # Add .js before the closing quote
+        sourcePath = sourcePath.replace(/(['"`])$/, ".js$1")
+
+      # Add import assertion for JSON files
+      if cleanPath.match(/\.json$/i)
+        @jsonImport = yes
+
+      code.push @makeCode sourcePath
+
+      # Handle import assertions (including JSON)
+      if @jsonImport
+        code.push @makeCode ' with { type: "json" }'
+      else if @assertions?
         code.push @makeCode ' assert '
         code.push @assertions.compileToFragments(o)...
 
@@ -3428,13 +3449,24 @@ exports.ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
       code.push @makeCode 'var '
       @clause.moduleDeclaration = 'export'
 
+    # For export default class, don't create assignment
+    if @ instanceof ExportDefaultDeclaration and @clause instanceof Class
+      @clause.exportDefault = yes
+
     if @clause.body? and @clause.body instanceof Block
       code = code.concat @clause.compileToFragments o, LEVEL_TOP
     else
       code = code.concat @clause.compileNode o
 
     if @source?.value?
-      code.push @makeCode " from #{@source.value}"
+      sourcePath = @source.value
+      cleanPath = sourcePath.replace(/^['"`]|['"`]$/g, '')
+
+      # Add .js extension to relative paths without an extension
+      if cleanPath.match(/^\.\.?\//) and not cleanPath.match(/\.\w+$/)
+        sourcePath = sourcePath.replace(/(['"`])$/, ".js$1")
+
+      code.push @makeCode " from #{sourcePath}"
       if @assertions?
         code.push @makeCode ' assert '
         code.push @assertions.compileToFragments(o)...
@@ -3487,15 +3519,60 @@ exports.ModuleSpecifierList = class ModuleSpecifierList extends Base
 
   compileNode: (o) ->
     code = []
-    o.indent += TAB
     compiledList = (specifier.compileToFragments o, LEVEL_LIST for specifier in @specifiers)
 
     if @specifiers.length isnt 0
-      code.push @makeCode "{\n#{o.indent}"
+      # Try single-line format first
+      singleLine = []
+      singleLine.push @makeCode '{ '
       for fragments, index in compiledList
-        code.push @makeCode(",\n#{o.indent}") if index
-        code.push fragments...
-      code.push @makeCode "\n}"
+        singleLine.push @makeCode(', ') if index
+        singleLine.push fragments...
+      singleLine.push @makeCode ' }'
+
+      # Calculate total length of single-line version
+      totalLength = 0
+      for fragment in singleLine
+        totalLength += fragment.code.length if fragment.code
+
+      # Use multi-line if the content alone exceeds 80 chars
+      # This helps keep lines readable
+      if totalLength > 80
+        # Multi-line format with packing up to 80 chars per line
+        o.indent += TAB
+        code.push @makeCode "{\n#{o.indent}"
+
+        lineFragments = []
+        lineLength = o.indent.length
+
+        for fragments, index in compiledList
+          # Calculate length of this item (with comma and space)
+          itemLength = 0
+          for fragment in fragments
+            itemLength += fragment.code.length if fragment.code
+          itemLength += 2 if index  # Account for ", "
+
+          # Start new line if this item would exceed 80 chars
+          if lineLength + itemLength > 80 and lineFragments.length > 0
+            # Output current line
+            for lineFragment, lineIndex in lineFragments
+              code.push @makeCode(', ') if lineIndex
+              code.push lineFragment...
+            code.push @makeCode(",\n#{o.indent}")
+            lineFragments = []
+            lineLength = o.indent.length
+
+          lineFragments.push fragments
+          lineLength += itemLength
+
+        # Output remaining fragments
+        for lineFragment, lineIndex in lineFragments
+          code.push @makeCode(', ') if lineIndex
+          code.push lineFragment...
+
+        code.push @makeCode "\n}"
+      else
+        code = singleLine
     else
       code.push @makeCode '{}'
     code
