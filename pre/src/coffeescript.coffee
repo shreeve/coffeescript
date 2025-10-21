@@ -224,7 +224,7 @@ parser.lexer =
   upcomingInput: -> ''
 
 # Make all the AST nodes visible to the parser.
-parser.yy = require './nodes'
+parser.yy = require if process.env.ES6 then './nodes' else './nodes5'
 
 # Override Jison's default error handling function.
 parser.yy.parseError = (message, {token}) ->
