@@ -2,40 +2,32 @@
 // Main module for tokenizing, parsing, and compiling CoffeeScript to JavaScript.
 var base64encode, checkShebangLine, getSourceMap, lexer, registerCompiled, withPrettyErrors;
 
-import {
-  Lexer
-} from './lexer';
+import { Lexer } from './lexer.js';
 
-import {
-  parser
-} from './parser';
+import { parser } from './parser.js';
 
-import * as helpers from './helpers';
+import * as helpers from './helpers.js';
 
-import SourceMap from './sourcemap';
+import SourceMap from './sourcemap.js';
 
-import * as nodesModule from './nodes';
+import * as nodesModule from './nodes.js';
 
-import packageJson from '../../package.json';
+import packageJson from '../../package.json' with { type: "json" };
 
 // The current CoffeeScript version number.
 export var VERSION = packageJson.version;
 
 export var FILE_EXTENSIONS = FILE_EXTENSIONS = ['.coffee', '.litcoffee', '.coffee.md'];
 
-export {
-  // Expose helpers for testing.
-  helpers
-};
+// Expose helpers for testing.
+export { helpers };
 
 ({getSourceMap, registerCompiled} = SourceMap);
 
-export {
-  // This is exported to enable an external module to implement caching of
-  // sourcemaps. This is used only when `patchStackTrace` has been called to adjust
-  // stack traces for files with cached source maps.
-  registerCompiled
-};
+// This is exported to enable an external module to implement caching of
+// sourcemaps. This is used only when `patchStackTrace` has been called to adjust
+// stack traces for files with cached source maps.
+export { registerCompiled };
 
 // Function that allows for btoa in both nodejs and the browser.
 base64encode = function(src) {

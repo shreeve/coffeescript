@@ -9,10 +9,7 @@ var BALANCED_PAIRS, CALL_CLOSERS, CONTROL_IN_IMPLICIT, DISCARDED, EXPRESSION_CLO
   indexOf = [].indexOf,
   hasProp = {}.hasOwnProperty;
 
-import {
-  throwSyntaxError,
-  extractAllCommentTokens
-} from './helpers';
+import { throwSyntaxError, extractAllCommentTokens } from './helpers.js';
 
 // Move attached comments from one token to another.
 moveComments = function(fromToken, toToken) {
@@ -1097,10 +1094,8 @@ for (k = 0, len = BALANCED_PAIRS.length; k < len; k++) {
   EXPRESSION_END.push(INVERSES[left] = right);
 }
 
-export {
-  // Export INVERSES after it's been populated
-  INVERSES
-};
+// Export INVERSES after it's been populated
+export { INVERSES };
 
 // Tokens that indicate the close of a clause of an expression.
 EXPRESSION_CLOSE = ['CATCH', 'THEN', 'ELSE', 'FINALLY'].concat(EXPRESSION_END);

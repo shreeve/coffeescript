@@ -15,7 +15,7 @@
 // A LineMap object keeps track of information about original line and column
 // positions for a single line of output JavaScript code.
 // SourceMaps are implemented in terms of LineMaps.
-var LineMap, SourceMap;
+var LineMap;
 
 LineMap = class LineMap {
   constructor(line1) {
@@ -45,7 +45,7 @@ LineMap = class LineMap {
 
 };
 
-export default SourceMap = (function() {
+export default (function() {
   var BASE64_CHARS, VLQ_CONTINUATION_BIT, VLQ_SHIFT, VLQ_VALUE_MASK;
 
   // SourceMap

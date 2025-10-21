@@ -3,7 +3,7 @@
 // Works with: Node.js, Bun, Deno, and browsers
 var CoffeeScript;
 
-import * as CoffeeScriptCore from './coffeescript';
+import * as CoffeeScriptCore from './coffeescript.js';
 
 // Create an enhanced object that includes both core functionality and Node.js-specific methods
 CoffeeScript = Object.assign({}, CoffeeScriptCore, {
@@ -37,7 +37,7 @@ CoffeeScript = Object.assign({}, CoffeeScriptCore, {
   }
 });
 
-export * from './coffeescript';
+export * from './coffeescript.js';
 
 // Export the enhanced CoffeeScript object as default
 export default CoffeeScript;

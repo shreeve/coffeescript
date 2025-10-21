@@ -12,27 +12,14 @@ var BOM, BOOL, CALLABLE, CODE, COFFEE_ALIASES, COFFEE_ALIAS_MAP, COFFEE_KEYWORDS
   indexOf = [].indexOf,
   slice = [].slice;
 
-import {
-  Rewriter,
-  INVERSES,
-  UNFINISHED
-} from './rewriter';
+import { Rewriter, INVERSES, UNFINISHED } from './rewriter.js';
 
 import {
   // Import the helpers we need.
-  count,
-  starts,
-  compact,
-  repeat,
-  invertLiterate,
-  merge,
-  attachCommentsToNode,
-  locationDataToString,
-  throwSyntaxError,
-  replaceUnicodeCodePointEscapes,
-  flatten,
-  parseNumber
-} from './helpers';
+  count, starts, compact, repeat, invertLiterate, merge, attachCommentsToNode,
+  locationDataToString, throwSyntaxError, replaceUnicodeCodePointEscapes,
+  flatten, parseNumber
+} from './helpers.js';
 
 // The Lexer Class
 // ---------------

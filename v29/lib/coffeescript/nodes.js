@@ -11,29 +11,13 @@ var HEREGEX_OMIT, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVE
   slice1 = [].slice;
 
 import {
-  compact,
-  flatten,
-  extend,
-  merge,
-  del,
-  starts,
-  ends,
-  some,
-  addDataToNode,
-  attachCommentsToNode,
-  locationDataToString,
-  throwSyntaxError,
-  replaceUnicodeCodePointEscapes,
-  isFunction,
-  isPlainObject,
-  isNumber,
+  compact, flatten, extend, merge, del, starts, ends, some, addDataToNode,
+  attachCommentsToNode, locationDataToString, throwSyntaxError,
+  replaceUnicodeCodePointEscapes, isFunction, isPlainObject, isNumber,
   parseNumber
-} from './helpers';
+} from './helpers.js';
 
-import {
-  isUnassignable,
-  JS_FORBIDDEN
-} from './lexer';
+import { isUnassignable, JS_FORBIDDEN } from './lexer.js';
 
 Error.stackTraceLimit = 2e308;
 
@@ -218,14 +202,10 @@ export var Scope = class Scope {
 
 };
 
-export {
-  // Functions required by parser.
-  extend
-};
+// Functions required by parser.
+export { extend };
 
-export {
-  addDataToNode
-};
+export { addDataToNode };
 
 // Constant functions for nodes that don't need customization.
 YES = function() {

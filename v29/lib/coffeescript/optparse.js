@@ -2,9 +2,7 @@
 var LONG_FLAG, MULTI_FLAG, OPTIONAL, SHORT_FLAG, buildRule, buildRules, normalizeArguments,
   splice = [].splice;
 
-import {
-  repeat
-} from './helpers';
+import { repeat } from './helpers.js';
 
 // A simple **OptionParser** class to parse option flags from the command-line.
 // Use it like so:
