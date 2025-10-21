@@ -1,0 +1,45 @@
+{
+  "name": "coffeescript",
+  "description": "Unfancy JavaScript",
+  "keywords": [
+    "javascript",
+    "language",
+    "coffeescript",
+    "compiler"
+  ],
+  "type": "commonjs",
+  "version": "2.8.0",
+  "license": "MIT",
+  "engines": {
+    "node": ">=6 <=20.11.1"
+  },
+  "directories": {
+    "lib": "./lib/coffeescript"
+  },
+  "main": "./lib/coffeescript/index",
+  "bin": {
+    "coffee": "./bin/coffee"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "register.js",
+    "repl.js"
+  ],
+  "scripts": {
+    "parser":  "coffee ../solar-es5.coffee -o lib/coffeescript/parser.js src/grammar.coffee",
+    "build":   "coffee -c -o lib/coffeescript src/*.coffee",
+    "test":    "coffee test/runner.coffee",
+    "version": "coffee --version",
+
+    "parser6": "ES6=1 ./bin/coffee ../solar-es6.coffee -o ../rip/lib/coffeescript/parser.js src/grammar.coffee",
+    "build6":  "ES6=1 ./bin/coffee -bc -o ../rip/lib/coffeescript ../rip/src/*.coffee",
+    "test6":   "../rip/bin/coffee ../rip/test/runner.coffee"
+  },
+  "homepage": "https://coffeescript.org",
+  "bugs": "https://github.com/jashkenas/coffeescript/issues",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jashkenas/coffeescript.git"
+  }
+}
