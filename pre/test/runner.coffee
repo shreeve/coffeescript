@@ -84,6 +84,11 @@ runTests = ->
   global.yellow = yellow
   global.reset  = reset
 
+  # Helper to require lib modules from test files
+  # This allows tests to work regardless of their directory depth
+  global.requireLib = (moduleName) ->
+    require path.resolve(__dirname, '..', 'lib', 'coffeescript', moduleName)
+
   asyncTests = []
   onFail = (description, fn, err) ->
     failures.push
@@ -198,12 +203,46 @@ runTests = ->
     message = "passed #{passedTests} tests in #{time} seconds#{reset}"
     return log(message, green) unless failures.length
     log "failed #{failures.length} and #{message}", red
+
+    # Group failures by file for better organization
+    failuresByFile = {}
     for fail in failures
-      {error, filename, description, source}  = fail
+      {error, filename, description} = fail
+      filename = filename or global.currentFile or 'unknown'
+      failuresByFile[filename] ?= []
+      failuresByFile[filename].push {error, description}
+
+    # Display failures in a concise format
+    for filename, fails of failuresByFile
       console.log ''
-      log "  #{description}", red if description
-      log "  #{error.stack}", red
-      console.log "  #{source}" if source
+      log "  #{filename}:", yellow
+      for fail in fails
+        {error, description} = fail
+        if description  # This is a test failure
+          log "    ✗ #{description}", red
+          errorMessage = error.message or error.toString()
+          # Clean up assertion messages to be more readable
+          if errorMessage.includes('[ERR_ASSERTION]')
+            errorMessage = errorMessage.replace(/^AssertionError \[ERR_ASSERTION\]( \[ERR_ASSERTION\])?: /, '')
+          log "      #{errorMessage}", red
+          # Show full stack trace in verbose mode
+          if process.env.VERBOSE
+            stackLines = error.stack.split('\n')[1..]  # Skip first line (error message)
+            for line in stackLines[0..4]  # Show first 5 stack frames
+              log "      #{line}", red if line
+        else  # This is a file-level failure
+          log "    ✗ Failed to load file", red
+          log "      #{error.message or error.toString()}", red
+          # Show stack trace for load failures in verbose mode
+          if process.env.VERBOSE and error.stack
+            stackLines = error.stack.split('\n')[1..2]  # Just show top 2 frames
+            for line in stackLines
+              log "      #{line}", red if line
+
+    # Show hint about verbose mode
+    unless process.env.VERBOSE
+      console.log ''
+      log "  Tip: Run with VERBOSE=1 to see full stack traces", yellow
     return
 
   # Feature detection for skipping unsupported tests
@@ -231,9 +270,9 @@ runTests = ->
     continue if basename in testFilesToSkip
 
     literate = helpers.isLiterate file
-    currentFile = file
+    currentFile = global.currentFile = file  # Update both local and global
 
-    console.log "#{bold}Running: #{file}#{reset}" if testFiles.length > 1
+    console.log "#{bold}Running: #{file}#{reset}"
 
     code = fs.readFileSync file
     try
