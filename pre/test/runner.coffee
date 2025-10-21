@@ -84,10 +84,10 @@ runTests = ->
   global.yellow = yellow
   global.reset  = reset
 
-  # Helper to require lib modules from test files
+  # Helper to require modules from the project root
   # This allows tests to work regardless of their directory depth
-  global.requireLib = (moduleName) ->
-    require path.resolve(__dirname, '..', 'lib', 'coffeescript', moduleName)
+  global.requireRoot = (modulePath) ->
+    require path.resolve(__dirname, '..', modulePath)
 
   asyncTests = []
   onFail = (description, fn, err) ->
