@@ -8,7 +8,7 @@ fs              = require 'fs'
 path            = require 'path'
 CoffeeScript    = require '../lib/coffeescript'
 helpers         = require '../lib/coffeescript/helpers'
-{Repl}          = require '../lib/coffeescript/repl'
+Repl            = require '../lib/coffeescript/repl'
 
 # ANSI Terminal Colors
 bold = red = green = yellow = reset = ''
