@@ -79,7 +79,7 @@
   // object, where sourceMap is a sourcemap.coffee#SourceMap object, handy for
   // doing programmatic lookups.
   exports.compile = compile = withPrettyErrors(function(code, options = {}) {
-    var ast, currentColumn, currentLine, encoded, filename, fragment, fragments, generateSourceMap, header, i, j, js, len, len1, map, newLines, nodes, range, ref, sourceCodeLastLine, sourceCodeNumberOfLines, sourceMapDataURI, sourceURL, token, tokens, transpiler, transpilerOptions, transpilerOutput, v3SourceMap;
+    var ast, currentColumn, currentLine, encoded, filename, fragment, fragments, generateSourceMap, header, i, j, js, len, len1, map, newLines, nodes, range, ref, sourceCodeLastLine, sourceCodeNumberOfLines, sourceMapDataURI, sourceURL, token, tokens, v3SourceMap;
     // Clone `options`, to avoid mutating the `options` object passed in.
     options = Object.assign({}, options);
     generateSourceMap = options.sourceMap || options.inlineMap || (options.filename == null);
@@ -173,29 +173,6 @@
     }
     if (generateSourceMap) {
       v3SourceMap = map.generate(options, code);
-    }
-    if (options.transpile) {
-      if (typeof options.transpile !== 'object') {
-        // This only happens if run via the Node API and `transpile` is set to
-        // something other than an object.
-        throw new Error('The transpile option must be given an object with options to pass to Babel');
-      }
-      // Get the reference to Babel that we have been passed if this compiler
-      // is run via the CLI or Node API.
-      transpiler = options.transpile.transpile;
-      delete options.transpile.transpile;
-      transpilerOptions = Object.assign({}, options.transpile);
-      // See https://github.com/babel/babel/issues/827#issuecomment-77573107:
-      // Babel can take a v3 source map object as input in `inputSourceMap`
-      // and it will return an *updated* v3 source map object in its output.
-      if (v3SourceMap && (transpilerOptions.inputSourceMap == null)) {
-        transpilerOptions.inputSourceMap = v3SourceMap;
-      }
-      transpilerOutput = transpiler(js, transpilerOptions);
-      js = transpilerOutput.code;
-      if (v3SourceMap && transpilerOutput.map) {
-        v3SourceMap = transpilerOutput.map;
-      }
     }
     if (options.inlineMap) {
       encoded = base64encode(JSON.stringify(v3SourceMap));
