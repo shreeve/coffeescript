@@ -139,28 +139,6 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
   if generateSourceMap
     v3SourceMap = map.generate options, code
 
-  if options.transpile
-    if typeof options.transpile isnt 'object'
-      # This only happens if run via the Node API and `transpile` is set to
-      # something other than an object.
-      throw new Error 'The transpile option must be given an object with options to pass to Babel'
-
-    # Get the reference to Babel that we have been passed if this compiler
-    # is run via the CLI or Node API.
-    transpiler = options.transpile.transpile
-    delete options.transpile.transpile
-
-    transpilerOptions = Object.assign {}, options.transpile
-
-    # See https://github.com/babel/babel/issues/827#issuecomment-77573107:
-    # Babel can take a v3 source map object as input in `inputSourceMap`
-    # and it will return an *updated* v3 source map object in its output.
-    if v3SourceMap and not transpilerOptions.inputSourceMap?
-      transpilerOptions.inputSourceMap = v3SourceMap
-    transpilerOutput = transpiler js, transpilerOptions
-    js = transpilerOutput.code
-    if v3SourceMap and transpilerOutput.map
-      v3SourceMap = transpilerOutput.map
 
   if options.inlineMap
     encoded = base64encode JSON.stringify v3SourceMap

@@ -49,7 +49,6 @@ SWITCHES = [
   ['-p', '--print',             'print out the compiled JavaScript']
   ['-r', '--require [MODULE*]', 'require the given module before eval or REPL']
   ['-s', '--stdio',             'listen for and compile scripts over stdio']
-  ['-t', '--transpile',         'pipe generated JavaScript through Babel']
   [      '--tokens',            'print out the tokens that the lexer/rewriter produce']
   ['-v', '--version',           'display the version number']
   ['-w', '--watch',             'watch scripts for changes and rerun commands']
@@ -93,7 +92,6 @@ exports.run = ->
   replCliOpts = useGlobal: yes
   opts.prelude = makePrelude opts.require       if opts.require
   replCliOpts.prelude = opts.prelude
-  replCliOpts.transpile = opts.transpile
   return forkNode()                             if opts.nodejs
   return usage()                                if opts.help
   return version()                              if opts.version
@@ -450,60 +448,11 @@ parseOptions = ->
 
 # The compile-time options to pass to the CoffeeScript compiler.
 compileOptions = (filename, base) ->
-  if opts.transpile
-    # The user has requested that the CoffeeScript compiler also transpile
-    # via Babel. We don't include Babel as a dependency because we want to
-    # avoid dependencies in general, and most users probably won't be relying
-    # on us to transpile for them; we assume most users will probably either
-    # run CoffeeScript's output without transpilation (modern Node or evergreen
-    # browsers) or use a proper build chain like Gulp or Webpack.
-    try
-      require '@babel/core'
-    catch
-      try
-        require 'babel-core'
-      catch
-        # Give appropriate instructions depending on whether `coffee` was run
-        # locally or globally.
-        if require.resolve('.').indexOf(process.cwd()) is 0
-          console.error '''
-            To use --transpile, you must have @babel/core installed:
-              npm install --save-dev @babel/core
-            And you must save options to configure Babel in one of the places it looks to find its options.
-            See https://coffeescript.org/#transpilation
-          '''
-        else
-          console.error '''
-            To use --transpile with globally-installed CoffeeScript, you must have @babel/core installed globally:
-              npm install --global @babel/core
-            And you must save options to configure Babel in one of the places it looks to find its options, relative to the file being compiled or to the current folder.
-            See https://coffeescript.org/#transpilation
-          '''
-        process.exit 1
-
-    opts.transpile = {} unless typeof opts.transpile is 'object'
-
-    # Pass a reference to Babel into the compiler, so that the transpile option
-    # is available for the CLI. We need to do this so that tools like Webpack
-    # can `require('coffeescript')` and build correctly, without trying to
-    # require Babel.
-    opts.transpile.transpile = CoffeeScript.transpile
-
-    # Babel searches for its options (a `.babelrc` file, a `.babelrc.js` file,
-    # a `package.json` file with a `babel` key, etc.) relative to the path
-    # given to it in its `filename` option. Make sure we have a path to pass
-    # along.
-    unless opts.transpile.filename
-      opts.transpile.filename = filename or path.resolve(base or process.cwd(), '<anonymous>')
-  else
-    opts.transpile = no
-
   answer =
     filename: filename
     literate: opts.literate or helpers.isLiterate(filename)
     bare: opts.bare
     header: opts.compile and not opts['no-header']
-    transpile: opts.transpile
     sourceMap: opts.map
     inlineMap: opts['inline-map']
     ast: opts.ast
