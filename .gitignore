@@ -1,2 +1,3 @@
 cs2/.tool-versions
 pre/.tool-versions
+pre/lib/coffeescript/grammar.js
