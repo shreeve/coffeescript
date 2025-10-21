@@ -5,7 +5,7 @@ path = require 'path'
 
 # Get the folder containing the compiled `coffee` executable and make it the
 # PATH so that `#!/usr/bin/env coffee` resolves to our locally built file.
-coffeeBinFolder = path.dirname require.resolve '../bin/coffee'
+coffeeBinFolder = path.dirname require.resolve '../../bin/coffee'
 # For some reason, Windows requires `coffee` to be executed as `node coffee`.
 coffeeCommand = if isWindows() then 'node coffee' else 'coffee'
 spawnOptions =
