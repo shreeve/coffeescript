@@ -63,7 +63,7 @@ exports.some = Array::some ? (fn) ->
 
 # Helper function for extracting code from Literate CoffeeScript by stripping
 # out all non-code blocks, producing a string of CoffeeScript code that can
-# be compiled “normally.”
+# be compiled "normally."
 exports.invertLiterate = (code) ->
   out = []
   blankLine = /^\s*$/
@@ -126,7 +126,7 @@ exports.extractAllCommentTokens = (tokens) ->
 buildLocationHash = (loc) ->
   "#{loc.range[0]}-#{loc.range[1]}"
 
-# Build a dictionary of extra token properties organized by tokens’ locations
+# Build a dictionary of extra token properties organized by tokens' locations
 # used as lookup hashes.
 exports.buildTokenDataDictionary = buildTokenDataDictionary = (tokens) ->
   tokenData = {}
@@ -137,7 +137,7 @@ exports.buildTokenDataDictionary = buildTokenDataDictionary = (tokens) ->
     # comments that start or end a file.
     tokenData[tokenHash] ?= {}
     if token.comments # `comments` is always an array.
-      # For “overlapping” tokens, that is tokens with the same location data
+      # For "overlapping" tokens, that is tokens with the same location data
       # and therefore matching `tokenHash`es, merge the comments from both/all
       # tokens together into one array, even if there are duplicate comments;
       # they will get sorted out later.
@@ -156,7 +156,7 @@ exports.addDataToNode = (parserState, firstLocationData, firstValue, lastLocatio
     else
       obj.locationData = locationData
 
-    # Add comments, building the dictionary of token data if it hasn’t been
+    # Add comments, building the dictionary of token data if it hasn't been
     # built yet.
     parserState.tokenData ?= buildTokenDataDictionary parserState.parser.tokens
     if obj.locationData?
@@ -319,7 +319,7 @@ exports.replaceUnicodeCodePointEscapes = (str, {flags, error, delimiter = ''} = 
     unicodeCodePointToUnicodeEscapes codePointDecimal
 
 UNICODE_CODE_POINT_ESCAPE = ///
-  ( \\\\ )        # Make sure the escape isn’t escaped.
+  ( \\\\ )        # Make sure the escape isn't escaped.
   |
   \\u\{ ( [\da-fA-F]+ ) \}
 ///g

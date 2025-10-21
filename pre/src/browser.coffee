@@ -25,11 +25,11 @@ CoffeeScript.run = (code, options = {}) ->
 # `index.coffee`, which is intended for a Node environment.
 module.exports = CoffeeScript
 
-# If we’re not in a browser environment, we’re finished with the public API.
+# If we're not in a browser environment, we're finished with the public API.
 return unless window?
 
-# Include source maps where possible. If we’ve got a base64 encoder, a
-# JSON serializer, and tools for escaping unicode characters, we’re good to go.
+# Include source maps where possible. If we've got a base64 encoder, a
+# JSON serializer, and tools for escaping unicode characters, we're good to go.
 # Ported from https://developer.mozilla.org/en-US/docs/DOM/window.btoa
 if btoa? and JSON?
   compile = (code, options = {}) ->
@@ -87,7 +87,7 @@ CoffeeScript.runScripts = ->
         # `options.filename` defines the filename the source map appears as
         # in Developer Tools. If a script tag has an `id`, use that as the
         # filename; otherwise use `coffeescript`, or `coffeescript1` etc.,
-        # leaving the first one unnumbered for the common case that there’s
+        # leaving the first one unnumbered for the common case that there's
         # only one CoffeeScript script block to parse.
         options.filename = if script.id and script.id isnt '' then script.id else "coffeescript#{if i isnt 0 then i else ''}"
         options.sourceFiles = ['embedded']

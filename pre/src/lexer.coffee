@@ -92,8 +92,8 @@ exports.Lexer = class Lexer
     (new Rewriter).rewrite @tokens
 
   # Preprocess the code to remove leading and trailing whitespace, carriage
-  # returns, etc. If we’re lexing literate CoffeeScript, strip external Markdown
-  # by removing all lines that aren’t indented by at least four spaces or a tab.
+  # returns, etc. If we're lexing literate CoffeeScript, strip external Markdown
+  # by removing all lines that aren't indented by at least four spaces or a tab.
   clean: (code) ->
     thusFar = 0
     if code.charCodeAt(0) is BOM
@@ -117,9 +117,9 @@ exports.Lexer = class Lexer
   # ----------
 
   # Matches identifying literals: variables, keywords, method names, etc.
-  # Check to ensure that JavaScript reserved words aren’t being used as
+  # Check to ensure that JavaScript reserved words aren't being used as
   # identifiers. Because CoffeeScript reserves a handful of keywords that are
-  # allowed in JavaScript, we’re careful not to tag them as keywords when
+  # allowed in JavaScript, we're careful not to tag them as keywords when
   # referenced as property names here, so you can still do `jQuery.is()` even
   # though `is` means `===` otherwise.
   identifierToken: ->
@@ -339,14 +339,14 @@ exports.Lexer = class Lexer
         @error "block comments cannot contain #{matchIllegal[0]}",
           offset: '###'.length + matchIllegal.index, length: matchIllegal[0].length
 
-      # Parse indentation or outdentation as if this block comment didn’t exist.
+      # Parse indentation or outdentation as if this block comment didn't exist.
       chunk = chunk.replace "####{hereComment}###", ''
       # Remove leading newlines, like `Rewriter::removeLeadingNewlines`, to
       # avoid the creation of unwanted `TERMINATOR` tokens.
       chunk = chunk.replace /^\n+/, ''
       @lineToken {chunk}
 
-      # Pull out the ###-style comment’s content, and format it.
+      # Pull out the ###-style comment's content, and format it.
       content = hereComment
       contents = [{
         content
@@ -413,7 +413,7 @@ exports.Lexer = class Lexer
 
     prev = @prev()
     unless prev
-      # If there’s no previous token, create a placeholder token to attach
+      # If there's no previous token, create a placeholder token to attach
       # this comment to; and follow with a newline.
       commentAttachments[0].newLine = yes
       @lineToken chunk: @chunk[commentWithSurroundingWhitespace.length..], offset: commentWithSurroundingWhitespace.length # Set the indent.
@@ -596,7 +596,7 @@ exports.Lexer = class Lexer
     this
 
   # Matches and consumes non-meaningful whitespace. Tag the previous token
-  # as being “spaced”, because there are some cases where it makes a difference.
+  # as being "spaced", because there are some cases where it makes a difference.
   whitespaceToken: ->
     return 0 unless (match = WHITESPACE.exec @chunk) or
                     (nline = @chunk.charAt(0) is '\n')
@@ -675,7 +675,7 @@ exports.Lexer = class Lexer
       else if firstChar is '{'
         if prevChar is ':'
           # This token represents the start of a JSX attribute value
-          # that’s an expression (e.g. the `{b}` in `<div a={b} />`).
+          # that's an expression (e.g. the `{b}` in `<div a={b} />`).
           # Our grammar represents the beginnings of expressions as `(`
           # tokens, so make this into a `(` token that displays as `{`.
           token = @token '(', '{'
@@ -811,7 +811,7 @@ exports.Lexer = class Lexer
         prev[0] = 'FUNC_EXIST' if prev[0] is '?'
         tag = 'CALL_START'
       else if value is '[' and ((prev[0] in INDEXABLE and not prev.spaced) or
-         (prev[0] is '::')) # `.prototype` can’t be a method you can call.
+         (prev[0] is '::')) # `.prototype` can't be a method you can call.
         tag = 'INDEX_START'
         switch prev[0]
           when '?'  then prev[0] = 'INDEX_SOAK'
@@ -1091,8 +1091,8 @@ exports.Lexer = class Lexer
     [locationData.first_line, locationData.first_column, locationData.range[0]] =
       @getLineAndColumnFromChunk offsetInChunk
 
-    # Use length - 1 for the final offset - we’re supplying the last_line and the last_column,
-    # so if last_column == first_column, then we’re looking at a character of length 1.
+    # Use length - 1 for the final offset - we're supplying the last_line and the last_column,
+    # so if last_column == first_column, then we're looking at a character of length 1.
     lastCharacter = if length > 0 then (length - 1) else 0
     [locationData.last_line, locationData.last_column, endOffset] =
       @getLineAndColumnFromChunk offsetInChunk + lastCharacter
@@ -1199,10 +1199,10 @@ isUnassignable = (name, displayName = name) -> switch
 
 exports.isUnassignable = isUnassignable
 
-# `from` isn’t a CoffeeScript keyword, but it behaves like one in `import` and
+# `from` isn't a CoffeeScript keyword, but it behaves like one in `import` and
 # `export` statements (handled above) and in the declaration line of a `for`
 # loop. Try to detect when `from` is a variable identifier and when it is this
-# “sometimes” keyword.
+# "sometimes" keyword.
 isForFrom = (prev) ->
   # `for i from iterable`
   if prev[0] is 'IDENTIFIER'
@@ -1400,7 +1400,7 @@ HERECOMMENT_ILLEGAL = /\*\//
 LINE_CONTINUER      = /// ^ \s* (?: , | \??\.(?![.\d]) | \??:: ) ///
 
 STRING_INVALID_ESCAPE = ///
-  ( (?:^|[^\\]) (?:\\\\)* )        # Make sure the escape isn’t escaped.
+  ( (?:^|[^\\]) (?:\\\\)* )        # Make sure the escape isn't escaped.
   \\ (
      ?: (0\d|[1-7])                # octal escape
       | (x(?![\da-fA-F]{2}).{0,2}) # hex escape
@@ -1409,7 +1409,7 @@ STRING_INVALID_ESCAPE = ///
   )
 ///
 REGEX_INVALID_ESCAPE = ///
-  ( (?:^|[^\\]) (?:\\\\)* )        # Make sure the escape isn’t escaped.
+  ( (?:^|[^\\]) (?:\\\\)* )        # Make sure the escape isn't escaped.
   \\ (
      ?: (0\d)                      # octal escape
       | (x(?![\da-fA-F]{2}).{0,2}) # hex escape

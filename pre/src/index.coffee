@@ -14,7 +14,7 @@ CoffeeScript.transpile = (js, options) ->
       babel = require 'babel-core'
     catch
       # This error is only for Node, as CLI users will see a different error
-      # earlier if they don’t have Babel installed.
+      # earlier if they don't have Babel installed.
       throw new Error 'To use the transpile option, you must have the \'@babel/core\' module installed'
   babel.transform js, options
 
@@ -139,11 +139,11 @@ CoffeeScript._compileFile = (filename, options = {}) ->
 
 module.exports = CoffeeScript
 
-# Explicitly define all named exports so that Node’s automatic detection of
+# Explicitly define all named exports so that Node's automatic detection of
 # named exports from CommonJS packages finds all of them. This enables consuming
 # packages to write code like `import { compile } from 'coffeescript'`.
-# Don’t simplify this into a loop or similar; the `module.exports.name` part is
-# essential for Node’s algorithm to successfully detect the name.
+# Don't simplify this into a loop or similar; the `module.exports.name` part is
+# essential for Node's algorithm to successfully detect the name.
 module.exports.VERSION = CoffeeScript.VERSION
 module.exports.FILE_EXTENSIONS = CoffeeScript.FILE_EXTENSIONS
 module.exports.helpers = CoffeeScript.helpers

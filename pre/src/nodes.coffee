@@ -18,7 +18,7 @@ isFunction, isPlainObject, isNumber, parseNumber} = require './helpers'
 exports.extend = extend
 exports.addDataToNode = addDataToNode
 
-# Constant functions for nodes that don’t need customization.
+# Constant functions for nodes that don't need customization.
 YES     = -> yes
 NO      = -> no
 THIS    = -> this
@@ -62,9 +62,9 @@ exports.Base = class Base
     fragmentsToText @compileToFragments o, lvl
 
   # Occasionally a node is compiled multiple times, for example to get the name
-  # of a variable to add to scope tracking. When we know that a “premature”
-  # compilation won’t result in comments being output, set those comments aside
-  # so that they’re preserved for a later `compile` call that will result in
+  # of a variable to add to scope tracking. When we know that a "premature"
+  # compilation won't result in comments being output, set those comments aside
+  # so that they're preserved for a later `compile` call that will result in
   # the comments being included in the output.
   compileWithoutComments: (o, lvl, method = 'compile') ->
     if @comments
@@ -142,7 +142,7 @@ exports.Base = class Base
   compileCommentFragments: (o, node, fragments) ->
     return fragments unless node.comments
     # This is where comments, that are attached to nodes as a `comments`
-    # property, become `CodeFragment`s. “Inline block comments,” e.g.
+    # property, become `CodeFragment`s. "Inline block comments," e.g.
     # `/* */`-delimited comments that are interspersed within code on a line,
     # are added to the current `fragments` stream. All other fragments are
     # attached as properties to the nearest preceding or following fragment,
@@ -162,7 +162,7 @@ exports.Base = class Base
         fragments.push commentFragment
 
     for comment in node.comments when comment not in @compiledComments
-      @compiledComments.push comment # Don’t output this comment twice.
+      @compiledComments.push comment # Don't output this comment twice.
       # For block/here comments, denoted by `###`, that are inline comments
       # like `1 + ### comment ### 2`, create fragments and insert them into
       # the fragments array.
@@ -231,7 +231,7 @@ exports.Base = class Base
   cacheToCodeFragments: (cacheValues) ->
     [fragmentsToText(cacheValues[0]), fragmentsToText(cacheValues[1])]
 
-  # Construct a node that returns the current node’s result.
+  # Construct a node that returns the current node's result.
   # Note that this is overridden for smarter behavior for
   # many statement nodes (e.g. `If`, `For`).
   makeReturn: (results, mark) ->
@@ -286,7 +286,7 @@ exports.Base = class Base
     # Create serializable representation of this node.
     astNode = @astNode o
     # Mark AST nodes that correspond to expressions that (implicitly) return.
-    # We can’t do this as part of `astNode` because we need to assemble child
+    # We can't do this as part of `astNode` because we need to assemble child
     # nodes first before marking the parent being returned.
     if @astNode? and @canBeReturned
       Object.assign astNode, {returns: yes}
@@ -317,7 +317,7 @@ exports.Base = class Base
   # By default, a node class has no specific properties.
   astProperties: -> {}
 
-  # By default, a node class’s AST `type` is its class name.
+  # By default, a node class's AST `type` is its class name.
   astType: -> @constructor.name
 
   # The AST location data is a rearranged version of our Jison location data,
@@ -377,9 +377,9 @@ exports.Base = class Base
   # the pointer to the `children` are how you can traverse the tree.
   children: []
 
-  # `isStatement` has to do with “everything is an expression”. A few things
-  # can’t be expressions, such as `break`. Things that `isStatement` returns
-  # `true` for are things that can’t be used as expressions. There are some
+  # `isStatement` has to do with "everything is an expression". A few things
+  # can't be expressions, such as `break`. Things that `isStatement` returns
+  # `true` for are things that can't be used as expressions. There are some
   # error messages that come from `nodes.coffee` due to statements ending up
   # in expression position.
   isStatement: NO
@@ -394,7 +394,7 @@ exports.Base = class Base
 
   # `jumps` tells you if an expression, or an internal part of an expression,
   # has a flow control construct (like `break`, `continue`, or `return`)
-  # that jumps out of the normal flow of control and can’t be used as a value.
+  # that jumps out of the normal flow of control and can't be used as a value.
   # (Note that `throw` is not considered a flow control construct.)
   # This is important because flow control in the middle of an expression
   # makes no sense; we have to disallow it.
@@ -443,7 +443,7 @@ exports.Base = class Base
     @comments = comments if comments?.length
     this
 
-  # Throw a SyntaxError associated with this node’s location.
+  # Throw a SyntaxError associated with this node's location.
   error: (message) ->
     throwSyntaxError message, @locationData
 
@@ -483,7 +483,7 @@ exports.HoistTarget = class HoistTarget extends Base
     # Holds presentational options to apply when the source node is compiled.
     @options = {}
 
-    # Placeholder fragments to be replaced by the source node’s compilation.
+    # Placeholder fragments to be replaced by the source node's compilation.
     @targetFragments = { fragments: [] }
 
   isStatement: (o) ->
@@ -533,7 +533,7 @@ exports.Root = class Root extends Base
 
   initializeScope: (o) ->
     o.scope = new Scope null, @body, null, o.referencedVars ? []
-    # Mark given local variables in the root scope as parameters so they don’t
+    # Mark given local variables in the root scope as parameters so they don't
     # end up being declared on the root block.
     o.scope.parameter name for name in o.locals or []
 
@@ -610,8 +610,8 @@ exports.Block = class Block extends Base
     len = @expressions.length
     [..., lastExp] = @expressions
     lastExp = lastExp?.unwrap() or no
-    # We also need to check that we’re not returning a JSX tag if there’s an
-    # adjacent one at the same level; JSX doesn’t allow that.
+    # We also need to check that we're not returning a JSX tag if there's an
+    # adjacent one at the same level; JSX doesn't allow that.
     if lastExp and lastExp instanceof Parens and lastExp.body.expressions.length > 1
       {body:{expressions}} = lastExp
       [..., penult, last] = expressions
@@ -635,7 +635,7 @@ exports.Block = class Block extends Base
     super o, lvl
 
   # Compile all expressions within the **Block** body. If we need to return
-  # the result, and it’s an expression, simply return it. If it’s a statement,
+  # the result, and it's an expression, simply return it. If it's a statement,
   # ask the statement to do so.
   compileNode: (o) ->
     @tab  = o.indent
@@ -650,7 +650,7 @@ exports.Block = class Block extends Base
         continue
       node = (node.unfoldSoak(o) or node)
       if node instanceof Block
-        # This is a nested block. We don’t do anything special here like
+        # This is a nested block. We don't do anything special here like
         # enclose it in a new scope; we just compile the statements in this
         # block along with our own.
         compiledNodes.push node.compileNode o
@@ -727,7 +727,7 @@ exports.Block = class Block extends Base
       if fragment.precedingComments
         # Determine the indentation level of the fragment that we are about
         # to insert comments before, and use that indentation level for our
-        # inserted comments. At this point, the fragments’ `code` property
+        # inserted comments. At this point, the fragments' `code` property
         # is the generated output JavaScript, and CoffeeScript always
         # generates output indented by two spaces; so all we need to do is
         # search for a `code` property that begins with at least two spaces.
@@ -749,9 +749,9 @@ exports.Block = class Block extends Base
         for pastFragment, pastFragmentIndex in fragments[0...(fragmentIndex + 1)] by -1
           newLineIndex = pastFragment.code.lastIndexOf '\n'
           if newLineIndex is -1
-            # Keep searching previous fragments until we can’t go back any
-            # further, either because there are no fragments left or we’ve
-            # discovered that we’re in a code block that is interpolated
+            # Keep searching previous fragments until we can't go back any
+            # further, either because there are no fragments left or we've
+            # discovered that we're in a code block that is interpolated
             # inside a string.
             if pastFragmentIndex is 0
               pastFragment.code = '\n' + pastFragment.code
@@ -767,7 +767,7 @@ exports.Block = class Block extends Base
           break
 
       # Yes, this is awfully similar to the previous `if` block, but if you
-      # look closely you’ll find lots of tiny differences that make this
+      # look closely you'll find lots of tiny differences that make this
       # confusing if it were abstracted into a function that both blocks share.
       if fragment.followingComments
         # Does the first trailing comment follow at the end of a line of code,
@@ -794,7 +794,7 @@ exports.Block = class Block extends Base
               else if '\n' in upcomingFragment.code
                 break
         # Is this comment following the indent inserted by bare mode?
-        # If so, there’s no need to indent this further.
+        # If so, there's no need to indent this further.
         code = if fragmentIndex is 1 and /^\s+$/.test fragments[0].code
           ''
         else if trail
@@ -812,9 +812,9 @@ exports.Block = class Block extends Base
         for upcomingFragment, upcomingFragmentIndex in fragments[fragmentIndex...]
           newLineIndex = upcomingFragment.code.indexOf '\n'
           if newLineIndex is -1
-            # Keep searching upcoming fragments until we can’t go any
-            # further, either because there are no fragments left or we’ve
-            # discovered that we’re in a code block that is interpolated
+            # Keep searching upcoming fragments until we can't go any
+            # further, either because there are no fragments left or we've
+            # discovered that we're in a code block that is interpolated
             # inside a string.
             if upcomingFragmentIndex is fragments.length - 1
               upcomingFragment.code = upcomingFragment.code + '\n'
@@ -878,8 +878,8 @@ exports.Block = class Block extends Base
             expression.astLocationData()
 
     return {
-      # For now, we’re not including `sourceType` on the `Program` AST node.
-      # Its value could be either `'script'` or `'module'`, and there’s no way
+      # For now, we're not including `sourceType` on the `Program` AST node.
+      # Its value could be either `'script'` or `'module'`, and there's no way
       # for CoffeeScript to always know which it should be. The presence of an
       # `import` or `export` statement in source code would imply that it should
       # be a `module`, but a project may consist of mostly such files and also
@@ -888,7 +888,7 @@ exports.Block = class Block extends Base
       # Determining the value of `sourceType` is essentially the same challenge
       # posed by determining the parse goal of a JavaScript file, also `module`
       # or `script`, and so if Node figures out a way to do so for `.js` files
-      # then CoffeeScript can copy Node’s algorithm.
+      # then CoffeeScript can copy Node's algorithm.
 
       # sourceType: 'module'
       body, directives
@@ -1263,7 +1263,7 @@ exports.DefaultLiteral = class DefaultLiteral extends Literal
 
 #### Return
 
-# A `return` is a *pureStatement*—wrapping it in a closure wouldn’t make sense.
+# A `return` is a *pureStatement*—wrapping it in a closure wouldn't make sense.
 exports.Return = class Return extends Base
   constructor: (@expression, {@belongsToFuncDirectiveReturn} = {}) ->
     super()
@@ -1280,7 +1280,7 @@ exports.Return = class Return extends Base
 
   compileNode: (o) ->
     answer = []
-    # TODO: If we call `expression.compile()` here twice, we’ll sometimes
+    # TODO: If we call `expression.compile()` here twice, we'll sometimes
     # get back different results!
     if @expression
       answer = @expression.compileToFragments o, LEVEL_PAREN
@@ -1300,7 +1300,7 @@ exports.Return = class Return extends Base
     answer
 
   checkForPureStatementInExpression: ->
-    # don’t flag `return` from `await return`/`yield return` as invalid.
+    # don't flag `return` from `await return`/`yield return` as invalid.
     return if @belongsToFuncDirectiveReturn
     super()
 
@@ -1494,14 +1494,14 @@ exports.Value = class Value extends Base
     else
       @error 'tried to assign to unassignable value'
 
-  # For AST generation, we need an `object` that’s this `Value` minus its last
+  # For AST generation, we need an `object` that's this `Value` minus its last
   # property, if it has properties.
   object: ->
     return @ unless @hasProperties()
     # Get all properties except the last one; for a `Value` with only one
     # property, `initialProperties` is an empty array.
     initialProperties = @properties[0...@properties.length - 1]
-    # Create the `object` that becomes the new “base” for the split-off final
+    # Create the `object` that becomes the new "base" for the split-off final
     # property.
     object = new Value @base, initialProperties, @tag, @isDefaultValue
     # Add location data to our new node, so that it has correct location data
@@ -1509,11 +1509,11 @@ exports.Value = class Value extends Base
     object.locationData =
       if initialProperties.length is 0
         # This new `Value` has only one property, so the location data is just
-        # that of the parent `Value`’s base.
+        # that of the parent `Value`'s base.
         @base.locationData
       else
         # This new `Value` has multiple properties, so the location data spans
-        # from the parent `Value`’s base to the last property that’s included
+        # from the parent `Value`'s base to the last property that's included
         # in this new node (a.k.a. the second-to-last property of the parent).
         mergeLocationData @base.locationData, initialProperties[initialProperties.length - 1].locationData
     object
@@ -1530,7 +1530,7 @@ exports.Value = class Value extends Base
 
   astNode: (o) ->
     # If the `Value` has no properties, the AST node is just whatever this
-    # node’s `base` is.
+    # node's `base` is.
     return @base.ast o unless @hasProperties()
     # Otherwise, call `Base::ast` which in turn calls the `astType` and
     # `astProperties` methods below.
@@ -1625,7 +1625,7 @@ exports.HereComment = class HereComment extends Base
     fragment.newLine = @newLine
     fragment.unshift = @unshift
     fragment.multiline = multiline
-    # Don’t rely on `fragment.type`, which can break when the compiler is minified.
+    # Don't rely on `fragment.type`, which can break when the compiler is minified.
     fragment.isComment = fragment.isHereComment = yes
     fragment
 
@@ -1647,7 +1647,7 @@ exports.LineComment = class LineComment extends Base
     fragment.newLine = @newLine
     fragment.unshift = @unshift
     fragment.trail = not @newLine and not @unshift
-    # Don’t rely on `fragment.type`, which can break when the compiler is minified.
+    # Don't rely on `fragment.type`, which can break when the compiler is minified.
     fragment.isComment = fragment.isLineComment = yes
     fragment
 
@@ -2167,7 +2167,7 @@ exports.Super = class Super extends Base
       # get incorrectly output near `super.method()`, when we want them to
       # get output on the second pass when `method:` is output. So set them
       # aside during this compilation pass, and put them back on the object so
-      # that they’re there for the later compilation.
+      # that they're there for the later compilation.
       salvagedComments = @accessor.name.comments
       delete @accessor.name.comments
     fragments = (new Value (new Literal 'super'), if @accessor then [ @accessor ] else [])
@@ -2270,8 +2270,8 @@ exports.Access = class Access extends Base
   shouldCache: NO
 
   astNode: (o) ->
-    # Babel doesn’t have an AST node for `Access`, but rather just includes
-    # this Access node’s child `name` Identifier node as the `property` of
+    # Babel doesn't have an AST node for `Access`, but rather just includes
+    # this Access node's child `name` Identifier node as the `property` of
     # the `MemberExpression` node.
     @name.ast o
 
@@ -2291,9 +2291,9 @@ exports.Index = class Index extends Base
     @index.shouldCache()
 
   astNode: (o) ->
-    # Babel doesn’t have an AST node for `Index`, but rather just includes
-    # this Index node’s child `index` Identifier node as the `property` of
-    # the `MemberExpression` node. The fact that the `MemberExpression`’s
+    # Babel doesn't have an AST node for `Index`, but rather just includes
+    # this Index node's child `index` Identifier node as the `property` of
+    # the `MemberExpression` node. The fact that the `MemberExpression`'s
     # `property` is an Index means that `computed` is `true` for the
     # `MemberExpression`.
     @index.ast o
@@ -2419,7 +2419,7 @@ exports.Range = class Range extends Base
 
 #### Slice
 
-# An array slice literal. Unlike JavaScript’s `Array#slice`, the second parameter
+# An array slice literal. Unlike JavaScript's `Array#slice`, the second parameter
 # specifies the index of the end of the slice, just as the first parameter
 # is the index of the beginning.
 exports.Slice = class Slice extends Base
@@ -2579,7 +2579,7 @@ exports.Obj = class Obj extends Base
       prop = prop.unwrapAll()
       prop.eachName iterator if prop.eachName?
 
-  # Convert “bare” properties to `ObjectProperty`s (or `Splat`s).
+  # Convert "bare" properties to `ObjectProperty`s (or `Splat`s).
   expandProperty: (property) ->
     {variable, context, operatorToken} = property
     key = if property instanceof Assign and context is 'object'
@@ -2723,7 +2723,7 @@ exports.Arr = class Arr extends Base
     # by definition line comments will introduce newlines into our output.
     # The exception is if only the first element has line comments; in that
     # case, output as the compact form if we otherwise would have, so that the
-    # first element’s line comments get output before or after the array.
+    # first element's line comments get output before or after the array.
     includesLineCommentsOnNonFirstElement = no
     for fragments, index in compiledObjs
       for fragment in fragments
@@ -3223,9 +3223,9 @@ exports.ModuleDeclaration = class ModuleDeclaration extends Base
 
   checkScope: (o, moduleDeclarationType) ->
     # TODO: would be appropriate to flag this error during AST generation (as
-    # well as when compiling to JS). But `o.indent` isn’t tracked during AST
-    # generation, and there doesn’t seem to be a current alternative way to track
-    # whether we’re at the “program top-level”.
+    # well as when compiling to JS). But `o.indent` isn't tracked during AST
+    # generation, and there doesn't seem to be a current alternative way to track
+    # whether we're at the "program top-level".
     if o.indent.length isnt 0
       @error "#{moduleDeclarationType} statements must be at top-level scope"
 
@@ -3420,7 +3420,7 @@ exports.ImportSpecifier = class ImportSpecifier extends ModuleSpecifier
     super imported, local, 'import'
 
   addIdentifierToScope: (o) ->
-    # Per the spec, symbols can’t be imported multiple times
+    # Per the spec, symbols can't be imported multiple times
     # (e.g. `import { foo, foo } from 'lib'` is invalid)
     if @identifier in o.importedSymbols or o.scope.check(@identifier)
       @error "'#{@identifier}' has already been declared"
@@ -3503,7 +3503,7 @@ exports.Assign = class Assign extends Base
 
   addScopeVariables: (o, {
     # During AST generation, we need to allow assignment to these constructs
-    # that are considered “unassignable” during compile-to-JS, while still
+    # that are considered "unassignable" during compile-to-JS, while still
     # flagging things like `[null] = b`.
     allowAssignmentToExpansion = no,
     allowAssignmentToNontrailingSplat = no,
@@ -3544,7 +3544,7 @@ exports.Assign = class Assign extends Base
         # If this assignment identifier has one or more herecomments
         # attached, output them as part of the declarations line (unless
         # other herecomments are already staged there) for compatibility
-        # with Flow typing. Don’t do this if this assignment is for a
+        # with Flow typing. Don't do this if this assignment is for a
         # class, e.g. `ClassName = class ClassName {`, as Flow requires
         # the comment to be between the class name and the `{`.
         if name.comments and not o.scope.comments[name.value] and
@@ -3563,8 +3563,8 @@ exports.Assign = class Assign extends Base
   compileNode: (o) ->
     isValue = @variable instanceof Value
     if isValue
-      # If `@variable` is an array or an object, we’re destructuring;
-      # if it’s also `isAssignable()`, the destructuring syntax is supported
+      # If `@variable` is an array or an object, we're destructuring;
+      # if it's also `isAssignable()`, the destructuring syntax is supported
       # in ES and we can output it as is; otherwise we `@compileDestructuring`
       # and convert this ES-unsupported destructuring into acceptable output.
       if @variable.isArray() or @variable.isObject()
@@ -3597,7 +3597,7 @@ exports.Assign = class Assign extends Base
 
     answer = compiledName.concat @makeCode(" #{ @context or '=' } "), val
     # Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Assignment_without_declaration,
-    # if we’re destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
+    # if we're destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
     # The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
     # (i.e. LEVEL_COND (4), LEVEL_OP (5) or LEVEL_ACCESS (6)), or if we're destructuring object, e.g. {a,b} = obj.
     if o.level > LEVEL_LIST or isValue and @variable.base instanceof Obj and not @nestedLhs and not (@param is yes)
@@ -3654,7 +3654,7 @@ exports.Assign = class Assign extends Base
 
     # At this point, there are several things to destructure. So the `fn()` in
     # `{a, b} = fn()` must be cached, for example. Make vvar into a simple
-    # variable if it isn’t already.
+    # variable if it isn't already.
     if value.unwrap() not instanceof IdentifierLiteral or @variable.assigns(vvarText)
       ref = o.scope.freeVariable 'ref'
       assigns.push [@makeCode(ref + ' = '), vvar...]
@@ -3845,7 +3845,7 @@ exports.Assign = class Assign extends Base
   propagateLhs: ->
     return unless @variable?.isArray?() or @variable?.isObject?()
     # This is the left-hand side of an assignment; let `Arr` and `Obj`
-    # know that, so that those nodes know that they’re assignable as
+    # know that, so that those nodes know that they're assignable as
     # destructured variables.
     @variable.base.propagateLhs yes
 
@@ -3970,7 +3970,7 @@ exports.Code = class Code extends Base
     # adding expressions to the function body to declare all parameter
     # variables that would have been after the splat/expansion parameter.
     # If we encounter a parameter that needs to be declared in the function
-    # body for any reason, for example it’s destructured with `this`, also
+    # body for any reason, for example it's destructured with `this`, also
     # declare and assign all subsequent parameters in the function body so that
     # any non-idempotent parameters are evaluated in the correct order.
     for param, i in @params
@@ -4018,10 +4018,10 @@ exports.Code = class Code extends Base
         # If this parameter comes before the splat or expansion, it will go
         # in the function definition parameter list.
         unless haveSplatParam
-          # If this parameter has a default value, and it hasn’t already been
+          # If this parameter has a default value, and it hasn't already been
           # set by the `shouldCache()` block above, define it as a statement in
           # the function body. This parameter comes after the splat parameter,
-          # so we can’t define its default value in the parameter list.
+          # so we can't define its default value in the parameter list.
           if param.shouldCache()
             ref = param.asReference o
           else
@@ -4029,7 +4029,7 @@ exports.Code = class Code extends Base
               ref = new Assign new Value(param.name), param.value, null, param: yes
             else
               ref = param
-          # Add this parameter’s reference(s) to the function scope.
+          # Add this parameter's reference(s) to the function scope.
           if param.name instanceof Arr or param.name instanceof Obj
             # This parameter is destructured.
             param.name.lhs = yes
@@ -4039,22 +4039,22 @@ exports.Code = class Code extends Base
           else
             # This compilation of the parameter is only to get its name to add
             # to the scope name tracking; since the compilation output here
-            # isn’t kept for eventual output, don’t include comments in this
-            # compilation, so that they get output the “real” time this param
+            # isn't kept for eventual output, don't include comments in this
+            # compilation, so that they get output the "real" time this param
             # is compiled.
             paramToAddToScope = if param.value? then param else ref
             o.scope.parameter fragmentsToText paramToAddToScope.compileToFragmentsWithoutComments o
           params.push ref
         else
           paramsAfterSplat.push param
-          # If this parameter had a default value, since it’s no longer in the
+          # If this parameter had a default value, since it's no longer in the
           # function parameter list we need to assign its default value
           # (if necessary) as an expression in the body.
           if param.value? and not param.shouldCache()
             condition = new Op '===', param, new UndefinedLiteral
             ifTrue = new Assign new Value(param.name), param.value
             exprs.push new If condition, ifTrue
-          # Add this parameter to the scope, since it wouldn’t have been added
+          # Add this parameter to the scope, since it wouldn't have been added
           # yet since it was skipped earlier.
           o.scope.add param.name.value, 'var', yes if param.name?.value?
 
@@ -4077,7 +4077,7 @@ exports.Code = class Code extends Base
       @body.expressions.unshift new Call(boundMethodCheck, [new Value(new ThisLiteral), @classVariable])
     @body.makeReturn() unless wasEmpty or @noReturn
 
-    # JavaScript doesn’t allow bound (`=>`) functions to also be generators.
+    # JavaScript doesn't allow bound (`=>`) functions to also be generators.
     # This is usually caught via `Op::compileContinuation`, but double-check:
     if @bound and @isGenerator
       yieldNode = @body.contains (node) -> node instanceof Op and node.operator is 'yield'
@@ -4101,7 +4101,7 @@ exports.Code = class Code extends Base
       signature.push @makeCode ', ' if i isnt 0
       signature.push @makeCode '...' if haveSplatParam and i is params.length - 1
       # Compile this parameter, but if any generated variables get created
-      # (e.g. `ref`), shift those into the parent scope since we can’t put a
+      # (e.g. `ref`), shift those into the parent scope since we can't put a
       # `var` line inside a function parameter list.
       scopeVariablesCount = o.scope.variables.length
       signature.push param.compileToFragments(o, LEVEL_PAREN)...
@@ -5148,7 +5148,7 @@ exports.Parens = class Parens extends Base
   compileNode: (o) ->
     expr = @body.unwrap()
     # If these parentheses are wrapping an `IdentifierLiteral` followed by a
-    # block comment, output the parentheses (or put another way, don’t optimize
+    # block comment, output the parentheses (or put another way, don't optimize
     # away these redundant parentheses). This is because Flow requires
     # parentheses in certain circumstances to distinguish identifiers followed
     # by comment-based type annotations from JavaScript labels.
@@ -5260,7 +5260,7 @@ exports.StringWithInterpolations = class StringWithInterpolations extends Base
           # Flag the `{` and `}` fragments as having been generated by this
           # `StringWithInterpolations` node, so that `compileComments` knows
           # to treat them as bounds. But the braces are unnecessary if all of
-          # the enclosed comments are `/* */` comments. Don’t trust
+          # the enclosed comments are `/* */` comments. Don't trust
           # `fragment.type`, which can report minified variable names when
           # this compiler is minified.
           code[0].isStringWithInterpolations = yes
@@ -5369,7 +5369,7 @@ exports.For = class For extends While
     @index.error 'indexes do not apply to range loops' if @range and @index
     @name.error 'cannot pattern match over range loops' if @range and @pattern
     @returns = no
-    # Move up any comments in the “`for` line”, i.e. the line of code with `for`,
+    # Move up any comments in the "`for` line", i.e. the line of code with `for`,
     # from any child nodes of that line up to the `for` node itself so that these
     # comments get output, and get output above the `for` loop.
     for attribute in ['source', 'guard', 'step', 'name', 'index'] when @[attribute]
@@ -5377,7 +5377,7 @@ exports.For = class For extends While
         if node.comments
           # These comments are buried pretty deeply, so if they happen to be
           # trailing comments the line they trail will be unrecognizable when
-          # we’re done compiling this `for` loop; so just shift them up to
+          # we're done compiling this `for` loop; so just shift them up to
           # output above the `for` line.
           comment.newLine = comment.unshift = yes for comment in node.comments
           moveComments node, @[attribute]
@@ -5605,7 +5605,7 @@ exports.SwitchWhen = class SwitchWhen extends Base
 # to the last line of each clause.
 #
 # Single-expression **Ifs** are compiled into conditional operators if possible,
-# because ternaries are already proper expressions, and don’t need conversion.
+# because ternaries are already proper expressions, and don't need conversion.
 exports.If = class If extends Base
   constructor: (@condition, @body, options = {}) ->
     super()
@@ -5806,7 +5806,7 @@ multident = (code, tab, includingFirstLine = yes) ->
   code = code + '\n' if endsWithNewLine
   code
 
-# Wherever in CoffeeScript 1 we might’ve inserted a `makeCode "#{@tab}"` to
+# Wherever in CoffeeScript 1 we might've inserted a `makeCode "#{@tab}"` to
 # indent a line of code, now we must account for the possibility of comments
 # preceding that line of code. If there are such comments, indent each line of
 # such comments, and _then_ indent the first following line of code.
@@ -5959,15 +5959,15 @@ isLocationDataEndGreater = (a, b) ->
   return no unless a.last_line is b.last_line
   a.last_column > b.last_column
 
-# Take two nodes’ location data and return a new `locationData` object that
+# Take two nodes' location data and return a new `locationData` object that
 # encompasses the location data of both nodes. So the new `first_line` value
-# will be the earlier of the two nodes’ `first_line` values, the new
-# `last_column` the later of the two nodes’ `last_column` values, etc.
+# will be the earlier of the two nodes' `first_line` values, the new
+# `last_column` the later of the two nodes' `last_column` values, etc.
 #
-# If you only want to extend the first node’s location data with the start or
+# If you only want to extend the first node's location data with the start or
 # end location data of the second node, pass the `justLeading` or `justEnding`
-# options. So e.g. if `first`’s range is [4, 5] and `second`’s range is [1, 10],
-# you’d get:
+# options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],
+# you'd get:
 # ```
 # mergeLocationData(first, second).range                   # [1, 10]
 # mergeLocationData(first, second, justLeading: yes).range # [1, 5]
@@ -6016,15 +6016,15 @@ exports.mergeLocationData = mergeLocationData = (locationDataA, locationDataB, {
     ]
   )
 
-# Take two AST nodes, or two AST nodes’ location data objects, and return a new
+# Take two AST nodes, or two AST nodes' location data objects, and return a new
 # location data object that encompasses the location data of both nodes. So the
-# new `start` value will be the earlier of the two nodes’ `start` values, the
-# new `end` value will be the later of the two nodes’ `end` values, etc.
+# new `start` value will be the earlier of the two nodes' `start` values, the
+# new `end` value will be the later of the two nodes' `end` values, etc.
 #
-# If you only want to extend the first node’s location data with the start or
+# If you only want to extend the first node's location data with the start or
 # end location data of the second node, pass the `justLeading` or `justEnding`
-# options. So e.g. if `first`’s range is [4, 5] and `second`’s range is [1, 10],
-# you’d get:
+# options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],
+# you'd get:
 # ```
 # mergeAstLocationData(first, second).range                   # [1, 10]
 # mergeAstLocationData(first, second, justLeading: yes).range # [1, 5]
@@ -6088,7 +6088,7 @@ exports.jisonLocationDataToAstLocationData = jisonLocationDataToAstLocationData 
     start: range[0]
     end:   range[1]
 
-# Generate a zero-width location data that corresponds to the end of another node’s location.
+# Generate a zero-width location data that corresponds to the end of another node's location.
 zeroWidthLocationDataFromEndLocation = ({range: [, endRange], last_line_exclusive, last_column_exclusive}) -> {
   first_line: last_line_exclusive
   first_column: last_column_exclusive
@@ -6119,12 +6119,12 @@ extractSameLineLocationDataLast = (numChars) -> ({range: [, endRange], last_line
   range: [endRange - numChars, endRange]
 }
 
-# We don’t currently have a token corresponding to the empty space
+# We don't currently have a token corresponding to the empty space
 # between interpolation/JSX expression braces, so piece together the location
-# data by trimming the braces from the Interpolation’s location data.
+# data by trimming the braces from the Interpolation's location data.
 # Technically the last_line/last_column calculation here could be
 # incorrect if the ending brace is preceded by a newline, but
-# last_line/last_column aren’t used for AST generation anyway.
+# last_line/last_column aren't used for AST generation anyway.
 emptyExpressionLocationData = ({interpolationNode: element, openingBrace, closingBrace}) ->
   first_line:            element.locationData.first_line
   first_column:          element.locationData.first_column + openingBrace.length

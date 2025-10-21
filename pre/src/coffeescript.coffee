@@ -72,7 +72,7 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
 
   tokens = lexer.tokenize code, options
 
-  # Pass a list of referenced variables, so that generated variables won’t get
+  # Pass a list of referenced variables, so that generated variables won't get
   # the same name.
   options.referencedVars = (
     token[1] for token in tokens when token[0] is 'IDENTIFIER'
@@ -89,7 +89,7 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
   # If all that was requested was a POJO representation of the nodes, e.g.
   # the abstract syntax tree (AST), we can stop now and just return that
   # (after fixing the location data for the root/`File`»`Program` node,
-  # which might’ve gotten misaligned from the original source due to the
+  # which might've gotten misaligned from the original source due to the
   # `clean` function in the lexer).
   if options.ast
     nodes.allCommentTokens = helpers.extractAllCommentTokens tokens
@@ -193,7 +193,7 @@ exports.nodes = withPrettyErrors (source, options) ->
 # This file used to export these methods; leave stubs that throw warnings
 # instead. These methods have been moved into `index.coffee` to provide
 # separate entrypoints for Node and non-Node environments, so that static
-# analysis tools don’t choke on Node packages when compiling for a non-Node
+# analysis tools don't choke on Node packages when compiling for a non-Node
 # environment.
 exports.run = exports.eval = exports.register = ->
   throw new Error 'require index.coffee, not this file'
@@ -203,7 +203,7 @@ lexer = new Lexer
 
 # The real Lexer produces a generic stream of tokens. This object provides a
 # thin wrapper around it, compatible with the Jison API. We can then pass it
-# directly as a “Jison lexer.”
+# directly as a "Jison lexer."
 parser.lexer =
   yylloc:
     range: []
@@ -316,7 +316,7 @@ exports.patchStackTrace = ->
   # positions.
   Error.prepareStackTrace = (err, stack) ->
     frames = for frame in stack
-      # Don’t display stack frames deeper than `CoffeeScript.run`.
+      # Don't display stack frames deeper than `CoffeeScript.run`.
       break if frame.getFunction() is exports.run
       "    at #{formatSourcePosition frame, getSourceMapping}"
 
