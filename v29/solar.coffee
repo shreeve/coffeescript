@@ -145,7 +145,6 @@ class Generator
 
     # Process types and their rules
     for own type, rules of grammar
-      console.log rules
       addSymbol type
       @types[type] = @symbolTable.get type
 
