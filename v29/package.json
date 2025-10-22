@@ -30,7 +30,7 @@
     "lib"
   ],
   "scripts": {
-    "parser":  "./bin/coffee ../solar-es6.coffee -o lib/coffeescript/parser.js src/grammar.coffee",
+    "parser":  "./bin/coffee solar.coffee -o lib/coffeescript/parser.js src/grammar.coffee",
     "build":   "./bin/coffee -c -o lib/coffeescript src/*.coffee",
     "test":    "./bin/coffee test/runner.coffee",
     "version": "./bin/coffee coffee --version"
