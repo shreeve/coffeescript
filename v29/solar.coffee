@@ -200,6 +200,12 @@ class Generator
       [symbols, null, null]
 
   _processGrammarAction: (action, symbols) ->
+
+    # Fix the action string indentation
+    if '\n' in action
+      if indent = action.match(/\n( +)[^\n]*$/)?[1]
+        action = action.replace ///^#{indent}///gm, ''
+
     # Main dispatcher - handles both Jison and Solar formats
     if @mode is 'solar' and typeof action is 'object' and action?
       @_generateDataAction(action, symbols)
