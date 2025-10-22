@@ -10,6 +10,10 @@
 #   Date: September 23, 2025
 # ==============================================================================
 
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath, pathToFileURL } from 'url'
+
 VERSION = '1.0.0'
 
 # Token: A terminal symbol that cannot be broken down further
@@ -141,6 +145,7 @@ class Generator
 
     # Process types and their rules
     for own type, rules of grammar
+      console.log rules
       addSymbol type
       @types[type] = @symbolTable.get type
 
@@ -679,7 +684,6 @@ class Generator
     export default parser
     """
 
-    # Fail loudly if compression fails
     if @options.compress then @_compressParser parserCode else parserCode
 
   _generateModuleCore: ->
@@ -692,8 +696,8 @@ class Generator
       parseTable: #{tableCode.moduleCode},
       defaultActions: #{JSON.stringify(@defaultActions).replace /"([0-9]+)":/g, "$1:"},
       performAction: #{@performAction},
-      #{String(@parseError).replace(/^function /, '').replace(/;$/gm, '')},
-      #{String(@parse     ).replace(/^function /, '').replace(/;$/gm, '')},
+      #{String(@parseError).replace(/^function /, '')},
+      #{String(@parse     ).replace(/^function /, '')},
       trace() {},
       yy: {},
     }"""
@@ -901,116 +905,113 @@ class Generator
 # Exports
 # ==============================================================================
 
-Solar = exports.Solar = exports
+export { Generator }
 
-Solar.Parser = (grammar, options) ->
+export Parser = (grammar, options) ->
   generator = new Generator grammar, options
   generator.createParser()
 
-exports.Generator = Generator
+export default Solar =
+  Generator: (g, options) ->
+    new Generator g, {...g.options, ...options}
 
-Solar.Generator = (g, options) ->
-  new Generator g, Object.assign({}, g.options, options)
-
-exports.Parser = (grammar, options) ->
-  generator = Solar.Generator grammar, options
-  generator.createParser()
+  Parser: (grammar, options) ->
+    generator = new Generator grammar, options
+    generator.createParser()
 
 # ==============================================================================
 # CLI Interface
 # ==============================================================================
 
-if require.main is module
-  fs = require 'fs'
-  path = require 'path'
+if process.argv[1] is fileURLToPath(import.meta.url)
+  do ->
+    showHelp = ->
+      console.log """
+        Solar - SLR(1) Parser Generator
+        ===============================
 
-  showHelp = ->
-    console.log """
-    Solar - SLR(1) Parser Generator
-    ===============================
+        Usage: coffee solar.coffee [options] [grammar-file]
 
-    Usage: coffee solar.coffee [options] [grammar-file]
+        Options:
+          -h, --help              Show this help
+          -s, --stats             Show grammar statistics
+          -g, --generate          Generate parser (default)
+          -o, --output <file>     Output file (default: parser.js)
+          -c, --compress          Compress parser with Brotli (requires Brotli support)
+          -v, --verbose           Verbose output
 
-    Options:
-      -h, --help              Show this help
-      -s, --stats             Show grammar statistics
-      -g, --generate          Generate parser (default)
-      -o, --output <file>     Output file (default: parser.js)
-      -c, --compress          Compress parser with Brotli (requires Brotli support)
-      -v, --verbose           Verbose output
+        Examples:
+          coffee solar.coffee grammar.coffee
+          coffee solar.coffee --stats grammar.coffee
+          coffee solar.coffee -c -o parser.js grammar.coffee
+          coffee solar.coffee --compress --output parser.js grammar.coffee
+      """
 
-    Examples:
-      coffee solar.coffee grammar.coffee
-      coffee solar.coffee --stats grammar.coffee
-      coffee solar.coffee -c -o parser.js grammar.coffee
-      coffee solar.coffee --compress --output parser.js grammar.coffee
-    """
+    showStats = (generator) ->
+      tokens = Object.keys(generator.tokenNames or {}).length
+      types = Object.keys(generator.types or {}).length
+      rules = generator.rules?.length or 0
+      states = generator.states?.length or 0
+      conflicts = generator.conflicts or 0
 
-  showStats = (generator) ->
-    tokens = Object.keys(generator.tokenNames or {}).length
-    types = Object.keys(generator.types or {}).length
-    rules = generator.rules?.length or 0
-    states = generator.states?.length or 0
-    conflicts = generator.conflicts or 0
+      console.log """
 
-    console.log """
+      ⏱️ Statistics:
+      • Tokens: #{tokens}
+      • Types: #{types}
+      • Rules: #{rules}
+      • States: #{states}
+      • Conflicts: #{conflicts}
+      """
 
-    ⏱️ Statistics:
-    • Tokens: #{tokens}
-    • Types: #{types}
-    • Rules: #{rules}
-    • States: #{states}
-    • Conflicts: #{conflicts}
-    """
+    # Parse command line
+    options = {help: false, stats: false, generate: false, output: 'parser.js', verbose: false, compress: false}
+    grammarFile = null
 
-  # Parse command line
-  options = {help: false, stats: false, generate: false, output: 'parser.js', verbose: false, compress: false}
-  grammarFile = null
+    i = 0
+    while i < process.argv.length - 2
+      arg = process.argv[i + 2]
+      switch arg
+        when '-h', '--help'     then options.help     = true
+        when '-s', '--stats'    then options.stats    = true
+        when '-g', '--generate' then options.generate = true
+        when '-o', '--output'   then options.output   = process.argv[++i + 2]
+        when '-v', '--verbose'  then options.verbose  = true
+        when '-c', '--compress' then options.compress = true
+        else grammarFile = arg unless arg.startsWith('-')
+      i++
 
-  i = 0
-  while i < process.argv.length - 2
-    arg = process.argv[i + 2]
-    switch arg
-      when '-h', '--help'     then options.help     = true
-      when '-s', '--stats'    then options.stats    = true
-      when '-g', '--generate' then options.generate = true
-      when '-o', '--output'   then options.output   = process.argv[++i + 2]
-      when '-v', '--verbose'  then options.verbose  = true
-      when '-c', '--compress' then options.compress = true
-      else grammarFile = arg unless arg.startsWith('-')
-    i++
+    if options.help or not grammarFile
+      showHelp()
+      process.exit 0
 
-  if options.help or not grammarFile
-    showHelp()
-    process.exit 0
+    try
+      unless fs.existsSync grammarFile
+        console.error "Grammar file not found: #{grammarFile}"
+        process.exit 1
 
-  try
-    unless fs.existsSync grammarFile
-      console.error "Grammar file not found: #{grammarFile}"
+      # Load grammar
+      grammar = if grammarFile.endsWith('.coffee') or grammarFile.endsWith('.js')
+        (await import(pathToFileURL(path.resolve(grammarFile)).href)).default
+      else if grammarFile.endsWith('.json')
+        JSON.parse fs.readFileSync(grammarFile, 'utf8')
+      else
+        throw new Error "Unsupported format. Use .coffee, .js, or .json"
+      unless grammar
+        throw new Error "Failed to load grammar"
+
+      # Generate parser
+      generator = new Generator grammar, options
+
+      if options.stats
+        showStats generator
+
+      if options.generate or not options.stats
+        parserCode = generator.generate()
+        fs.writeFileSync options.output, parserCode
+        console.log "\nParser generated: #{options.output}"
+
+    catch error
+      console.error "Error:", error.message
+      console.error error.stack if options.verbose
       process.exit 1
-
-    # Load grammar
-    grammar = if grammarFile.endsWith('.coffee')
-      require(path.resolve(grammarFile))
-    else if grammarFile.endsWith('.json')
-      JSON.parse fs.readFileSync(grammarFile, 'utf8')
-    else
-      throw new Error "Unsupported format. Use .coffee or .json"
-    unless grammar
-      throw new Error "Failed to load grammar"
-
-    # Generate parser
-    generator = new Generator grammar, options
-
-    if options.stats
-      showStats generator
-
-    if options.generate or not options.stats
-      parserCode = generator.generate()
-      fs.writeFileSync options.output, parserCode
-      console.log "\nParser generated: #{options.output}"
-
-  catch error
-    console.error "Error:", error.message
-    console.error error.stack if options.verbose
-    process.exit 1
