@@ -669,7 +669,6 @@ class Generator
     exports.parse = function() { return parser.parse.apply(parser, arguments); };
     """
 
-    # Fail loudly if compression fails
     if @options.compress then @_compressParser parserCode else parserCode
 
   _generateModuleCore: ->
