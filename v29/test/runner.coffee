@@ -37,6 +37,17 @@ equal = (actual, expected) ->
     false
 
 # Test functions that will be made global
+#
+# Note about backticks and template literals:
+# - CoffeeScript passes through single backticks (`) as raw JavaScript
+# - CoffeeScript's string interpolation "#{}" compiles to JS template literals `${}`
+# - To embed actual JS template literals in tests, use triple backticks:
+#   ```
+#   `hello ${x}`
+#   ```
+# - Be careful: the test runner uses eval() which can conflict with template literals
+# - For tests that need template literals, prefer using triple single quotes (''')
+#   instead of triple double quotes (""") to avoid template literal evaluation issues
 global.test = (description, source, expected) ->
   # Handle optional description
   if arguments.length is 2
