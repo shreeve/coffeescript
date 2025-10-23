@@ -6,8 +6,8 @@
 # Import the helpers we plan to use.
 import {
   compact, flatten, extend, merge, del, starts, ends, some,
-addDataToNode, attachCommentsToNode, locationDataToString,
-throwSyntaxError, replaceUnicodeCodePointEscapes,
+  addDataToNode, attachCommentsToNode, locationDataToString,
+  throwSyntaxError, replaceUnicodeCodePointEscapes,
   isFunction, isPlainObject, isNumber, parseNumber
 } from './helpers'
 
