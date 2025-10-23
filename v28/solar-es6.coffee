@@ -68,6 +68,7 @@ class Generator
     @options     = { ...grammar.options, ...options }
     @parseParams = grammar.parseParams
     @yy          = {}
+    @indent      = '  '
 
     # Detect grammar mode based on export structure
     if grammar.bnf?
@@ -196,6 +197,13 @@ class Generator
       [symbols, null, null]
 
   _processGrammarAction: (action, symbols) ->
+
+    # Fix the action string indentation
+    if '\n' in action
+      if indent = action.match(/\n( +)[^\n]*$/)?[1]
+        action = action.replace ///^#{indent}///gm, @indent
+    action = @indent + action
+
     # Main dispatcher - handles both Jison and Solar formats
     if @mode is 'solar' and typeof action is 'object' and action?
       @_generateDataAction(action, symbols)
@@ -312,8 +320,7 @@ class Generator
     for action, labels of actionGroups
       actions.push labels.join(' ')
       actions.push action
-      # Only add break if the action doesn't start with 'return' (all Solar actions return)
-      actions.push 'break;' unless action.trim().startsWith('return')
+      actions.push @indent + 'break;' unless action.trim().startsWith('return')
     actions.push '}'
 
     actions.join('\n')
@@ -679,7 +686,6 @@ class Generator
     export default parser
     """
 
-    # Fail loudly if compression fails
     if @options.compress then @_compressParser parserCode else parserCode
 
   _generateModuleCore: ->
@@ -692,8 +698,8 @@ class Generator
       parseTable: #{tableCode.moduleCode},
       defaultActions: #{JSON.stringify(@defaultActions).replace /"([0-9]+)":/g, "$1:"},
       performAction: #{@performAction},
-      #{String(@parseError).replace(/^function /, '').replace(/;$/gm, '')},
-      #{String(@parse     ).replace(/^function /, '').replace(/;$/gm, '')},
+      #{String(@parseError).replace(/^function /, '')},
+      #{String(@parse     ).replace(/^function /, '')},
       trace() {},
       yy: {},
     }"""
@@ -990,12 +996,12 @@ if require.main is module
       process.exit 1
 
     # Load grammar
-    grammar = if grammarFile.endsWith('.coffee')
+    grammar = if grammarFile.endsWith('.coffee') or grammarFile.endsWith('.js')
       require(path.resolve(grammarFile))
     else if grammarFile.endsWith('.json')
       JSON.parse fs.readFileSync(grammarFile, 'utf8')
     else
-      throw new Error "Unsupported format. Use .coffee or .json"
+      throw new Error "Unsupported format. Use .coffee, .js, or .json"
     unless grammar
       throw new Error "Failed to load grammar"
 
