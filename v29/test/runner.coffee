@@ -1,6 +1,5 @@
 #!/usr/bin/env coffee
 
-# Simple ES6 Test Runner - provides test/code/fail globally to test files
 import fs from 'fs'
 import path from 'path'
 import {fileURLToPath} from 'url'
