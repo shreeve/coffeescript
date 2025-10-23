@@ -72,6 +72,7 @@ class Generator
     @options     = { ...grammar.options, ...options }
     @parseParams = grammar.parseParams
     @yy          = {}
+    @indent      = '  '
 
     # Detect grammar mode based on export structure
     if grammar.bnf?
@@ -204,7 +205,8 @@ class Generator
     # Fix the action string indentation
     if '\n' in action
       if indent = action.match(/\n( +)[^\n]*$/)?[1]
-        action = action.replace ///^#{indent}///gm, ''
+        action = action.replace ///^#{indent}///gm, @indent
+    action = @indent + action
 
     # Main dispatcher - handles both Jison and Solar formats
     if @mode is 'solar' and typeof action is 'object' and action?
@@ -322,8 +324,7 @@ class Generator
     for action, labels of actionGroups
       actions.push labels.join(' ')
       actions.push action
-      # Only add break if the action doesn't start with 'return' (all Solar actions return)
-      actions.push 'break;' unless action.trim().startsWith('return')
+      actions.push @indent + 'break;' unless action.trim().startsWith('return')
     actions.push '}'
 
     actions.join('\n')
