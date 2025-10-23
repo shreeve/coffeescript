@@ -146,8 +146,9 @@ test "regex with flags from string", """
 """, true
 
 # Empty regex
+# NOTE: test removed - it's a parse error!
+# test "empty regex", "//", //
 
-test "empty regex", "//", //
 test "empty regex test", '/(?:)/.test("")', true
 
 # Complex patterns
@@ -193,5 +194,3 @@ test "regex interpolation compiles", """
   code = CoffeeScript.compile('///a\#{b}c///')
   code.includes('RegExp')
 """, true
-
-
