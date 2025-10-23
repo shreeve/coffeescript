@@ -68,6 +68,7 @@ class Generator
     @options     = { ...grammar.options, ...options }
     @parseParams = grammar.parseParams
     @yy          = {}
+    @indent      = '  '
 
     # Detect grammar mode based on export structure
     if grammar.bnf?
@@ -200,7 +201,8 @@ class Generator
     # Fix the action string indentation
     if '\n' in action
       if indent = action.match(/\n( +)[^\n]*$/)?[1]
-        action = action.replace ///^#{indent}///gm, ''
+        action = action.replace ///^#{indent}///gm, @indent
+    action = @indent + action
 
     # Main dispatcher - handles both Jison and Solar formats
     if @mode is 'solar' and typeof action is 'object' and action?
@@ -318,8 +320,7 @@ class Generator
     for action, labels of actionGroups
       actions.push labels.join(' ')
       actions.push action
-      # Only add break if the action doesn't start with 'return' (all Solar actions return)
-      actions.push 'break;' unless action.trim().startsWith('return')
+      actions.push @indent + 'break;' unless action.trim().startsWith('return')
     actions.push '}'
 
     actions.join('\n')
@@ -985,12 +986,12 @@ if require.main is module
       process.exit 1
 
     # Load grammar
-    grammar = if grammarFile.endsWith('.coffee')
+    grammar = if grammarFile.endsWith('.coffee') or grammarFile.endsWith('.js')
       require(path.resolve(grammarFile))
     else if grammarFile.endsWith('.json')
       JSON.parse fs.readFileSync(grammarFile, 'utf8')
     else
-      throw new Error "Unsupported format. Use .coffee or .json"
+      throw new Error "Unsupported format. Use .coffee, .js, or .json"
     unless grammar
       throw new Error "Failed to load grammar"
 
