@@ -8,17 +8,11 @@ var BANNER, SWITCHES, compileJoin, compileOptions, compilePath, compileScript, c
 
 // External dependencies.
 import fs from 'fs';
-
 import path from 'path';
-
 import * as helpers from './helpers.js';
-
 import * as optparse from './optparse.js';
-
 import CoffeeScript from './index.js';
-
 import { spawn, exec } from 'child_process';
-
 import { EventEmitter } from 'events';
 
 useWinPathSep = path.sep === '\\';

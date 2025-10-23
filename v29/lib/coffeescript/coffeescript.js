@@ -3,13 +3,9 @@ var base64encode, checkShebangLine, getSourceMap, lexer, registerCompiled, withP
 
 // Main module for tokenizing, parsing, and compiling CoffeeScript to JavaScript.
 import { Lexer } from './lexer.js';
-
 import { parser } from './parser.js';
-
 import * as helpers from './helpers.js';
-
 import SourceMap from './sourcemap.js';
-
 import * as nodesModule from './nodes.js';
 
 import packageJson from '../../package.json' with { type: "json" };

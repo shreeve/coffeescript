@@ -4,9 +4,7 @@
 // Similar to the old register.coffee but for ES modules
 // Usage: node --loader coffeescript/lib/coffeescript/loader.js
 import { pathToFileURL } from 'url';
-
 import { readFileSync } from 'fs';
-
 import CoffeeScript from './index.js';
 
 // Resolve hook - handles .coffee file imports

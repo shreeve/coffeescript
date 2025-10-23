@@ -1101,10 +1101,11 @@ export var Block = (function() {
     // the result, and it's an expression, simply return it. If it's a statement,
     // ask the statement to do so.
     compileNode(o) {
-      var answer, compiledNodes, fragments, index, j, lastFragment, len1, node, ref1, top;
+      var answer, compiledIndex, compiledNodes, fragments, index, j, k, lastFragment, len1, len2, lineGap, nextExprIndex, nextIsImport, nextNode, node, nodeMapping, ref1, separator, thisExprIndex, thisIsImport, thisNode, top;
       this.tab = o.indent;
       top = o.level === LEVEL_TOP;
       compiledNodes = [];
+      nodeMapping = []; // Track which expression each compiled node came from
       ref1 = this.expressions;
       for (index = j = 0, len1 = ref1.length; j < len1; index = ++j) {
         node = ref1[index];
@@ -1120,6 +1121,7 @@ export var Block = (function() {
           // enclose it in a new scope; we just compile the statements in this
           // block along with our own.
           compiledNodes.push(node.compileNode(o));
+          nodeMapping.push(index);
         } else if (top) {
           node.front = true;
           fragments = node.compileToFragments(o);
@@ -1131,13 +1133,40 @@ export var Block = (function() {
             }
           }
           compiledNodes.push(fragments);
+          nodeMapping.push(index);
         } else {
           compiledNodes.push(node.compileToFragments(o, LEVEL_LIST));
+          nodeMapping.push(index);
         }
       }
       if (top) {
         if (this.spaced) {
-          return [].concat(this.joinFragmentArrays(compiledNodes, '\n\n'), this.makeCode('\n'));
+          // For consecutive imports, preserve original spacing instead of always using \n\n
+          answer = [];
+          for (compiledIndex = k = 0, len2 = compiledNodes.length; k < len2; compiledIndex = ++k) {
+            fragments = compiledNodes[compiledIndex];
+            answer.push(...fragments);
+            if (compiledIndex < compiledNodes.length - 1) {
+              // Get the actual expression indices
+              thisExprIndex = nodeMapping[compiledIndex];
+              nextExprIndex = nodeMapping[compiledIndex + 1];
+              thisNode = this.expressions[thisExprIndex];
+              nextNode = this.expressions[nextExprIndex];
+              thisIsImport = (thisNode != null ? thisNode.unwrap() : void 0) instanceof ImportDeclaration;
+              nextIsImport = (nextNode != null ? nextNode.unwrap() : void 0) instanceof ImportDeclaration;
+              if (thisIsImport && nextIsImport && thisNode.locationData && nextNode.locationData) {
+                // Check line gap between imports
+                lineGap = nextNode.locationData.first_line - thisNode.locationData.last_line;
+                separator = lineGap > 1 ? '\n\n' : '\n';
+                answer.push(this.makeCode(separator));
+              } else {
+                // Normal spacing for non-import or import followed by non-import
+                answer.push(this.makeCode('\n\n'));
+              }
+            }
+          }
+          answer.push(this.makeCode('\n'));
+          return answer;
         } else {
           return this.joinFragmentArrays(compiledNodes, '\n');
         }
