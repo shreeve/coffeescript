@@ -31,20 +31,16 @@ case 13:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.StatementLiteral($$[$0]));
   break;
 case 31:
-  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Op($$[$0],
-  new yy.Value(new yy.Literal(''))));
+  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Op($$[$0], new yy.Value(new yy.Literal(''))));
   break;
 case 32: case 374: case 375: case 376: case 378: case 379: case 382: case 405:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op($$[$0-1],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op($$[$0-1], $$[$0]));
   break;
 case 33: case 383:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Op($$[$0-3],
-  $$[$0-1]));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Op($$[$0-3], $$[$0-1]));
   break;
 case 34:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Op($$[$0-2].concat($$[$0-1]),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Op($$[$0-2].concat($$[$0-1]), $$[$0]));
   break;
 case 35:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Block());
@@ -57,12 +53,8 @@ case 37:
   break;
 case 38:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)((function() {
-    var ref,
-  ref1,
-  ref2,
-  ref3;
-    return new yy.JSXTag($$[$0].toString(),
-  {
+    var ref, ref1, ref2, ref3;
+    return new yy.JSXTag($$[$0].toString(), {
       tagNameLocationData: $$[$0].tagNameToken[2],
       closingTagOpeningBracketLocationData: (ref = $$[$0].closingTagOpeningBracketToken) != null ? ref[2] : void 0,
       closingTagSlashLocationData: (ref1 = $$[$0].closingTagSlashToken) != null ? ref1[2] : void 0,
@@ -75,15 +67,12 @@ case 39:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.PropertyName($$[$0].toString()));
   break;
 case 40:
-  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.NumberLiteral($$[$0].toString(),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.NumberLiteral($$[$0].toString(), {
     parsedValue: $$[$0].parsedValue
   }));
   break;
 case 42:
-  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.StringLiteral($$[$0].slice(1,
-      -1), // strip artificial quotes and unwrap to primitive string
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.StringLiteral($$[$0].slice(1, -1), { // strip artificial quotes and unwrap to primitive string
     quote: $$[$0].quote,
     initialChunk: $$[$0].initialChunk,
     finalChunk: $$[$0].finalChunk,
@@ -93,8 +82,7 @@ case 42:
   }));
   break;
 case 43:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.StringWithInterpolations(yy.Block.wrap($$[$0-1]),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.StringWithInterpolations(yy.Block.wrap($$[$0-1]), {
     quote: $$[$0-2].quote,
     startQuote: yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Literal($$[$0-2].toString()))
   }));
@@ -118,21 +106,18 @@ case 49: case 293:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)($$[$0]);
   break;
 case 50:
-  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.RegexLiteral($$[$0].toString(),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.RegexLiteral($$[$0].toString(), {
     delimiter: $$[$0].delimiter,
     heregexCommentTokens: $$[$0].heregexCommentTokens
   }));
   break;
 case 51:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.RegexWithInterpolations($$[$0-1],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.RegexWithInterpolations($$[$0-1], {
     heregexCommentTokens: $$[$0].heregexCommentTokens
   }));
   break;
 case 53:
-  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.PassthroughLiteral($$[$0].toString(),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.PassthroughLiteral($$[$0].toString(), {
     here: $$[$0].here,
     generated: $$[$0].generated
   }));
@@ -144,14 +129,12 @@ case 56:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.NullLiteral($$[$0]));
   break;
 case 57:
-  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.BooleanLiteral($$[$0].toString(),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.BooleanLiteral($$[$0].toString(), {
     originalValue: $$[$0].original
   }));
   break;
 case 58:
-  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.InfinityLiteral($$[$0].toString(),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.InfinityLiteral($$[$0].toString(), {
     originalValue: $$[$0].original
   }));
   break;
@@ -159,49 +142,34 @@ case 59:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.NaNLiteral($$[$0]));
   break;
 case 60:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Assign($$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Assign($$[$0-2], $$[$0]));
   break;
 case 61:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Assign($$[$0-3],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Assign($$[$0-3], $$[$0]));
   break;
 case 62:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Assign($$[$0-4],
-  $$[$0-1]));
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Assign($$[$0-4], $$[$0-1]));
   break;
 case 63: case 122: case 127: case 128: case 130: case 131: case 132: case 133: case 134: case 136: case 137: case 310: case 311:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Value($$[$0]));
   break;
 case 65:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Assign(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Value($$[$0-2])),
-      $$[$0],
-      'object',
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Assign(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Value($$[$0-2])), $$[$0], 'object', {
     operatorToken: yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Literal($$[$0-1]))
   }));
   break;
 case 66:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Assign(yy.addDataToNode(yy, _$[$0-4], $$[$0-4], null, null, true)(new yy.Value($$[$0-4])),
-      $$[$0-1],
-      'object',
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Assign(yy.addDataToNode(yy, _$[$0-4], $$[$0-4], null, null, true)(new yy.Value($$[$0-4])), $$[$0-1], 'object', {
     operatorToken: yy.addDataToNode(yy, _$[$0-3], $$[$0-3], null, null, true)(new yy.Literal($$[$0-3]))
   }));
   break;
 case 67:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Assign(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Value($$[$0-2])),
-      $$[$0],
-      null,
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Assign(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Value($$[$0-2])), $$[$0], null, {
     operatorToken: yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Literal($$[$0-1]))
   }));
   break;
 case 68:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Assign(yy.addDataToNode(yy, _$[$0-4], $$[$0-4], null, null, true)(new yy.Value($$[$0-4])),
-      $$[$0-1],
-      null,
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Assign(yy.addDataToNode(yy, _$[$0-4], $$[$0-4], null, null, true)(new yy.Value($$[$0-4])), $$[$0-1], null, {
     operatorToken: yy.addDataToNode(yy, _$[$0-3], $$[$0-3], null, null, true)(new yy.Literal($$[$0-3]))
   }));
   break;
@@ -209,16 +177,13 @@ case 73:
   this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Value(new yy.ComputedPropertyName($$[$0-1])));
   break;
 case 74:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Value(yy.addDataToNode(yy, _$[$0-3], $$[$0-3], null, null, true)(new yy.ThisLiteral($$[$0-3])),
-  [yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.ComputedPropertyName($$[$0-1]))],
-  'this'));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Value(yy.addDataToNode(yy, _$[$0-3], $$[$0-3], null, null, true)(new yy.ThisLiteral($$[$0-3])), [yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.ComputedPropertyName($$[$0-1]))], 'this'));
   break;
 case 76:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Splat(new yy.Value($$[$0-1])));
   break;
 case 77:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Splat(new yy.Value($$[$0]),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Splat(new yy.Value($$[$0]), {
     postfix: false
   }));
   break;
@@ -226,30 +191,21 @@ case 78: case 120:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Splat($$[$0-1]));
   break;
 case 79: case 121:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Splat($$[$0],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Splat($$[$0], {
     postfix: false
   }));
   break;
 case 85: case 220:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.SuperCall(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Super()),
-  $$[$0],
-  $$[$0-1].soak,
-  $$[$0-2]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.SuperCall(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Super()), $$[$0], $$[$0-1].soak, $$[$0-2]));
   break;
 case 86: case 221:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.DynamicImportCall(yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.DynamicImport()),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.DynamicImportCall(yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.DynamicImport()), $$[$0]));
   break;
 case 87:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Call(new yy.Value($$[$0-2]),
-  $$[$0],
-  $$[$0-1].soak));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Call(new yy.Value($$[$0-2]), $$[$0], $$[$0-1].soak));
   break;
 case 88: case 219:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Call($$[$0-2],
-  $$[$0],
-  $$[$0-1].soak));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Call($$[$0-2], $$[$0], $$[$0-1].soak));
   break;
 case 89: case 90:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)((new yy.Value($$[$0-1])).add($$[$0]));
@@ -264,50 +220,36 @@ case 93:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Return());
   break;
 case 94:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.YieldReturn($$[$0],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.YieldReturn($$[$0], {
     returnKeyword: yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Literal($$[$0-1]))
   }));
   break;
 case 95:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.YieldReturn(null,
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.YieldReturn(null, {
     returnKeyword: yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.Literal($$[$0]))
   }));
   break;
 case 96:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.AwaitReturn($$[$0],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.AwaitReturn($$[$0], {
     returnKeyword: yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Literal($$[$0-1]))
   }));
   break;
 case 97:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.AwaitReturn(null,
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.AwaitReturn(null, {
     returnKeyword: yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.Literal($$[$0]))
   }));
   break;
 case 98:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Code($$[$0-3],
-  $$[$0],
-  $$[$0-1],
-  yy.addDataToNode(yy, _$[$0-4], $$[$0-4], null, null, true)(new yy.Literal($$[$0-4]))));
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Code($$[$0-3], $$[$0], $$[$0-1], yy.addDataToNode(yy, _$[$0-4], $$[$0-4], null, null, true)(new yy.Literal($$[$0-4]))));
   break;
 case 99:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Code([],
-  $$[$0],
-  $$[$0-1]));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Code([], $$[$0], $$[$0-1]));
   break;
 case 100:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Code($$[$0-3],
-  yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(yy.Block.wrap([$$[$0]])),
-  $$[$0-1],
-  yy.addDataToNode(yy, _$[$0-4], $$[$0-4], null, null, true)(new yy.Literal($$[$0-4]))));
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Code($$[$0-3], yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(yy.Block.wrap([$$[$0]])), $$[$0-1], yy.addDataToNode(yy, _$[$0-4], $$[$0-4], null, null, true)(new yy.Literal($$[$0-4]))));
   break;
 case 101:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Code([],
-  yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(yy.Block.wrap([$$[$0]])),
-  $$[$0-1]));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Code([], yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(yy.Block.wrap([$$[$0]])), $$[$0-1]));
   break;
 case 102: case 103:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.FuncGlyph($$[$0]));
@@ -328,20 +270,15 @@ case 111:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Param($$[$0]));
   break;
 case 112:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Param($$[$0-1],
-  null,
-  true));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Param($$[$0-1], null, true));
   break;
 case 113:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Param($$[$0],
-      null,
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Param($$[$0], null, {
     postfix: false
   }));
   break;
 case 114:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Param($$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Param($$[$0-2], $$[$0]));
   break;
 case 115: case 250:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Expansion());
@@ -353,34 +290,28 @@ case 124:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Value($$[$0-1]).add($$[$0]));
   break;
 case 138:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Super(yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.Access($$[$0])),
-  yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Literal($$[$0-2]))));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Super(yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.Access($$[$0])), yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Literal($$[$0-2]))));
   break;
 case 139:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Super(yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Index($$[$0-1])),
-  yy.addDataToNode(yy, _$[$0-3], $$[$0-3], null, null, true)(new yy.Literal($$[$0-3]))));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Super(yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Index($$[$0-1])), yy.addDataToNode(yy, _$[$0-3], $$[$0-3], null, null, true)(new yy.Literal($$[$0-3]))));
   break;
 case 140:
-  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.Super(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Index($$[$0-2])),
-  yy.addDataToNode(yy, _$[$0-5], $$[$0-5], null, null, true)(new yy.Literal($$[$0-5]))));
+  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.Super(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Index($$[$0-2])), yy.addDataToNode(yy, _$[$0-5], $$[$0-5], null, null, true)(new yy.Literal($$[$0-5]))));
   break;
 case 141: case 142:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.MetaProperty(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.IdentifierLiteral($$[$0-2])),
-  yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.Access($$[$0]))));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.MetaProperty(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.IdentifierLiteral($$[$0-2])), yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.Access($$[$0]))));
   break;
 case 143:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Access($$[$0]));
   break;
 case 144:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Access($$[$0],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Access($$[$0], {
     soak: true
   }));
   break;
 case 145:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)([
-    yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Access(new yy.PropertyName('prototype'),
-    {
+    yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Access(new yy.PropertyName('prototype'), {
       shorthand: true
     })),
     yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.Access($$[$0]))
@@ -388,8 +319,7 @@ case 145:
   break;
 case 146:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)([
-    yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Access(new yy.PropertyName('prototype'),
-    {
+    yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Access(new yy.PropertyName('prototype'), {
       shorthand: true,
       soak: true
     })),
@@ -397,14 +327,12 @@ case 146:
   ]);
   break;
 case 147:
-  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Access(new yy.PropertyName('prototype'),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Access(new yy.PropertyName('prototype'), {
     shorthand: true
   }));
   break;
 case 148:
-  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Access(new yy.PropertyName('prototype'),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Access(new yy.PropertyName('prototype'), {
     shorthand: true,
     soak: true
   }));
@@ -413,8 +341,7 @@ case 151:
   this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)($$[$0-2]);
   break;
 case 152:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(yy.extend($$[$0],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(yy.extend($$[$0], {
     soak: true
   }));
   break;
@@ -425,117 +352,73 @@ case 154:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Slice($$[$0]));
   break;
 case 155:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Obj($$[$0-2],
-  $$[$0-3].generated));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Obj($$[$0-2], $$[$0-3].generated));
   break;
 case 161:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Class());
   break;
 case 162:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Class(null,
-  null,
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Class(null, null, $$[$0]));
   break;
 case 163:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Class(null,
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Class(null, $$[$0]));
   break;
 case 164:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Class(null,
-  $$[$0-1],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Class(null, $$[$0-1], $$[$0]));
   break;
 case 165:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Class($$[$0]));
   break;
 case 166:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Class($$[$0-1],
-  null,
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Class($$[$0-1], null, $$[$0]));
   break;
 case 167:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Class($$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Class($$[$0-2], $$[$0]));
   break;
 case 168:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Class($$[$0-3],
-  $$[$0-1],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Class($$[$0-3], $$[$0-1], $$[$0]));
   break;
 case 169:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.ImportDeclaration(null,
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.ImportDeclaration(null, $$[$0]));
   break;
 case 170:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.ImportDeclaration(null,
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.ImportDeclaration(null, $$[$0-2], $$[$0]));
   break;
 case 171:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-2],
-  null),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-2], null), $$[$0]));
   break;
 case 172:
-  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-4],
-  null),
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-4], null), $$[$0-2], $$[$0]));
   break;
 case 173:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null,
-  $$[$0-2]),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null, $$[$0-2]), $$[$0]));
   break;
 case 174:
-  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null,
-  $$[$0-4]),
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null, $$[$0-4]), $$[$0-2], $$[$0]));
   break;
 case 175:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null,
-  new yy.ImportSpecifierList([])),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null, new yy.ImportSpecifierList([])), $$[$0]));
   break;
 case 176:
-  this.$ = yy.addDataToNode(yy, _$[$0-6], $$[$0-6], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null,
-  new yy.ImportSpecifierList([])),
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-6], $$[$0-6], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null, new yy.ImportSpecifierList([])), $$[$0-2], $$[$0]));
   break;
 case 177:
-  this.$ = yy.addDataToNode(yy, _$[$0-6], $$[$0-6], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null,
-  new yy.ImportSpecifierList($$[$0-4])),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-6], $$[$0-6], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null, new yy.ImportSpecifierList($$[$0-4])), $$[$0]));
   break;
 case 178:
-  this.$ = yy.addDataToNode(yy, _$[$0-8], $$[$0-8], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null,
-  new yy.ImportSpecifierList($$[$0-6])),
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-8], $$[$0-8], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause(null, new yy.ImportSpecifierList($$[$0-6])), $$[$0-2], $$[$0]));
   break;
 case 179:
-  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-4],
-  $$[$0-2]),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-4], $$[$0-2]), $$[$0]));
   break;
 case 180:
-  this.$ = yy.addDataToNode(yy, _$[$0-7], $$[$0-7], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-6],
-  $$[$0-4]),
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-7], $$[$0-7], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-6], $$[$0-4]), $$[$0-2], $$[$0]));
   break;
 case 181:
-  this.$ = yy.addDataToNode(yy, _$[$0-8], $$[$0-8], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-7],
-  new yy.ImportSpecifierList($$[$0-4])),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-8], $$[$0-8], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-7], new yy.ImportSpecifierList($$[$0-4])), $$[$0]));
   break;
 case 182:
-  this.$ = yy.addDataToNode(yy, _$[$0-10], $$[$0-10], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-9],
-  new yy.ImportSpecifierList($$[$0-6])),
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-10], $$[$0-10], _$[$0], $$[$0], true)(new yy.ImportDeclaration(new yy.ImportClause($$[$0-9], new yy.ImportSpecifierList($$[$0-6])), $$[$0-2], $$[$0]));
   break;
 case 186: case 211: case 245:
   this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)($$[$0-2]);
@@ -544,22 +427,19 @@ case 188:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.ImportSpecifier($$[$0]));
   break;
 case 189:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ImportSpecifier($$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ImportSpecifier($$[$0-2], $$[$0]));
   break;
 case 190:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.ImportSpecifier(yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.DefaultLiteral($$[$0]))));
   break;
 case 191:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ImportSpecifier(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.DefaultLiteral($$[$0-2])),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ImportSpecifier(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.DefaultLiteral($$[$0-2])), $$[$0]));
   break;
 case 192:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.ImportDefaultSpecifier($$[$0]));
   break;
 case 193:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ImportNamespaceSpecifier(new yy.Literal($$[$0-2]),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ImportNamespaceSpecifier(new yy.Literal($$[$0-2]), $$[$0]));
   break;
 case 194:
   this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(new yy.ExportSpecifierList([])));
@@ -571,26 +451,17 @@ case 196:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration($$[$0]));
   break;
 case 197:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Assign($$[$0-2],
-      $$[$0],
-      null,
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Assign($$[$0-2], $$[$0], null, {
     moduleDeclaration: 'export'
   }))));
   break;
 case 198:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Assign($$[$0-3],
-      $$[$0],
-      null,
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Assign($$[$0-3], $$[$0], null, {
     moduleDeclaration: 'export'
   }))));
   break;
 case 199:
-  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Assign($$[$0-4],
-      $$[$0-1],
-      null,
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Assign($$[$0-4], $$[$0-1], null, {
     moduleDeclaration: 'export'
   }))));
   break;
@@ -601,54 +472,40 @@ case 201:
   this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.ExportDefaultDeclaration(new yy.Value($$[$0-1])));
   break;
 case 202:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.ExportAllDeclaration(new yy.Literal($$[$0-2]),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.ExportAllDeclaration(new yy.Literal($$[$0-2]), $$[$0]));
   break;
 case 203:
-  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.ExportAllDeclaration(new yy.Literal($$[$0-4]),
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.ExportAllDeclaration(new yy.Literal($$[$0-4]), $$[$0-2], $$[$0]));
   break;
 case 204:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(new yy.ExportSpecifierList([]),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(new yy.ExportSpecifierList([]), $$[$0]));
   break;
 case 205:
-  this.$ = yy.addDataToNode(yy, _$[$0-6], $$[$0-6], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(new yy.ExportSpecifierList([]),
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-6], $$[$0-6], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(new yy.ExportSpecifierList([]), $$[$0-2], $$[$0]));
   break;
 case 206:
-  this.$ = yy.addDataToNode(yy, _$[$0-6], $$[$0-6], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(new yy.ExportSpecifierList($$[$0-4]),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-6], $$[$0-6], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(new yy.ExportSpecifierList($$[$0-4]), $$[$0]));
   break;
 case 207:
-  this.$ = yy.addDataToNode(yy, _$[$0-8], $$[$0-8], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(new yy.ExportSpecifierList($$[$0-6]),
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-8], $$[$0-8], _$[$0], $$[$0], true)(new yy.ExportNamedDeclaration(new yy.ExportSpecifierList($$[$0-6]), $$[$0-2], $$[$0]));
   break;
 case 213:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.ExportSpecifier($$[$0]));
   break;
 case 214:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ExportSpecifier($$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ExportSpecifier($$[$0-2], $$[$0]));
   break;
 case 215:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ExportSpecifier($$[$0-2],
-  yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.DefaultLiteral($$[$0]))));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ExportSpecifier($$[$0-2], yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.DefaultLiteral($$[$0]))));
   break;
 case 216:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.ExportSpecifier(yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.DefaultLiteral($$[$0]))));
   break;
 case 217:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ExportSpecifier(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.DefaultLiteral($$[$0-2])),
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.ExportSpecifier(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.DefaultLiteral($$[$0-2])), $$[$0]));
   break;
 case 218:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.TaggedTemplateCall($$[$0-2],
-  $$[$0],
-  $$[$0-1].soak));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.TaggedTemplateCall($$[$0-2], $$[$0], $$[$0-1].soak));
   break;
 case 222:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)({
@@ -673,9 +530,7 @@ case 226: case 227:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Value(new yy.ThisLiteral($$[$0])));
   break;
 case 228:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Value(yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.ThisLiteral($$[$0-1])),
-  [yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.Access($$[$0]))],
-  'this'));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Value(yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.ThisLiteral($$[$0-1])), [yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.Access($$[$0]))], 'this'));
   break;
 case 229:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Arr([]));
@@ -684,8 +539,7 @@ case 230:
   this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Arr($$[$0-1]));
   break;
 case 231:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Arr([].concat($$[$0-2],
-  $$[$0-1])));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Arr([].concat($$[$0-2], $$[$0-1])));
   break;
 case 232:
   this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)({
@@ -698,37 +552,25 @@ case 233:
   });
   break;
 case 234: case 235:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Range($$[$0-3],
-  $$[$0-1],
-  $$[$0-2].exclusive ? 'exclusive' : 'inclusive'));
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Range($$[$0-3], $$[$0-1], $$[$0-2].exclusive ? 'exclusive' : 'inclusive'));
   break;
 case 236: case 238:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Range($$[$0-2],
-  $$[$0],
-  $$[$0-1].exclusive ? 'exclusive' : 'inclusive'));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Range($$[$0-2], $$[$0], $$[$0-1].exclusive ? 'exclusive' : 'inclusive'));
   break;
 case 237: case 239:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Range($$[$0-1],
-  null,
-  $$[$0].exclusive ? 'exclusive' : 'inclusive'));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Range($$[$0-1], null, $$[$0].exclusive ? 'exclusive' : 'inclusive'));
   break;
 case 240:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Range(null,
-  $$[$0],
-  $$[$0-1].exclusive ? 'exclusive' : 'inclusive'));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Range(null, $$[$0], $$[$0-1].exclusive ? 'exclusive' : 'inclusive'));
   break;
 case 241:
-  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Range(null,
-  null,
-  $$[$0].exclusive ? 'exclusive' : 'inclusive'));
+  this.$ = yy.addDataToNode(yy, _$[$0], $$[$0], _$[$0], $$[$0], true)(new yy.Range(null, null, $$[$0].exclusive ? 'exclusive' : 'inclusive'));
   break;
 case 254:
   this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)($$[$0-2].concat($$[$0-1]));
   break;
 case 255:
-  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)($$[$0-5].concat($$[$0-4],
-  $$[$0-2],
-  $$[$0-1]));
+  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)($$[$0-5].concat($$[$0-4], $$[$0-2], $$[$0-1]));
   break;
 case 259:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)([].concat($$[$0]));
@@ -740,35 +582,25 @@ case 263:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)($$[$0-1]);
   break;
 case 266: case 267:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)([].concat($$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)([].concat($$[$0-2], $$[$0]));
   break;
 case 268:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Try($$[$0]));
   break;
 case 269:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Try($$[$0-1],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Try($$[$0-1], $$[$0]));
   break;
 case 270:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Try($$[$0-2],
-  null,
-  $$[$0],
-  yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Literal($$[$0-1]))));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Try($$[$0-2], null, $$[$0], yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Literal($$[$0-1]))));
   break;
 case 271:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Try($$[$0-3],
-  $$[$0-2],
-  $$[$0],
-  yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Literal($$[$0-1]))));
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Try($$[$0-3], $$[$0-2], $$[$0], yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Literal($$[$0-1]))));
   break;
 case 272:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Catch($$[$0],
-  $$[$0-1]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Catch($$[$0], $$[$0-1]));
   break;
 case 273:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Catch($$[$0],
-  yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Value($$[$0-1]))));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Catch($$[$0], yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.Value($$[$0-1]))));
   break;
 case 274:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Catch($$[$0]));
@@ -789,20 +621,17 @@ case 279: case 283:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.While($$[$0]));
   break;
 case 280: case 284: case 285:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.While($$[$0-2],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.While($$[$0-2], {
     guard: $$[$0]
   }));
   break;
 case 281: case 286:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.While($$[$0],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.While($$[$0], {
     invert: true
   }));
   break;
 case 282: case 287: case 288:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.While($$[$0-2],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.While($$[$0-2], {
     invert: true,
     guard: $$[$0]
   }));
@@ -811,20 +640,17 @@ case 289: case 290: case 298: case 299:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)($$[$0-1].addBody($$[$0]));
   break;
 case 291: case 292:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)((Object.assign($$[$0],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)((Object.assign($$[$0], {
     postfix: true
   })).addBody(yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(yy.Block.wrap([$$[$0-1]]))));
   break;
 case 294:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.While(yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.BooleanLiteral('true')),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.While(yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.BooleanLiteral('true')), {
     isLoop: true
   }).addBody($$[$0]));
   break;
 case 295:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.While(yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.BooleanLiteral('true')),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.While(yy.addDataToNode(yy, _$[$0-1], $$[$0-1], null, null, true)(new yy.BooleanLiteral('true')), {
     isLoop: true
   }).addBody(yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(yy.Block.wrap([$$[$0]]))));
   break;
@@ -835,14 +661,12 @@ case 296: case 297:
   }()));
   break;
 case 300:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.For([],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.For([], {
     source: yy.addDataToNode(yy, _$[$0], $$[$0], null, null, true)(new yy.Value($$[$0]))
   }));
   break;
 case 301: case 303:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.For([],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.For([], {
     source: yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(new yy.Value($$[$0-2])),
     step: $$[$0]
   }));
@@ -851,20 +675,17 @@ case 302: case 304:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)($$[$0-1].addSource($$[$0]));
   break;
 case 305:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.For([],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.For([], {
     name: $$[$0][0],
     index: $$[$0][1]
   }));
   break;
 case 306:
   this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)((function() {
-    var index,
-  name;
+    var index, name;
     [name,
   index] = $$[$0];
-    return new yy.For([],
-  {
+    return new yy.For([], {
       name,
       index,
       await: true,
@@ -874,12 +695,10 @@ case 306:
   break;
 case 307:
   this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)((function() {
-    var index,
-  name;
+    var index, name;
     [name,
   index] = $$[$0];
-    return new yy.For([],
-  {
+    return new yy.For([], {
       name,
       index,
       own: true,
@@ -949,42 +768,30 @@ case 331: case 332: case 350: case 351:
   });
   break;
 case 352: case 353:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Switch($$[$0-3],
-  $$[$0-1]));
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Switch($$[$0-3], $$[$0-1]));
   break;
 case 354: case 355:
-  this.$ = yy.addDataToNode(yy, _$[$0-6], $$[$0-6], _$[$0], $$[$0], true)(new yy.Switch($$[$0-5],
-  $$[$0-3],
-  yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0-1], $$[$0-1], true)($$[$0-1])));
+  this.$ = yy.addDataToNode(yy, _$[$0-6], $$[$0-6], _$[$0], $$[$0], true)(new yy.Switch($$[$0-5], $$[$0-3], yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0-1], $$[$0-1], true)($$[$0-1])));
   break;
 case 356:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Switch(null,
-  $$[$0-1]));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Switch(null, $$[$0-1]));
   break;
 case 357:
-  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.Switch(null,
-  $$[$0-3],
-  yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0-1], $$[$0-1], true)($$[$0-1])));
+  this.$ = yy.addDataToNode(yy, _$[$0-5], $$[$0-5], _$[$0], $$[$0], true)(new yy.Switch(null, $$[$0-3], yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0-1], $$[$0-1], true)($$[$0-1])));
   break;
 case 360:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.SwitchWhen($$[$0-1],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.SwitchWhen($$[$0-1], $$[$0]));
   break;
 case 361:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], false)(yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0-1], $$[$0-1], true)(new yy.SwitchWhen($$[$0-2],
-  $$[$0-1])));
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], false)(yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0-1], $$[$0-1], true)(new yy.SwitchWhen($$[$0-2], $$[$0-1])));
   break;
 case 362: case 368:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.If($$[$0-1],
-      $$[$0],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.If($$[$0-1], $$[$0], {
     type: $$[$0-2]
   }));
   break;
 case 363: case 369:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)($$[$0-4].addElse(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.If($$[$0-1],
-      $$[$0],
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)($$[$0-4].addElse(yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.If($$[$0-1], $$[$0], {
     type: $$[$0-2]
   }))));
   break;
@@ -992,111 +799,71 @@ case 365: case 371:
   this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)($$[$0-2].addElse($$[$0]));
   break;
 case 366: case 367: case 372: case 373:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.If($$[$0],
-      yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(yy.Block.wrap([$$[$0-2]])),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.If($$[$0], yy.addDataToNode(yy, _$[$0-2], $$[$0-2], null, null, true)(yy.Block.wrap([$$[$0-2]])), {
     type: $$[$0-1],
     postfix: true
   }));
   break;
 case 377:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op($$[$0-1].toString(),
-      $$[$0],
-      void 0,
-      void 0,
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op($$[$0-1].toString(), $$[$0], void 0, void 0, {
     originalOperator: $$[$0-1].original
   }));
   break;
 case 380:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('-',
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('-', $$[$0]));
   break;
 case 381:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('+',
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('+', $$[$0]));
   break;
 case 384:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('--',
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('--', $$[$0]));
   break;
 case 385:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('++',
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('++', $$[$0]));
   break;
 case 386:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('--',
-  $$[$0-1],
-  null,
-  true));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('--', $$[$0-1], null, true));
   break;
 case 387:
-  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('++',
-  $$[$0-1],
-  null,
-  true));
+  this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Op('++', $$[$0-1], null, true));
   break;
 case 388:
   this.$ = yy.addDataToNode(yy, _$[$0-1], $$[$0-1], _$[$0], $$[$0], true)(new yy.Existence($$[$0-1]));
   break;
 case 389:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Op('+',
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Op('+', $$[$0-2], $$[$0]));
   break;
 case 390:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Op('-',
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Op('-', $$[$0-2], $$[$0]));
   break;
 case 391: case 392: case 393: case 395: case 396: case 397: case 400:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Op($$[$0-1],
-  $$[$0-2],
-  $$[$0]));
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Op($$[$0-1], $$[$0-2], $$[$0]));
   break;
 case 394: case 398: case 399:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Op($$[$0-1].toString(),
-      $$[$0-2],
-      $$[$0],
-      void 0,
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Op($$[$0-1].toString(), $$[$0-2], $$[$0], void 0, {
     originalOperator: $$[$0-1].original
   }));
   break;
 case 401:
   this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)((function() {
-    var ref,
-  ref1;
-    return new yy.Op($$[$0-1].toString(),
-  $$[$0-2],
-  $$[$0],
-  void 0,
-  {
+    var ref, ref1;
+    return new yy.Op($$[$0-1].toString(), $$[$0-2], $$[$0], void 0, {
       invertOperator: (ref = (ref1 = $$[$0-1].invert) != null ? ref1.original : void 0) != null ? ref : $$[$0-1].invert
     });
   }()));
   break;
 case 402:
-  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Assign($$[$0-2],
-      $$[$0],
-      $$[$0-1].toString(),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-2], $$[$0-2], _$[$0], $$[$0], true)(new yy.Assign($$[$0-2], $$[$0], $$[$0-1].toString(), {
     originalContext: $$[$0-1].original
   }));
   break;
 case 403:
-  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Assign($$[$0-4],
-      $$[$0-1],
-      $$[$0-3].toString(),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-4], $$[$0-4], _$[$0], $$[$0], true)(new yy.Assign($$[$0-4], $$[$0-1], $$[$0-3].toString(), {
     originalContext: $$[$0-3].original
   }));
   break;
 case 404:
-  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Assign($$[$0-3],
-      $$[$0],
-      $$[$0-2].toString(),
-      {
+  this.$ = yy.addDataToNode(yy, _$[$0-3], $$[$0-3], _$[$0], $$[$0], true)(new yy.Assign($$[$0-3], $$[$0], $$[$0-2].toString(), {
     originalContext: $$[$0-2].original
   }));
   break;
