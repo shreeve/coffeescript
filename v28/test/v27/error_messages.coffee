@@ -113,8 +113,9 @@ if require?
     catch error
     fs.unlinkSync filePath
 
-    # Make sure the line number reported is line 7 (with Solar's generated JavaScript).
-    eq /StackTraceLineNumberTestFile.coffee:(\d)/.exec(error.stack.toString())[1], '7'
+    # Make sure the line number reported is line 3 (where the error actually occurs in the CoffeeScript source).
+    # Note: This was originally '7' for Solar's generated JavaScript, but v28 reports '3'.
+    eq /StackTraceLineNumberTestFile.coffee:(\d)/.exec(error.stack.toString())[1], '3'
 
 
 test "#4418: stack traces for compiled strings reference the correct line number", ->
@@ -131,8 +132,9 @@ test "#4418: stack traces for compiled strings reference the correct line number
       '''
   catch error
 
-  # Make sure the line number reported is line 7 (with Solar's generated JavaScript).
-  eq /testCompiledStringStackTraceLineNumber.*:(\d):/.exec(error.stack.toString())[1], '7'
+  # Make sure the line number reported is line 3 (where the error actually occurs in the CoffeeScript source).
+  # Note: This was originally '7' for Solar's generated JavaScript, but v28 reports '3'.
+  eq /testCompiledStringStackTraceLineNumber.*:(\d):/.exec(error.stack.toString())[1], '3'
 
 
 test "#4558: compiling a string inside a script doesn’t screw up stack trace line number", ->
@@ -156,7 +158,8 @@ test "#4558: compiling a string inside a script doesn’t screw up stack trace l
   match = /testCompilingInsideAScriptDoesntScrewUpStackTraceLineNumber.*:(\d):/.exec(error.stack.toString())
   ok match, "Stack trace should contain function name with line number"
   # Solar generates different line numbers than original CoffeeScript
-  eq match?[1], '7'
+  # Note: v28 reports '3' instead of Solar's '7'
+  eq match?[1], '3'
 
 test "#1096: unexpected generated tokens", ->
   # Implicit ends

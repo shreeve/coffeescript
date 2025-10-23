@@ -67,7 +67,7 @@ test "#3075: v3 source map fields", ->
 
 test "node --enable-source-map built in stack trace mapping", ->
   new Promise (resolve, reject) ->
-    proc = fork './test/cs2/importing/error.coffee', [
+    proc = fork './test/v27/importing/error.coffee', [
       '--enable-source-maps'
     ], stdio: 'pipe'
 
@@ -90,7 +90,7 @@ test "node --enable-source-map built in stack trace mapping", ->
 if Number(process.versions.node.split('.')[0]) >= 14
   test "NODE_OPTIONS=--enable-source-maps environment variable stack trace mapping", ->
     new Promise (resolve, reject) ->
-      proc = fork './test/cs2/importing/error.coffee', [],
+      proc = fork './test/v27/importing/error.coffee', [],
         env:
           NODE_OPTIONS: '--enable-source-maps'
         stdio: 'pipe'
@@ -113,7 +113,7 @@ if Number(process.versions.node.split('.')[0]) >= 14
 
   test "generate correct stack traces with --enable-source-maps from bin/coffee", ->
     new Promise (resolve, reject) ->
-      proc = fork 'test/cs2/importing/error.coffee',
+      proc = fork 'test/v27/importing/error.coffee',
         ['--enable-source-maps'],
         stdio: 'pipe'
 
