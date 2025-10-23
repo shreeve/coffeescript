@@ -38,31 +38,33 @@ equal = (actual, expected) ->
 
 # Test functions that will be made global
 global.test = (description, source, expected) ->
+  # Handle optional description
   if arguments.length is 2
     [source, expected] = [description, source]
     description = "test"
 
-  try
-    # Compile and run the code
-    compiled = CoffeeScript.compile source, bare: yes
-    result = eval(compiled)
+  do ->  # Wrap in async context to allow await
+    try
+      # Compile and run the code
+      compiled = CoffeeScript.compile source, bare: yes
+      result = eval(compiled)
 
-    # Handle async results
-    if result?.then
-      result = await result
+      # Handle async results
+      if result?.then
+        result = await result
 
-    if equal result, expected
-      passed++
-      console.log "  #{green}✓ #{description}#{reset}"
-    else
+      if equal result, expected
+        passed++
+        console.log "  #{green}✓ #{description}#{reset}"
+      else
+        failed++
+        console.log "  #{red}✗ #{description}#{reset}"
+        console.log "    Expected: #{JSON.stringify expected}"
+        console.log "    Got:      #{JSON.stringify result}"
+    catch err
       failed++
-      console.log "  #{red}✗ #{description}#{reset}"
-      console.log "    Expected: #{JSON.stringify expected}"
-      console.log "    Got:      #{JSON.stringify result}"
-  catch err
-    failed++
-    console.log "  #{red}✗ #{description} (error)#{reset}"
-    console.log "    #{err.message}"
+      console.log "  #{red}✗ #{description} (error)#{reset}"
+      console.log "    #{err.message}"
 
 global.code = (description, source, expectedJS) ->
   if arguments.length is 2
@@ -120,13 +122,41 @@ runTests = ->
   testFiles = []
   for testPath in testPaths
     fullPath = path.resolve testPath
+
+    # Check if path exists
+    if not fs.existsSync(fullPath)
+      console.log "#{red}Error: File or directory not found: #{testPath}#{reset}"
+
+      # Try to provide helpful suggestions
+      if testPath.endsWith('.coffee')
+        # Check if they forgot "old/" subdirectory
+        altPath = path.join(path.dirname(testPath), 'old', path.basename(testPath))
+        if fs.existsSync(path.resolve(altPath))
+          console.log "#{yellow}Did you mean: #{altPath}?#{reset}"
+
+      process.exit 1
+
     stat = fs.statSync fullPath
     if stat.isDirectory()
       testFiles = testFiles.concat findCoffeeFiles(fullPath)
     else if stat.isFile() and testPath.endsWith('.coffee')
       testFiles.push fullPath
+    else if stat.isFile()
+      console.log "#{yellow}Warning: Skipping non-CoffeeScript file: #{testPath}#{reset}"
+    else
+      console.log "#{yellow}Warning: Unknown file type: #{testPath}#{reset}"
+
+  # Exit gracefully if no test files found
+  if testFiles.length is 0
+    console.log "#{yellow}No test files found.#{reset}"
+    process.exit 0
 
   console.log "#{bold}Running #{testFiles.length} test file(s)#{reset}\n"
+
+  # Save the original test functions once
+  originalTest = global.test
+  originalCode = global.code
+  originalFail = global.fail
 
   # Run each test file
   for file in testFiles
@@ -139,8 +169,18 @@ runTests = ->
       source = fs.readFileSync file, 'utf8'
       compiled = CoffeeScript.compile source, bare: yes, filename: file
 
+      # Collect test promises
+      global.testPromises = []
+      global.test = (description, source, expected) ->
+        promise = originalTest(description, source, expected)
+        global.testPromises.push promise if promise?.then
+        promise
+
       # Execute in global context with test functions available
-      await eval(compiled)
+      eval(compiled)
+
+      # Wait for all tests to complete
+      await Promise.all(global.testPromises) if global.testPromises.length > 0
 
     catch err
       failed++
@@ -148,6 +188,11 @@ runTests = ->
       console.log "    #{err.message}"
 
     console.log ""
+
+  # Restore original functions after all tests
+  global.test = originalTest
+  global.code = originalCode
+  global.fail = originalFail
 
   # Print summary
   console.log "#{bold}─────────────────────────────────────#{reset}"

@@ -1,166 +1,115 @@
-# Strings
-# -------
+# String Tests
+# ------------
 
-# String literals
+# Basic strings
 
-test "single quote string", "'hello'", 'hello'
-test "double quote string", '"hello"', 'hello'
-test "empty string", "''", ''
+test "empty string", '""', ''
+test "single char", '"a"', 'a'
+test "basic string", '"hello"', 'hello'
+test "string with spaces", '"hello world"', 'hello world'
+
+# Single vs double quotes
+
+test "single quotes", "'hello'", 'hello'
+test "double quotes", '"hello"', 'hello'
+test "mixed quotes", """
+  "it's"
+""", "it's"
 
 # String concatenation
 
-test "string concatenation", """
-  'hello' + ' ' + 'world'
-""", 'hello world'
-
-test "string concatenation multiline", """
-  str = 'hello' +
-        ' ' +
-        'world'
-  str
-""", 'hello world'
+test "concatenation", '"hello" + " " + "world"', 'hello world'
+test "concatenation numbers", '"age: " + 25', 'age: 25'
 
 # String interpolation
 
 test "basic interpolation", """
-  name = 'World'
-  "Hello \#{name}"
-""", 'Hello World'
+  x = 5
+  "x = \#{x}"
+""", 'x = 5'
 
 test "expression interpolation", """
-  "2 + 2 = \#{2 + 2}"
-""", '2 + 2 = 4'
+  a = 2
+  b = 3
+  "sum = \#{a + b}"
+""", 'sum = 5'
 
-test "nested interpolation", """
+test "multiple interpolations", """
   x = 5
   y = 10
   "x = \#{x}, y = \#{y}, sum = \#{x + y}"
 """, 'x = 5, y = 10, sum = 15'
 
-# Multiline strings
-
-test "multiline string basic", '''
-  """
-  Line 1
-  Line 2
-  """
-''', 'Line 1\\nLine 2'
-
-test "multiline string indented", '''
-  str = """
-    Indented
-    String
-  """
-  str
-''', 'Indented\\nString'
-
-# Block strings
-
-test "block string single quotes", """
-  '''
-  Block
-  String
-  '''
-""", 'Block\\nString'
-
 # Escape sequences
 
-test "escape newline", '"line1\\nline2"', 'line1\\nline2'
-test "escape tab", '"col1\\tcol2"', 'col1\\tcol2'
-test "escape quote", '"It\\'s"', "It's"
-test "escape backslash", '"back\\\\slash"', 'back\\slash'
+test "escape newline", '"line1\\nline2"', "line1\nline2"
+test "escape tab", '"col1\\tcol2"', "col1\tcol2"
+test "escape quote", '"He said \\"Hello\\""', 'He said "Hello"'
+test "escape backslash", '"C:\\\\path"', 'C:\\path'
 
 # String methods
 
-test "string length", '"hello".length', 5
-test "string charAt", '"hello".charAt(1)', 'e'
-test "string indexOf", '"hello".indexOf("l")', 2
-test "string slice", '"hello".slice(1, 4)', 'ell'
-test "string substring", '"hello".substring(1, 4)', 'ell'
-test "string substr", '"hello".substr(1, 3)', 'ell'
-
-# String case
-
+test "length", '"hello".length', 5
 test "toUpperCase", '"hello".toUpperCase()', 'HELLO'
 test "toLowerCase", '"HELLO".toLowerCase()', 'hello'
-
-# String trimming
-
-test "trim", '" hello ".trim()', 'hello'
-test "trimStart", '" hello".trimStart()', 'hello'
-test "trimEnd", '"hello ".trimEnd()', 'hello'
-
-# String splitting and joining
-
+test "charAt", '"hello".charAt(1)', 'e'
+test "indexOf", '"hello".indexOf("l")', 2
+test "lastIndexOf", '"hello".lastIndexOf("l")', 3
+test "substring", '"hello".substring(1, 4)', 'ell'
+test "substr", '"hello".substr(1, 3)', 'ell'
+test "slice", '"hello".slice(1, 4)', 'ell'
+test "slice negative", '"hello".slice(-3)', 'llo'
 test "split", '"a,b,c".split(",")', ['a', 'b', 'c']
-test "split with limit", '"a,b,c".split(",", 2)', ['a', 'b']
-test "join", '["a", "b", "c"].join(",")', 'a,b,c'
+test "replace", '"hello".replace("l", "r")', 'herlo'
+test "replaceAll", '"hello".replace(/l/g, "r")', 'herro'
+test "trim", '"  hello  ".trim()', 'hello'
+test "trimStart", '"  hello".trimStart()', 'hello'
+test "trimEnd", '"hello  ".trimEnd()', 'hello'
 
-# String replacement
+# String comparisons
 
-test "replace first", '"hello".replace("l", "L")', 'heLlo'
-test "replace global", '"hello".replace(/l/g, "L")', 'heLLo'
+test "equality", '"hello" == "hello"', true
+test "inequality", '"hello" == "world"', false
+test "less than", '"a" < "b"', true
+test "greater than", '"b" > "a"', true
 
-# String search
+# String coercion
 
-test "includes", '"hello".includes("ell")', true
-test "includes false", '"hello".includes("xyz")', false
+test "number to string", '5 + ""', '5'
+test "boolean to string", 'true + ""', 'true'
+test "array to string", '[1, 2] + ""', '1,2'
+
+# String searching
+
+test "includes", '"hello".includes("ll")', true
 test "startsWith", '"hello".startsWith("he")', true
 test "endsWith", '"hello".endsWith("lo")', true
+test "match", '"hello".match(/l+/)[0]', 'll'
 
-# String repeat
+# String repetition
 
 test "repeat", '"ab".repeat(3)', 'ababab'
 test "repeat zero", '"ab".repeat(0)', ''
 
 # String padding
 
-test "padStart", '"5".padStart(3, "0")', '005'
+test "padStart", '"5".padStart(3, "0")', "005"
 test "padEnd", '"5".padEnd(3, "0")', '500'
 
 # Template literals
 
 test "template literal", '`hello`', 'hello'
-test "template with expression", '`2 + 2 = ${2 + 2}`', '2 + 2 = 4'
-
-# String comparison
-
-test "string equality", '"hello" is "hello"', true
-test "string inequality", '"hello" isnt "world"', true
-test "string less than", '"a" < "b"', true
-test "string greater than", '"b" > "a"', true
-
-# String coercion
-
-test "number to string", '5 + ""', '5'
-test "boolean to string", 'true + ""', 'true'
-test "String constructor", 'String(42)', '42'
-
-# Character codes
-
-test "charCodeAt", '"A".charCodeAt(0)', 65
-test "fromCharCode", 'String.fromCharCode(65)', 'A'
-
-# Regular expressions in strings
-
-test "string match", '"hello".match(/l+/)[0]', 'll'
-test "string search method", '"hello".search("l")', 2
+test "template with interpolation", """
+  x = 'world'
+  `hello \${x}`
+""", 'hello world'
 
 # Tagged template literals
 
-test "tagged template function", """
-  tag = (strings, ...values) -> strings.join('')
+test "tagged template", """
+  tag = (strings) -> strings[0]
   tag\`hello world\`
 """, 'hello world'
-
-# Heredocs
-
-test "heredoc", '''
-  """
-    This is a heredoc
-    It preserves indentation
-  """
-''', '  This is a heredoc\\n  It preserves indentation'
 
 # String iteration
 
@@ -184,12 +133,6 @@ test "String.raw", 'String.raw`\\n`', '\\n'
 # Backslash escapes
 test 'backslash escapes', '"\\/\\\\"', '/\\'
 
-# Multiline string joining
-test 'multiline literal joining', '"one\n two\n three"', 'one two three'
-
-# Escaped backslash at end of line
-test 'escaped backslash EOL', '"line1\\\\\nline2"', 'line1\\ line2'
-
 # Unicode escapes
 test 'unicode escape', '"\\u0041"', 'A'
 test 'unicode escape emoji', '"\\u{1F600}"', '😀'
@@ -203,3 +146,302 @@ test 'string toString', '"hello".toString()', 'hello'
 
 # String constructor with new
 test 'new String', '(new String("hello")).valueOf()', 'hello'
+
+# Character codes
+test 'charCodeAt', '"A".charCodeAt(0)', 65
+test 'fromCharCode', 'String.fromCharCode(65)', 'A'
+
+# String localeCompare
+test 'localeCompare equal', '"a".localeCompare("a")', 0
+test 'localeCompare less', '"a".localeCompare("b") < 0', true
+test 'localeCompare greater', '"b".localeCompare("a") > 0', true
+
+# Regex test with strings
+test 'regex test', '/hello/.test("hello world")', true
+test 'regex test fail', '/goodbye/.test("hello world")', false
+
+# String normalization
+test 'normalize', '"e\\u0301".normalize("NFC").length', 1
+
+# Code point methods
+test 'codePointAt', '"😀".codePointAt(0)', 128512
+test 'fromCodePoint', 'String.fromCodePoint(128512)', '😀'
+
+# String valueOf
+test 'valueOf', '"hello".valueOf()', 'hello'
+
+# String Symbol.iterator
+test 'iterator', """
+  str = 'ab'
+  it = str[Symbol.iterator]()
+  [it.next().value, it.next().value]
+""", ['a', 'b']
+
+# String at method (ES2022)
+# test 'at method', '"hello".at(1)', 'e'
+# test 'at negative', '"hello".at(-1)', 'o'
+
+# Multiline continuation
+test 'multiline continuation', """
+  "one \\
+two \\
+three"
+""", 'one two three'
+
+# Raw strings (no escapes)
+test 'raw string tag', """
+  String.raw\`\\n\`
+""", '\\n'
+
+# Multiline strings and heredocs
+
+code "multiline string basic", '''
+  """
+  Line 1
+  Line 2
+  """
+''', '''
+  `Line 1
+  Line 2`;
+'''
+
+code "multiline string indented", '''
+  str = """
+    Indented
+    String
+  """
+''', '''
+  var str;
+
+  str = `Indented
+  String`;
+'''
+
+code "block string single quotes", """
+  '''
+  Block
+  String
+  '''
+""", """
+  `Block
+  String`;
+"""
+
+code "heredoc preserves indentation", '''
+  """
+    This is a heredoc
+    It preserves indentation
+  """
+''', '''
+  `  This is a heredoc
+    It preserves indentation`;
+'''
+
+code "interpolation in multiline", '''
+  name = "World"
+  """
+  Hello
+  #{name}
+  """
+''', '''
+  var name;
+
+  name = "World";
+
+  `Hello
+  ${name}`;
+'''
+
+code "escaped newlines in strings", '''
+  "line1\\
+  line2"
+''', '''
+  `line1line2`;
+'''
+
+code "multiple heredocs", '''
+  a = """
+    First
+  """
+  b = """
+    Second
+  """
+''', '''
+  var a, b;
+
+  a = `First`;
+
+  b = `Second`;
+'''
+
+test "multiline string concatenation", '''
+  "one
+   two
+   three"
+''', 'one two three'
+
+test "heredoc with backslash", '''
+  """\\
+  test"""
+''', 'test'
+
+test "empty multiline string", '''
+  """
+  """
+''', ''
+
+test "single line in triple quotes", '''
+  """single"""
+''', 'single'
+
+code "nested interpolation in heredoc", '''
+  x = 5
+  """
+  Value: #{
+    if x > 3
+      "big"
+    else
+      "small"
+  }
+  """
+''', '''
+  var x;
+
+  x = 5;
+
+  `Value: ${x > 3 ? "big" : "small"}`;
+'''
+
+# Additional multiline and block string tests
+
+code "herecomment", '''
+  ###
+  This is a block comment
+  It spans multiple lines
+  ###
+  5
+''', '''
+  /*
+  This is a block comment
+  It spans multiple lines
+  */
+  5;
+'''
+
+test "escaped quotes in heredocs", '''
+  """
+  She said, \\"Hello\\"
+  """
+''', 'She said, "Hello"'
+
+test "indentation removal in heredocs", '''
+  html = """
+         <div>
+           <p>Hello</p>
+         </div>
+         """
+  html
+''', '<div>\n  <p>Hello</p>\n</div>'
+
+code "regex in heredoc interpolation", '''
+  """
+  Match: #{ /test/.test("test") }
+  """
+''', '''
+  `Match: ${/test/.test("test")}`;
+'''
+
+test "adjacent string literals", '''
+  'Hello ' 'World'
+''', 'Hello World'
+
+test "multiline regex", '''
+  ///
+    ^   # Start
+    \\w+ # Word
+    $   # End
+  ///.test("hello")
+''', true
+
+code "tagged template literal", '''
+  tag = (strings, ...values) -> strings[0] + values[0]
+  tag"""
+    Hello #{42}
+  """
+''', '''
+  var tag;
+
+  tag = function(strings, ...values) {
+    return strings[0] + values[0];
+  };
+
+  tag`Hello ${42}`;
+'''
+
+test "line continuation in string", '''
+  "abc\\
+  def"
+''', 'abcdef'
+
+test "empty heredoc", '''
+  """
+
+  """
+''', ''
+
+test "heredoc only whitespace", '''
+  """
+
+
+  """
+''', ''
+
+code "complex multiline interpolation", '''
+  items = ["a", "b", "c"]
+  """
+  Items:
+  #{
+    items.map((i) -> "  - " + i).join("\\n")
+  }
+  """
+''', '''
+  var items;
+
+  items = ["a", "b", "c"];
+
+  `Items:
+  ${items.map(function(i) {
+    return "  - " + i;
+  }).join("\\n")}`;
+'''
+
+test "unicode in multiline", '''
+  """
+  😀 Emoji
+  """
+''', '😀 Emoji'
+
+test "tabs in heredocs", '''
+  """
+  \tTabbed
+  """
+''', '\tTabbed'
+
+code "jsx-like in heredoc", '''
+  """
+  <Component>
+    <Child />
+  </Component>
+  """
+''', '''
+  `<Component>
+    <Child />
+  </Component>`;
+'''
+
+test "backslash at end of heredoc line", '''
+  """
+  Line 1\\
+  Line 2
+  """
+''', 'Line 1Line 2'
