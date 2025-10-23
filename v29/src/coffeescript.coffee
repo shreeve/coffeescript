@@ -136,7 +136,7 @@ export compile = withPrettyErrors (code, options = {}) ->
   if match = js.match(/^((?:(?:\/\/.*|\s*)(?:\n|$))*?)(var\s+[\s\S]*?;\n+)/m)
     [full, before, varDecl] = match
     js = "#{header}#{varDecl}#{js.replace(full, before)}"
-  else
+  else if header
     js = "#{header}\n#{js}"
 
   if generateSourceMap
