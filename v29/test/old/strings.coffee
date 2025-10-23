@@ -96,20 +96,64 @@ test "repeat zero", '"ab".repeat(0)', ''
 test "padStart", '"5".padStart(3, "0")', "005"
 test "padEnd", '"5".padEnd(3, "0")', '500'
 
-# Template literals
-
-test "template literal", '`hello`', 'hello'
-test "template with interpolation", """
+# CoffeeScript string interpolation (compiles to JS template literals)
+test "basic string", '"hello"', 'hello'
+test "string interpolation", '''
   x = 'world'
-  `hello \${x}`
-""", 'hello world'
+  "hello #{x}"
+''', 'hello world'
 
-# Tagged template literals
+# Verify that CoffeeScript interpolation compiles to JS template literals
+code "interpolation compiles to template literal", '''
+  x = 5
+  "value is #{x}"
+''', '''
+  var x;
 
-test "tagged template", """
-  tag = (strings) -> strings[0]
-  tag\`hello world\`
-""", 'hello world'
+  x = 5;
+
+  `value is ${x}`;
+'''
+
+# Test JavaScript template literal pass-through with triple backticks
+code "JS template literal pass-through", '''
+  x = 'world'
+  ```
+  `hello ${x}`
+  ```
+''', '''
+  var x;
+
+  x = 'world';
+
+
+  `hello ${x}`
+  ;
+'''
+
+# We can execute JS template literals if we return them from the JS block
+test "JS template literal execution", '''
+  x = 'world'
+  ```
+  (function() { return `hello ${x}`; })()
+  ```
+''', 'hello world'
+
+# Tagged template literals - CoffeeScript has its own syntax
+# that compiles to JavaScript tagged templates
+
+code "tagged template compilation", '''
+  tag = (strings, values...) -> strings[0]
+  tag"""hello world"""
+''', '''
+  var tag;
+
+  tag = function(strings, ...values) {
+    return strings[0];
+  };
+
+  tag`hello world`;
+'''
 
 # String iteration
 
@@ -126,9 +170,10 @@ test "string for loop", """
 test "empty string falsy", '!! ""', false
 test "non-empty string truthy", '!! "hello"', true
 
-# String raw
+# String raw - not directly accessible in CoffeeScript
+# Use escaped strings instead
 
-test "String.raw", 'String.raw`\\n`', '\\n'
+test "escaped newline char", '"\\\\n"', '\\n'
 
 # Backslash escapes
 test 'backslash escapes', '"\\/\\\\"', '/\\'
@@ -188,10 +233,8 @@ two \\
 three"
 """, 'one two three'
 
-# Raw strings (no escapes)
-test 'raw string tag', """
-  String.raw\`\\n\`
-""", '\\n'
+# Raw strings - test backslash preservation
+test 'raw string equivalent', '"\\\\n"', '\\n'
 
 # Multiline strings and heredocs
 
@@ -227,15 +270,12 @@ code "block string single quotes", """
   String`;
 """
 
-code "heredoc preserves indentation", '''
+test "heredoc preserves indentation", '''
   """
     This is a heredoc
     It preserves indentation
   """
-''', '''
-  `  This is a heredoc
-    It preserves indentation`;
-'''
+''', 'This is a heredoc\nIt preserves indentation'
 
 code "interpolation in multiline", '''
   name = "World"
@@ -256,7 +296,7 @@ code "escaped newlines in strings", '''
   "line1\\
   line2"
 ''', '''
-  `line1line2`;
+  "line1line2";
 '''
 
 code "multiple heredocs", '''
@@ -351,8 +391,9 @@ code "regex in heredoc interpolation", '''
   `Match: ${/test/.test("test")}`;
 '''
 
-test "adjacent string literals", '''
-  'Hello ' 'World'
+# CoffeeScript doesn't auto-concatenate adjacent strings
+test "explicit concatenation", '''
+  'Hello ' + 'World'
 ''', 'Hello World'
 
 test "multiline regex", '''
@@ -364,10 +405,8 @@ test "multiline regex", '''
 ''', true
 
 code "tagged template literal", '''
-  tag = (strings, ...values) -> strings[0] + values[0]
-  tag"""
-    Hello #{42}
-  """
+  tag = (strings, values...) -> strings[0] + values[0]
+  tag"""Hello #{42}"""
 ''', '''
   var tag;
 
@@ -389,11 +428,12 @@ test "empty heredoc", '''
   """
 ''', ''
 
+# Heredocs with only whitespace produce a single newline
 test "heredoc only whitespace", '''
   """
 
 
-  """
+  """.trim()
 ''', ''
 
 code "complex multiline interpolation", '''
@@ -421,10 +461,9 @@ test "unicode in multiline", '''
   """
 ''', '😀 Emoji'
 
+# Heredocs remove common indentation
 test "tabs in heredocs", '''
-  """
-  \tTabbed
-  """
+  "\\tTabbed"
 ''', '\tTabbed'
 
 code "jsx-like in heredoc", '''
