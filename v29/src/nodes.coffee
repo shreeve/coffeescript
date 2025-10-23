@@ -2510,7 +2510,6 @@ export class Range extends Base
     # The final loop body.
     [@makeCode "#{varPart}; #{condPart}; #{stepPart}"]
 
-
   # When used as a value, expand the range into the equivalent array.
   compileArray: (o) ->
     known = @fromNum? and @toNum?

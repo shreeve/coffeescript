@@ -8,7 +8,6 @@
 # map file — which is a compact, VLQ-encoded representation of the JSON serialization
 # of this information — to write out alongside the generated JavaScript.
 
-
 # LineMap
 # -------
 
@@ -27,7 +26,6 @@ class LineMap
   sourceLocation: (column) ->
     column-- until (mapping = @columns[column]) or (column <= 0)
     mapping and [mapping.sourceLine, mapping.sourceColumn]
-
 
 # SourceMap
 # ---------
@@ -150,7 +148,6 @@ export default class SourceMap
 
     v3
 
-
   # Base64 VLQ Encoding
   # -------------------
 
@@ -181,7 +178,6 @@ export default class SourceMap
       answer += @encodeBase64 nextChunk
 
     answer
-
 
   # Regular Base64 Encoding
   # -----------------------
