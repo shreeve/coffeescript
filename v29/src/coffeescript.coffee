@@ -1,6 +1,5 @@
 # Main module for tokenizing, parsing, and compiling CoffeeScript to JavaScript.
 
-
 import {Lexer}          from './lexer'
 import {parser}         from './parser'
 import * as helpers     from './helpers'
