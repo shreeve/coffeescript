@@ -831,10 +831,12 @@ exports.Block = class Block extends Base
             if Object::hasOwnProperty.call o.scope.comments, declaredVariable
               fragments.push o.scope.comments[declaredVariable]...
             if declaredVariablesIndex isnt declaredVariables.length - 1
-              fragments.push @makeCode ', '
+              comma = @makeCode ', '
+              comma.isVarDeclarationComma = yes  # Mark this comma so arrays don't reformat it
+              fragments.push comma
         if assigns
-          fragments.push @makeCode ",\n#{@tab + TAB}" if declars
-          fragments.push @makeCode scope.assignedVariables().join(",\n#{@tab + TAB}")
+          fragments.push @makeCode ", " if declars
+          fragments.push @makeCode scope.assignedVariables().join(", ")
         fragments.push @makeCode ";\n#{if @spaced then '\n' else ''}"
       else if fragments.length and post.length
         fragments.push @makeCode "\n"
@@ -2854,14 +2856,17 @@ exports.Arr = class Arr extends Base
       # Add ', ' if all `Elisions` from the beginning of the array are processed (e.g. [, , , a]) and
       # element isn't `Elision` or last element is `Elision` (e.g. [a,,b,,])
       if index isnt 0 and passedElision and (not fragmentIsElision(fragments) or index is olen - 1)
-        answer.push @makeCode ', '
+        separator = @makeCode ', '
+        separator.isArraySeparator = yes  # Mark this as an array element separator
+        answer.push separator
       passedElision = passedElision or not fragmentIsElision fragments
       answer.push fragments...
     if includesLineCommentsOnNonFirstElement or '\n' in fragmentsToText(answer)
       for fragment, fragmentIndex in answer
         if fragment.isHereComment
           fragment.code = "#{multident(fragment.code, o.indent, no)}\n#{o.indent}"
-        else if fragment.code is ', ' and not fragment?.isElision and fragment.type not in ['StringLiteral', 'StringWithInterpolations']
+        else if fragment.code is ', ' and fragment.isArraySeparator
+          # Only reformat commas that are array element separators
           fragment.code = ",\n#{o.indent}"
       answer.unshift @makeCode "[\n#{o.indent}"
       answer.push @makeCode "\n#{@tab}]"
