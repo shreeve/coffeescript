@@ -137,8 +137,7 @@ export class Scope
     "#{v.name} = #{v.type.value}" for v in @variables when v.type.assigned
 
 # Functions required by parser.
-export {extend}
-export {addDataToNode}
+export {extend, addDataToNode}
 
 # Constant functions for nodes that don't need customization.
 YES     = -> yes

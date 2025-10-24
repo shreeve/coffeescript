@@ -235,6 +235,7 @@ export class Lexer
         alias = id
         id = COFFEE_ALIAS_MAP[id]
         tokenData.original = alias
+
       tag = switch id
         when '!'                 then 'UNARY'
         when '==', '!='          then 'COMPARE'
