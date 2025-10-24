@@ -5,20 +5,20 @@ import { repeat } from './helpers.js';
 
 // A simple **OptionParser** class to parse option flags from the command-line.
 // Use it like so:
-
+//
 //     parser  = new OptionParser switches, helpBanner
 //     options = parser.parse process.argv
-
+//
 // The first non-option is considered to be the start of the file (and file
 // option) list, and all subsequent arguments are left unparsed.
-
+//
 // The `coffee` command uses an instance of **OptionParser** to parse its
 // command-line arguments in `src/command.coffee`.
 export var OptionParser = class OptionParser {
   // Initialize with a list of valid options, in the form:
-
+  //
   //     [short-flag, long-flag, description]
-
+  //
   // Along with an optional banner for the usage help.
   constructor(ruleDeclarations, banner) {
     this.banner = banner;

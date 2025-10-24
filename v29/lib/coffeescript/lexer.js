@@ -5,9 +5,9 @@ var BOM, BOOL, CALLABLE, CODE, COFFEE_ALIASES, COFFEE_ALIAS_MAP, COFFEE_KEYWORDS
 // matches against the beginning of the source code. When a match is found,
 // a token is produced, we consume the match, and start again. Tokens are in the
 // form:
-
+//
 //     [tag, value, locationData]
-
+//
 // where locationData is {first_line, first_column, last_line, last_column, last_line_exclusive, last_column_exclusive}.
 // These are read by the parser in the `parser.lexer` function defined in coffeescript.coffee.
 import { Rewriter, INVERSES, UNFINISHED } from './rewriter.js';
@@ -37,10 +37,10 @@ export var Lexer = class Lexer {
   // remaining code, or a custom recursive token-matching method
   // (for interpolations). When the next token has been recorded, we move forward
   // within the code past the token, and begin again.
-
+  //
   // Each tokenizing method is responsible for returning the number of characters
   // it has consumed.
-
+  //
   // Before returning the token stream, run it through the [Rewriter](rewriter.html).
   tokenize(code, opts = {}) {
     var consumed, end, i, ref;
@@ -709,11 +709,11 @@ export var Lexer = class Lexer {
   // Matches newlines, indents, and outdents, and determines which is which.
   // If we can detect that the current line is continued onto the next line,
   // then the newline is suppressed:
-
+  //
   //     elements
   //       .each( ... )
   //       .map( ... )
-
+  //
   // Keeps track of the level of indentation, because a single outdent token
   // can close multiple indents, so we need to know how far in we happen to be.
   lineToken({chunk = this.chunk, offset = 0} = {}) {
@@ -1266,12 +1266,12 @@ export var Lexer = class Lexer {
   // Match the contents of a delimited token and expand variables and expressions
   // inside it using Ruby-like notation for substitution of arbitrary
   // expressions.
-
+  //
   //     "Hello #{name.capitalize()}."
-
+  //
   // If it encounters an interpolation, this method will recursively create a new
   // Lexer and tokenize until the `{` of `#{` is balanced with a `}`.
-
+  //
   //  - `regex` matches the contents of a token (but not `delimiter`, and not
   //    `#{` if interpolations are desired).
   //  - `delimiter` is the delimiter of the token. Examples are `'`, `"`, `'''`,
@@ -1279,7 +1279,7 @@ export var Lexer = class Lexer {
   //  - `closingDelimiter` is different from `delimiter` only in JSX
   //  - `interpolators` matches the start of an interpolation, for JSX it's both
   //    `{` and `<` (i.e. nested JSX tag)
-
+  //
   // This method allows us to have strings within interpolations within strings,
   // ad infinitum.
   matchWithInterpolations(regex, delimiter, closingDelimiter = delimiter, interpolators = /^#\{/) {
@@ -1496,10 +1496,10 @@ export var Lexer = class Lexer {
         this.error(`unmatched ${tag}`);
       }
       // Auto-close `INDENT` to support syntax like this:
-
+      //
       //     el.click((event) ->
       //       el.hide())
-
+      //
       ref1 = this.indents, [lastIndent] = slice.call(ref1, -1);
       this.outdentToken({
         moveOut: lastIndent,
@@ -1535,7 +1535,7 @@ export var Lexer = class Lexer {
   }
 
   // Returns the line and column number from an offset into the current chunk.
-
+  //
   // `offset` is a number of characters into `@chunk`.
   getLineAndColumnFromChunk(offset) {
     var column, columnCompensation, compensation, lastLine, lineCount, previousLinesCompensation, ref, string;
@@ -1608,7 +1608,7 @@ export var Lexer = class Lexer {
   // `offset` is the offset into the current `@chunk` where the token starts.
   // `length` is the length of the token in the `@chunk`, after the offset.  If
   // not specified, the length of `value` will be used.
-
+  //
   // Returns the new token.
   token(tag, value, {offset, length, origin, data, generated, indentSize} = {}) {
     var token;
@@ -1926,7 +1926,7 @@ COMPARABLE_LEFT_SIDE = ['IDENTIFIER', ')', ']', 'NUMBER'];
 
 // Tokens which a regular expression will never immediately follow (except spaced
 // CALLABLEs in some cases), but which a division operator can.
-
+//
 // See: http://www-archive.mozilla.org/js/language/js20-2002-04/rationale/syntax.html#regular-expressions
 NOT_REGEX = INDEXABLE.concat(['++', '--']);
 

@@ -5,7 +5,7 @@ var LineMap;
 // the original source code that corresponds to it. This can be minified
 // JavaScript, but in our case, we're concerned with mapping pretty-printed
 // JavaScript back to CoffeeScript.
-
+//
 // In order to produce maps, we must keep track of positions (line number, column number)
 // that originated every node in the syntax tree, and be able to generate a
 // map file — which is a compact, VLQ-encoded representation of the JSON serialization
@@ -53,7 +53,7 @@ export default (function() {
 
     // Maps locations in a single generated JavaScript file back to locations in
   // the original CoffeeScript source file.
-
+  //
   // This is intentionally agnostic towards how a source map might be represented on
   // disk. Once the compiler is ready to produce a "v3"-style source map, we can walk
   // through the arrays of line and column buffer to produce it.

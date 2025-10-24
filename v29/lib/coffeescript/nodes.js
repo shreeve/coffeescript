@@ -438,7 +438,7 @@ export var Base = (function() {
     // If the code generation wishes to use the result of a complex expression
     // in multiple places, ensure that the expression is only ever evaluated once,
     // by assigning it to a temporary variable. Pass a level to precompile.
-
+    //
     // If `level` is passed, then returns `[val, ref]`, where `val` is the compiled value, and `ref`
     // is the compiled reference. If `level` is not passed, this returns `[val, ref]` where
     // the two values are raw nodes which have not been compiled.
@@ -463,7 +463,7 @@ export var Base = (function() {
     // result of the expression is available before its location in the source, but the expression's
     // variable scope corresponds to the source position. This is used extensively to deal with executable
     // class bodies in classes.
-
+    //
     // Calling this method mutates the node, proxying the `compileNode` and `compileToFragments`
     // methods to store their result for later replacing the `target` node, which is returned by the
     // call.
@@ -2654,7 +2654,7 @@ export var LineComment = class LineComment extends Base {
 
   compileNode(o) {
     var fragment;
-    fragment = this.makeCode(/^\s*$/.test(this.content) ? '' : `${this.precededByBlankLine ? `\n${o.indent}` : ''}//${this.content}`);
+    fragment = this.makeCode(`${this.precededByBlankLine ? `\n${o.indent}` : ''}//${this.content}`);
     fragment.newLine = this.newLine;
     fragment.unshift = this.unshift;
     fragment.trail = !this.newLine && !this.unshift;
@@ -4587,13 +4587,13 @@ export var Class = (function() {
     }
 
     // Add an expression to the class initializer
-
+    //
     // This is the key method for determining whether an expression in a class
     // body should appear in the initializer or the executable body. If the given
     // `node` is valid in a class body the method will return a (new, modified,
     // or identical) node for inclusion in the class initializer, otherwise
     // nothing will be returned and the node will appear in the executable body.
-
+    //
     // At time of writing, only methods (instance and static) are valid in ES
     // class initializers. As new ES class features (such as class fields) reach
     // Stage 4, this method will need to be updated to support them. We
@@ -7402,7 +7402,7 @@ export var Op = (function() {
 
     // Mimic Python's chained comparisons when multiple comparison operators are
     // used sequentially. For example:
-
+    //
     //     bin/coffee -e 'console.log 50 < 65 > 10'
     //     true
     compileChain(o) {
@@ -8004,7 +8004,7 @@ export var Parens = (function() {
     // An extra set of parentheses, specified explicitly in the source. At one time
   // we tried to clean up the results by detecting and removing redundant
   // parentheses, but no longer -- you can put in as many as you please.
-
+  //
   // Parentheses are a good way to force any statement to become an expression.
   class Parens extends Base {
     constructor(body1) {
@@ -8302,7 +8302,7 @@ export var For = (function() {
     // CoffeeScript's replacement for the *for* loop is our array and object
   // comprehensions, that compile into *for* loops here. They also act as an
   // expression, able to return the result of each filtered iteration.
-
+  //
   // Unlike Python array comprehensions, they can be multi-line, and you can pass
   // the current index of the loop as a second parameter. Unlike Ruby blocks,
   // you can map and filter in a single pass.
@@ -8800,7 +8800,7 @@ export var If = (function() {
 
     // *If/else* statements. Acts as an expression by pushing down requested returns
   // to the last line of each clause.
-
+  //
   // Single-expression **Ifs** are compiled into conditional operators if possible,
   // because ternaries are already proper expressions, and don't need conversion.
   class If extends Base {
@@ -9341,7 +9341,7 @@ isLocationDataEndGreater = function(a, b) {
 // encompasses the location data of both nodes. So the new `first_line` value
 // will be the earlier of the two nodes' `first_line` values, the new
 // `last_column` the later of the two nodes' `last_column` values, etc.
-
+//
 // If you only want to extend the first node's location data with the start or
 // end location data of the second node, pass the `justLeading` or `justEnding`
 // options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],
@@ -9385,7 +9385,7 @@ export var mergeLocationData = function(locationDataA, locationDataB, {justLeadi
 // location data object that encompasses the location data of both nodes. So the
 // new `start` value will be the earlier of the two nodes' `start` values, the
 // new `end` value will be the later of the two nodes' `end` values, etc.
-
+//
 // If you only want to extend the first node's location data with the start or
 // end location data of the second node, pass the `justLeading` or `justEnding`
 // options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],

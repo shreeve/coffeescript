@@ -63,11 +63,11 @@ withPrettyErrors = function(fn) {
 };
 
 // Compile CoffeeScript code to JavaScript.
-
+//
 // If `options.sourceMap` is specified, then `options.filename` must also be
 // specified. All options that can be passed to `SourceMap#generate` may also
 // be passed here.
-
+//
 // This returns a javascript string, unless `options.sourceMap` is passed,
 // in which case this returns a `{js, v3SourceMap, sourceMap}`
 // object, where sourceMap is a sourcemap.coffee#SourceMap object, handy for

@@ -511,7 +511,7 @@ mkdirp = function(dir, fn) {
 // Write out a JavaScript source file with the compiled code. By default, files
 // are written out in `cwd` as `.js` files with the same name, but the output
 // directory can be customized with `--output`.
-
+//
 // If `generatedSourceMap` is provided, this will write a `.js.map` file into the
 // same directory as the `.js` file.
 writeJs = function(base, sourcePath, js, jsPath, generatedSourceMap = null) {

@@ -390,7 +390,7 @@ export var Rewriter = (function() {
         }
         if (tag === 'INDENT' && inImplicit()) {
           // An `INDENT` closes an implicit call unless
-
+          //
           //  1. We have seen a `CONTROL` argument on the line.
           //  2. The last token before the indent is part of the list below.
           if (prevTag !== '=>' && prevTag !== '->' && prevTag !== '[' && prevTag !== '(' && prevTag !== ',' && prevTag !== '{' && prevTag !== 'ELSE' && prevTag !== '=') {
@@ -458,20 +458,20 @@ export var Rewriter = (function() {
           return forward(2);
         }
         // Implicit call taking an implicit indented object as first argument.
-
+        //
         //     f
         //       a: b
         //       c: d
-
+        //
         // Don't accept implicit calls of this type, when on the same line
         // as the control structures below as that may misinterpret constructs like:
-
+        //
         //     if f
         //        a: 1
         // as
-
+        //
         //     if f(a: 1)
-
+        //
         // which is probably always unintended.
         // Furthermore don't allow this in the first line of a literal array
         // or explicit object, as that creates grammatical ambiguities (#5368).
@@ -519,15 +519,15 @@ export var Rewriter = (function() {
         }
         // End implicit calls when chaining method calls
         // like e.g.:
-
+        //
         //     f ->
         //       a
         //     .g b, ->
         //       c
         //     .h a
-
+        //
         // and also
-
+        //
         //     f a
         //     .g b
         //     .h a
@@ -577,20 +577,20 @@ export var Rewriter = (function() {
         // Close implicit object if comma is the last character
         // and what comes after doesn't look like it belongs.
         // This is used for trailing commas and calls, like:
-
+        //
         //     x =
         //         a: b,
         //         c: d,
         //     e = 2
-
+        //
         // and
-
+        //
         //     f a, b: c, d: e, f, g: h: i, j
-
+        //
         if (tag === ',' && !this.looksObjectish(i + 1) && inImplicitObject() && !((ref5 = this.tag(i + 2)) === 'FOROF' || ref5 === 'FORIN') && (nextTag !== 'TERMINATOR' || !this.looksObjectish(i + 2))) {
           // When nextTag is OUTDENT the comma is insignificant and
           // should just be ignored so embed it in the implicit object.
-
+          //
           // When it isn't the comma go on to play a role in a call or
           // array further up the stack, so give it a chance.
           offset = nextTag === 'OUTDENT' ? 1 : 0;

@@ -15,7 +15,7 @@ var alt, alternatives, grammar, name, o, operators, unwrap, hasProp = {}.hasOwnP
 // the token sequence against the rules below. When a match can be made, it
 // reduces into the [nonterminal](https://en.wikipedia.org/wiki/Terminal_and_nonterminal_symbols)
 // (the enclosing name at the top), and we proceed from there.
-
+//
 // Generate a new `lib/parser.js` file by running `npm run parser`.
 
 // Since we're going to be wrapped in a parser function in any case, if our
@@ -89,9 +89,9 @@ o = function(patternString, action, options) {
 // the key to a list of alternative matches. With each match's action, the
 // dollar-sign variables are provided by the parser as references to the value of
 // their numeric position, so in this rule:
-
+//
 //     'Expression UNLESS Expression'
-
+//
 // `$1` would be the value of the first `Expression`, `$2` would be the token
 // for the `UNLESS` terminal, and `$3` would be the value of the second
 // `Expression`.
@@ -1784,11 +1784,11 @@ grammar = {
 
 // Operators at the top of this list have higher precedence than the ones lower
 // down. Following these rules is what makes `2 + 3 * 4` parse as:
-
+//
 //     2 + (3 * 4)
-
+//
 // And not:
-
+//
 //     (2 + 3) * 4
 operators = [['right', 'DO_IIFE'], ['left', '.', '?.', '::', '?::'], ['left', 'CALL_START', 'CALL_END'], ['nonassoc', '++', '--'], ['left', '?'], ['right', 'UNARY', 'DO'], ['right', 'AWAIT'], ['right', '**'], ['right', 'UNARY_MATH'], ['left', 'MATH'], ['left', '+', '-'], ['left', 'SHIFT'], ['left', 'RELATION'], ['left', 'COMPARE'], ['left', '&'], ['left', '^'], ['left', '|'], ['left', '&&'], ['left', '||'], ['left', 'BIN?'], ['nonassoc', 'INDENT', 'OUTDENT'], ['right', 'YIELD'], ['right', '=', ':', 'COMPOUND_ASSIGN', 'RETURN', 'THROW', 'EXTENDS'], ['right', 'FORIN', 'FOROF', 'FORFROM', 'BY', 'WHEN'], ['right', 'IF', 'ELSE', 'FOR', 'WHILE', 'UNTIL', 'LOOP', 'SUPER', 'CLASS', 'IMPORT', 'EXPORT', 'DYNAMIC_IMPORT'], ['left', 'POST_IF']];
 
