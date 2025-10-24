@@ -1793,7 +1793,7 @@ export class LineComment extends Base
     super()
 
   compileNode: (o) ->
-    fragment = @makeCode(if /^\s*$/.test @content then '' else "#{if @precededByBlankLine then "\n#{o.indent}" else ''}//#{@content}")
+    fragment = @makeCode("#{if @precededByBlankLine then "\n#{o.indent}" else ''}//#{@content}")
     fragment.newLine = @newLine
     fragment.unshift = @unshift
     fragment.trail = not @newLine and not @unshift
