@@ -5130,7 +5130,7 @@ export var ImportClause = (function() {
       var code;
       code = [];
       if (this.defaultBinding != null) {
-        code.push(...this.defaultBinding.compileNode(o));
+        code.push(...this.defaultBinding.compileToFragments(o, LEVEL_LIST));
         if (this.namedImports != null) {
           code.push(this.makeCode(', '));
         }

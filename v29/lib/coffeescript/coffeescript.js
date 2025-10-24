@@ -8,6 +8,8 @@ import * as helpers from './helpers.js';
 import SourceMap from './sourcemap.js';
 import * as nodesModule from './nodes.js';
 
+// Import `package.json`, which is two levels above this file, as this file is
+// evaluated from `lib/coffeescript`.
 import packageJson from '../../package.json' with { type: "json" };
 
 // The current CoffeeScript version number.
