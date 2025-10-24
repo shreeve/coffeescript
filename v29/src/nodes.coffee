@@ -3451,7 +3451,7 @@ export class ImportClause extends Base
     code = []
 
     if @defaultBinding?
-      code.push @defaultBinding.compileNode(o)...
+      code.push @defaultBinding.compileToFragments(o, LEVEL_LIST)...
       code.push @makeCode ', ' if @namedImports?
 
     if @namedImports?
