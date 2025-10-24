@@ -200,9 +200,7 @@ export var Scope = class Scope {
 };
 
 // Functions required by parser.
-export { extend };
-
-export { addDataToNode };
+export { extend, addDataToNode };
 
 // Constant functions for nodes that don't need customization.
 YES = function() {
